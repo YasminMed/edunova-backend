@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../widgets/animated_background.dart';

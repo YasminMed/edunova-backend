@@ -302,10 +302,12 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
                             isPassword: true,
                             icon: Icons.lock_outline_rounded,
                             validator: (value) {
-                              if (value == null || value.isEmpty)
+                              if (value == null || value.isEmpty) {
                                 return 'Please confirm your password';
-                              if (value != _passwordController.text)
+                              }
+                              if (value != _passwordController.text) {
                                 return 'Passwords do not match';
+                              }
                               return null;
                             },
                           ),

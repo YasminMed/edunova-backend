@@ -32,20 +32,18 @@ class _WelcomePageState extends State<WelcomePage>
   late AnimationController _controller2;
   late AnimationController _controller3;
 
-  late AnimationController _transitionController;
-  late Animation<double> _scaleAnimation;
   late AnimationController _logoPulseController;
   late Animation<double> _pulseScale;
   late Animation<double> _pulseOpacity;
+  late AnimationController _textFadeController;
+  late Animation<double> _textOpacity;
+  late Animation<double> _textSlide;
   late AnimationController _particleController;
   late Animation<double> _floatAnimation; // New Floating Movement
   final List<Offset> _particles = List.generate(
     25,
     (_) => Offset(Random().nextDouble(), Random().nextDouble()),
   );
-
-  // To verify if intro is completed to show content
-  bool _introCompleted = false;
 
   @override
   void initState() {
@@ -64,22 +62,6 @@ class _WelcomePageState extends State<WelcomePage>
       vsync: this,
       duration: const Duration(seconds: 20),
     )..repeat(reverse: true);
-
-    // Transition Logic
-    _transitionController = AnimationController(
-      vsync: this,
-      duration: const Duration(
-        milliseconds: 1500,
-      ), // Slower base duration for smoothness
-      value: 1.0, // Start fully expanded
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.1, end: 4.0).animate(
-      CurvedAnimation(
-        parent: _transitionController,
-        curve: const Cubic(0.2, 0.0, 0.2, 1.0),
-      ),
-    );
 
     // Logo Pulse Animation
     _logoPulseController = AnimationController(
@@ -113,30 +95,37 @@ class _WelcomePageState extends State<WelcomePage>
       ),
     );
 
+    // Text Fade In & Slide
+    _textFadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+
+    _textOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _textFadeController,
+        curve: const Interval(0.4, 1.0, curve: Curves.easeIn),
+      ),
+    );
+
+    _textSlide = Tween<double>(begin: 20.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _textFadeController,
+        curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
+      ),
+    );
+
     _runSequence();
   }
 
   Future<void> _runSequence() async {
-    // 1. Initial State: The screen is covered (Big Circle).
-    // Allow a brief moment for the user to perceive the brand color/cover.
-    await Future.delayed(const Duration(milliseconds: 600));
-
-    // 2. Shrink to reveal content (Big -> Small)
-    // We start at value 1.0 (Big) and reverse to 0.0 (Small).
-    _transitionController.duration = const Duration(milliseconds: 1800);
-    await _transitionController.reverse();
-
-    // Hide the tiny remnant
-    setState(() {
-      _introCompleted = true;
-    });
-
-    // Trigger Content Fade In
+    // Show content immediately when entering WelcomePage
     if (mounted) {
       context.read<WelcomeProvider>().setShowContent(true);
-    } // ... rest of the function continues as previously defined
+      _textFadeController.forward();
+    }
 
-    // 4. Wait for reading time
+    // Wait for reading time
     await Future.delayed(const Duration(milliseconds: 3500));
 
     // 5. Outro: Smooth Fade/Slide instead of Circle
@@ -185,9 +174,9 @@ class _WelcomePageState extends State<WelcomePage>
     _controller1.dispose();
     _controller2.dispose();
     _controller3.dispose();
-    _transitionController.dispose();
     _logoPulseController.dispose();
     _particleController.dispose();
+    _textFadeController.dispose();
     super.dispose();
   }
 
@@ -242,8 +231,6 @@ class _WelcomePageState extends State<WelcomePage>
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    // Calculate diagonal for full cover
-    final maxDimension = max(screenSize.width, screenSize.height);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -410,52 +397,86 @@ class _WelcomePageState extends State<WelcomePage>
                               const SizedBox(height: 12),
                               const SizedBox(height: 16),
                               // Elegant Script Typography with Vibrant Gradient
-                              Text(
-                                "EduNova", // Corrected casing to EduNova
-                                style: GoogleFonts.libreBaskerville(
-                                  fontSize: min(
-                                    screenSize.width * 0.15,
-                                    60,
-                                  ), // Adjusted size for Serif font
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors
-                                      .primaryText, // Restored Navy Blue
-                                  height: 1.0,
-                                  shadows: [
-                                    Shadow(
-                                      color: AppColors.primary.withOpacity(0.2),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 4),
+                              AnimatedBuilder(
+                                animation: _textFadeController,
+                                builder: (context, child) {
+                                  return Transform.translate(
+                                    offset: Offset(0, _textSlide.value),
+                                    child: Opacity(
+                                      opacity: _textOpacity.value,
+                                      child: Text(
+                                        "EduNova", // Corrected casing to EduNova
+                                        style: GoogleFonts.libreBaskerville(
+                                          fontSize: min(
+                                            screenSize.width * 0.15,
+                                            60,
+                                          ), // Adjusted size for Serif font
+                                          fontWeight: FontWeight.bold,
+                                          color:
+                                              Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? Colors.white
+                                              : AppColors
+                                                    .primaryText, // Restored Navy Blue
+                                          height: 1.0,
+                                          shadows: [
+                                            Shadow(
+                                              color: AppColors.primary
+                                                  .withOpacity(0.2),
+                                              blurRadius: 20,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                  ],
-                                ),
+                                  );
+                                },
                               ),
                               const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 8,
-                                ),
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(30),
-                                  border: Border.all(
-                                    color: AppColors.primary.withOpacity(0.1),
-                                  ),
-                                ),
-                                child: Text(
-                                  "YOUR LEARNING STAR",
-                                  textAlign: TextAlign.center,
-                                  style: TextDesign.pageSubtitle.copyWith(
-                                    color: AppColors.primary,
-                                    fontSize: min(screenSize.width * 0.04, 16),
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 4.0,
-                                  ),
-                                ),
+                              AnimatedBuilder(
+                                animation: _textFadeController,
+                                builder: (context, child) {
+                                  return Transform.translate(
+                                    offset: Offset(0, _textSlide.value * 1.5),
+                                    child: Opacity(
+                                      opacity: _textOpacity.value,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 8,
+                                        ),
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 24,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            30,
+                                          ),
+                                          border: Border.all(
+                                            color: AppColors.primary
+                                                .withOpacity(0.1),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          "YOUR LEARNING STAR",
+                                          textAlign: TextAlign.center,
+                                          style: TextDesign.pageSubtitle
+                                              .copyWith(
+                                                color: AppColors.primary,
+                                                fontSize: min(
+                                                  screenSize.width * 0.04,
+                                                  16,
+                                                ),
+                                                fontWeight: FontWeight.w900,
+                                                letterSpacing: 4.0,
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                               const SizedBox(height: 60),
                             ],
@@ -489,41 +510,7 @@ class _WelcomePageState extends State<WelcomePage>
             },
           ),
 
-          // --- 3. Transition Overlay Circle ---
-          if (!_introCompleted)
-            AnimatedBuilder(
-              animation: _scaleAnimation,
-              builder: (context, child) {
-                // Determine scale based on animation value.
-                // Value 0.1 -> Small | Value 3.0 -> Covers screen
-                return Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: Container(
-                    width: maxDimension,
-                    height: maxDimension,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      // Updated Gradient for "Comfort"
-                      gradient: RadialGradient(
-                        colors: [
-                          AppColors.accentLight.withOpacity(0.9), // Softer Mint
-                          AppColors.primary.withOpacity(0.6), // Hint of Teal
-                        ],
-                        stops: const [0.0, 1.0],
-                        radius: 1.0,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.2),
-                          blurRadius: 50,
-                          spreadRadius: 20,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+          // --- Removing Transition Overlay Circle ---
         ],
       ),
     );

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
@@ -228,22 +229,30 @@ class _SelectionPageView extends StatelessWidget {
                     AppLocalizations.of(context)?.translate('choose_role') ??
                         "Choose your role",
                     style: TextDesign.h1.copyWith(
-                      fontSize: 28,
+                      fontSize: 32,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -1.0,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : AppColors.primaryText,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Text(
                     AppLocalizations.of(
                           context,
                         )?.translate('welcome_subtitle') ??
                         "Start your journey with EduNova",
-                    style: TextDesign.body,
+                    style: TextDesign.body.copyWith(
+                      fontSize: 16,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white70
+                          : AppColors.mutedText,
+                    ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 56),
 
                   // Cards
                   _RoleCard(
@@ -279,7 +288,7 @@ class _SelectionPageView extends StatelessWidget {
   }
 }
 
-class _RoleCard extends StatelessWidget {
+class _RoleCard extends StatefulWidget {
   final String title;
   final IconData icon;
   final Color color;
@@ -293,51 +302,142 @@ class _RoleCard extends StatelessWidget {
   });
 
   @override
+  State<_RoleCard> createState() => _RoleCardState();
+}
+
+class _RoleCardState extends State<_RoleCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+      reverseDuration: const Duration(milliseconds: 150),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.98,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    _controller.forward();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    _controller.reverse();
+    widget.onTap(); // Execute tap action
+  }
+
+  void _onTapCancel() {
+    _controller.reverse();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 120,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.8), // Glass effect
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 10,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: const BorderRadiusDirectional.horizontal(
-                  start: Radius.circular(16),
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          height: 130, // Deeper card
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.4)
+                    : widget.color.withOpacity(0.15),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.white.withOpacity(0.75),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.08)
+                        : Colors.white.withOpacity(0.5),
+                    width: 1.2,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      decoration: BoxDecoration(
+                        color: widget.color,
+                        borderRadius: const BorderRadiusDirectional.horizontal(
+                          start: Radius.circular(24),
+                        ),
+                        boxShadow: isDark
+                            ? [
+                                BoxShadow(
+                                  color: widget.color.withOpacity(0.5),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
+                                ),
+                              ]
+                            : [],
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16), // Larger icon pad
+                      decoration: BoxDecoration(
+                        color: widget.color.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: widget.color.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(widget.icon, size: 36, color: widget.color),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      child: Text(
+                        widget.title,
+                        style: TextDesign.h2.copyWith(
+                          color: isDark ? Colors.white : AppColors.primaryText,
+                          fontSize: 22,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: isDark ? Colors.white38 : AppColors.mutedText,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 24),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(width: 24),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 32, color: color),
-            ),
-            const SizedBox(width: 24),
-            Expanded(child: Text(title, style: TextDesign.h2)),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: AppColors.mutedText,
-              size: 20,
-            ),
-            const SizedBox(width: 24),
-          ],
+          ),
         ),
       ),
     );

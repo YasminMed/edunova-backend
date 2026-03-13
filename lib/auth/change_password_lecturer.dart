@@ -213,8 +213,9 @@ class _ChangePasswordLecturerPageState
                                 "New Password",
                             controller: _newPassController,
                             validator: (value) {
-                              if (value == null || value.length < 8)
+                              if (value == null || value.length < 8) {
                                 return 'Must be at least 8 characters';
+                              }
                               return null;
                             },
                           ),
@@ -227,8 +228,9 @@ class _ChangePasswordLecturerPageState
                                 "Confirm Password",
                             controller: _confirmPassController,
                             validator: (value) {
-                              if (value != _newPassController.text)
+                              if (value != _newPassController.text) {
                                 return 'Passwords do not match';
+                              }
                               return null;
                             },
                           ),

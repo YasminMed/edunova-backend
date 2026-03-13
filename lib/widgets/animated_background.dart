@@ -183,7 +183,7 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
           // Glassmorphism Blur
           Positioned.fill(
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+              filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
               child: Container(
                 color: Theme.of(context).brightness == Brightness.dark
                     ? Colors.black.withOpacity(0.2)

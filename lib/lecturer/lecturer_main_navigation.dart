@@ -47,9 +47,13 @@ class _LecturerMainNavigationState extends State<LecturerMainNavigation> {
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor.withOpacity(0.6),
-                    ),
+                    border: Theme.of(context).brightness == Brightness.dark
+                        ? null
+                        : Border.all(
+                            color: Theme.of(
+                              context,
+                            ).dividerColor.withOpacity(0.6),
+                          ),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.secondary.withOpacity(0.2),

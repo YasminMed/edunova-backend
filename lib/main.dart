@@ -75,6 +75,35 @@ class MyApp extends StatelessWidget {
               iconTheme: IconThemeData(color: Colors.black),
               titleTextStyle: TextStyle(color: Colors.black, fontSize: 20),
             ),
+            cardTheme: CardThemeData(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              elevation: 0,
+              color: Colors.white,
+              margin: EdgeInsets.zero,
+            ),
+            inputDecorationTheme: InputDecorationTheme(
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              hintStyle: TextStyle(color: Colors.black.withOpacity(0.3)),
+              labelStyle: const TextStyle(color: Colors.black54),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.black.withOpacity(0.05)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: AppColors.primary.withOpacity(0.5),
+                  width: 2,
+                ),
+              ),
+            ),
           ),
           darkTheme: ThemeData(
             brightness: Brightness.dark,
@@ -93,23 +122,31 @@ class MyApp extends StatelessWidget {
                   titleMedium: const TextStyle(color: Colors.white),
                   titleSmall: const TextStyle(color: Colors.white70),
                 ),
+            cardTheme: CardThemeData(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              elevation: 0,
+              color: const Color(0xFF1E1E26),
+              margin: EdgeInsets.zero,
+            ),
             inputDecorationTheme: InputDecorationTheme(
               filled: true,
               fillColor: const Color(0xFF1E1E26),
               hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
               labelStyle: const TextStyle(color: Colors.white70),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.primary,
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: AppColors.primary.withOpacity(0.8),
                   width: 2,
                 ),
               ),

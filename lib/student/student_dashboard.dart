@@ -66,11 +66,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       decoration: BoxDecoration(
                         color: Theme.of(context).cardColor.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(30),
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).dividerColor.withOpacity(0.6),
-                        ),
+                        border: Theme.of(context).brightness == Brightness.dark
+                            ? null
+                            : Border.all(
+                                color: Theme.of(
+                                  context,
+                                ).dividerColor.withOpacity(0.6),
+                              ),
                         boxShadow: [
                           BoxShadow(
                             color: AppColors.primary.withOpacity(0.2),
@@ -196,7 +198,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     childAspectRatio: 1.1,
                     padding: const EdgeInsets.only(right: 20),
                     children: [
-                      _buildGridItem(
+                      _DashboardGridItem(
                         title:
                             AppLocalizations.of(context)?.translate('marks') ??
                             "Marks",
@@ -211,7 +213,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           );
                         },
                       ),
-                      _buildGridItem(
+                      _DashboardGridItem(
                         title:
                             AppLocalizations.of(context)?.translate('medals') ??
                             "Medals",
@@ -226,7 +228,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           );
                         },
                       ),
-                      _buildGridItem(
+                      _DashboardGridItem(
                         title:
                             AppLocalizations.of(context)?.translate('ranks') ??
                             "Ranks",
@@ -241,7 +243,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           );
                         },
                       ),
-                      _buildGridItem(
+                      _DashboardGridItem(
                         title:
                             AppLocalizations.of(context)?.translate('fees') ??
                             "Fees",
@@ -256,7 +258,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           );
                         },
                       ),
-                      _buildGridItem(
+                      _DashboardGridItem(
                         title:
                             AppLocalizations.of(
                               context,
@@ -273,7 +275,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           );
                         },
                       ),
-                      _buildGridItem(
+                      _DashboardGridItem(
                         title:
                             AppLocalizations.of(
                               context,
@@ -290,7 +292,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           );
                         },
                       ),
-                      _buildGridItem(
+                      _DashboardGridItem(
                         title:
                             AppLocalizations.of(context)?.translate('music') ??
                             "Music",
@@ -305,7 +307,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           );
                         },
                       ),
-                      _buildGridItem(
+                      _DashboardGridItem(
                         title:
                             AppLocalizations.of(
                               context,
@@ -415,6 +417,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
             end: Alignment.centerRight,
           ),
           borderRadius: BorderRadius.circular(24),
+          border: isDark
+              ? Border.all(color: Colors.white.withOpacity(0.05))
+              : null,
           boxShadow: [
             BoxShadow(
               color: color.withOpacity(0.1),
@@ -591,58 +596,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  Widget _buildGridItem({
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap,
-    required Color color,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Theme.of(context).cardColor
-              : Theme.of(context).cardColor.withOpacity(0.6),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.15),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              style: TextDesign.body.copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white
-                    : Colors.black87,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildNavItem(IconData icon, int index) {
     final bool isSelected = _selectedIndex == index;
     return GestureDetector(
@@ -660,6 +613,116 @@ class _StudentDashboardState extends State<StudentDashboard> {
           icon,
           color: isSelected ? AppColors.primary : AppColors.mutedText,
           size: 26,
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardGridItem extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _DashboardGridItem({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  State<_DashboardGridItem> createState() => _DashboardGridItemState();
+}
+
+class _DashboardGridItemState extends State<_DashboardGridItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+      reverseDuration: const Duration(milliseconds: 150),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    _controller.forward();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    _controller.reverse();
+    widget.onTap();
+  }
+
+  void _onTapCancel() {
+    _controller.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark
+                ? Theme.of(context).cardColor
+                : Theme.of(context).cardColor.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(20),
+            border: isDark
+                ? Border.all(color: Colors.white.withOpacity(0.05))
+                : null,
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withOpacity(0.15),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: widget.color.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(widget.icon, color: widget.color, size: 28),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                widget.title,
+                style: TextDesign.body.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );

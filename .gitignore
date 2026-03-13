@@ -43,3 +43,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase config (keep secrets out of GitHub)
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+
+# Environment files
+.env
+*.env
