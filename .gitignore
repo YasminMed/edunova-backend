@@ -44,11 +44,15 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Firebase config (keep secrets out of GitHub)
+# Firebase
 google-services.json
 GoogleService-Info.plist
-firebase_options.dart
 
-# Environment files
-.env
-*.env
+# Secrets and Environment
+.env*
+secrets.json
+*.keystore
+*.jks
+*.p12
+*.key
+*.pem
