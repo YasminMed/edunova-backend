@@ -7,6 +7,7 @@ import 'signup_student.dart';
 import 'forgot_password_student.dart';
 import '../student/student_dashboard.dart';
 import '../l10n/app_localizations.dart';
+import '../services/auth_service.dart';
 
 class LoginStudentPage extends StatefulWidget {
   const LoginStudentPage({super.key});
@@ -22,6 +23,10 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+  String? _emailError;
+  String? _passwordError;
 
   @override
   void dispose() {
@@ -31,14 +36,49 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
+    setState(() {
+      _emailError = null;
+      _passwordError = null;
+    });
+
     if (_formKey.currentState!.validate()) {
-      // Navigate to Student Dashboard
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const StudentDashboard()),
-        (route) => false,
-      );
+      setState(() => _isLoading = true);
+      try {
+        await _authService.login(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+
+        if (!mounted) return;
+
+        // Navigate to Student Dashboard
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const StudentDashboard()),
+          (route) => false,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        final errorMsg = e.toString().toLowerCase();
+
+        setState(() {
+          if (errorMsg.contains("email") || errorMsg.contains("not registered")) {
+            _emailError = e.toString();
+          } else if (errorMsg.contains("password") || errorMsg.contains("incorrect")) {
+            _passwordError = e.toString();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(e.toString()),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+        });
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -47,6 +87,8 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
     required TextEditingController controller,
     bool isPassword = false,
     IconData? icon,
+    String? errorText,
+    ValueChanged<String>? onChanged,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
@@ -97,6 +139,7 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
                 vertical: 16,
               ),
             ),
+            onChanged: onChanged,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please enter $label';
@@ -115,6 +158,18 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
             },
           ),
         ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              errorText,
+              style: TextDesign.caption.copyWith(
+                color: Colors.redAccent,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -205,6 +260,12 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
                                 "Email",
                             controller: _emailController,
                             icon: Icons.email_outlined,
+                            errorText: _emailError,
+                            onChanged: (val) {
+                              if (_emailError != null) {
+                                setState(() => _emailError = null);
+                              }
+                            },
                           ),
                           const SizedBox(height: 20),
                           _buildTextField(
@@ -216,6 +277,12 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
                             controller: _passwordController,
                             isPassword: true,
                             icon: Icons.lock_outline_rounded,
+                            errorText: _passwordError,
+                            onChanged: (val) {
+                              if (_passwordError != null) {
+                                setState(() => _passwordError = null);
+                              }
+                            },
                           ),
 
                           Align(
@@ -245,12 +312,14 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
 
                           const SizedBox(height: 32),
                           CustomButton(
-                            text:
-                                AppLocalizations.of(
+                            text: AppLocalizations.of(
                                   context,
                                 )?.translate('login') ??
                                 "Login",
-                            onTap: _handleLogin,
+                            isLoading: _isLoading,
+                            onTap: () {
+                              _handleLogin();
+                            },
                           ),
                         ],
                       ),

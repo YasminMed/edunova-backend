@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
+import '../services/post_service.dart';
+import '../services/auth_service.dart';
 
 class PostCreationPage extends StatefulWidget {
   const PostCreationPage({super.key});
@@ -12,7 +16,68 @@ class PostCreationPage extends StatefulWidget {
 class _PostCreationPageState extends State<PostCreationPage> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
+  final PostService _postService = PostService();
+  
+  String _activeTab = "New"; // "New" or "Posted"
+  File? _selectedImage;
   bool _isUploading = false;
+  
+  List<dynamic> _myPosts = [];
+  bool _isLoadingHistory = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  Future<void> _fetchMyPosts() async {
+    setState(() => _isLoadingHistory = true);
+    try {
+      final posts = await _postService.getPosts();
+      // In a real app we'd filter by lecturer ID, but here we show all for simplicity
+      setState(() {
+        _myPosts = posts;
+        _isLoadingHistory = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingHistory = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error loading posts: $e")),
+        );
+      }
+    }
+  }
+
+  Future<void> _deletePost(int id) async {
+    try {
+      await _postService.deletePost(id);
+      _fetchMyPosts();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Post deleted successfully")),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Delete failed: $e")),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickImage() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedImage = File(result.files.single.path!);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,17 +95,222 @@ class _PostCreationPageState extends State<PostCreationPage> {
         elevation: 0,
         iconTheme: IconThemeData(color: textColor),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      body: Column(
+        children: [
+          _buildTabFilter(isDark),
+          Expanded(
+            child: _activeTab == "New" 
+              ? _buildNewPostSection(isDark) 
+              : _buildPostedHistorySection(isDark),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabFilter(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      height: 50,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        children: [
+          _buildTabItem("New", isDark),
+          _buildTabItem("Posted", isDark),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabItem(String title, bool isDark) {
+    final isSelected = _activeTab == title;
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          setState(() => _activeTab = title);
+          if (title == "Posted") _fetchMyPosts();
+        },
+        borderRadius: BorderRadius.circular(15),
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.secondary : Colors.transparent,
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Text(
+            title,
+            style: TextStyle(
+              color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black54),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNewPostSection(bool isDark) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          _buildInputCard(isDark),
+          const SizedBox(height: 24),
+          if (_selectedImage != null) _buildImagePreview(),
+          const SizedBox(height: 24),
+          _buildMediaSection(isDark),
+          const SizedBox(height: 40),
+          _buildPostButton(),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImagePreview() {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.file(
+            _selectedImage!,
+            width: double.infinity,
+            height: 200,
+            fit: BoxFit.cover,
+          ),
+        ),
+        Positioned(
+          top: 10,
+          right: 10,
+          child: GestureDetector(
+            onTap: () => setState(() => _selectedImage = null),
+            child: Container(
+              padding: const EdgeInsets.all(5),
+              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+              child: const Icon(Icons.close, color: Colors.white, size: 20),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPostedHistorySection(bool isDark) {
+    if (_isLoadingHistory) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    }
+    if (_myPosts.isEmpty) {
+      return Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildInputCard(isDark),
-            const SizedBox(height: 24),
-            _buildMediaSection(isDark),
-            const SizedBox(height: 40),
-            _buildPostButton(),
+            Icon(Icons.history_rounded, size: 80, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text("No posts yet", style: TextDesign.h3.copyWith(color: Colors.grey)),
           ],
         ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _fetchMyPosts,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(20),
+        itemCount: _myPosts.length,
+        itemBuilder: (context, index) {
+          final post = _myPosts[index];
+          final String? imageUrl = post['image_url'];
+          final fullImageUrl = imageUrl != null ? "${AuthService.baseUrl}$imageUrl" : null;
+          
+          return Container(
+            margin: const EdgeInsets.only(bottom: 20),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: AppColors.secondary.withOpacity(0.1),
+                      child: const Icon(Icons.person, color: AppColors.secondary),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("You", style: TextDesign.body.copyWith(fontWeight: FontWeight.bold)),
+                          Text(post['created_at'] != null ? "Posted just now" : "", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                      onPressed: () => _showDeleteDialog(post['id']),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(post['title'] ?? "", style: TextDesign.h3),
+                const SizedBox(height: 8),
+                Text(post['description'] ?? "", style: TextDesign.body),
+                if (fullImageUrl != null) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: Image.network(fullImageUrl, height: 150, width: double.infinity, fit: BoxFit.cover),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                const Divider(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatItem(Icons.favorite_border_rounded, "Likes"),
+                    _buildStatItem(Icons.chat_bubble_outline_rounded, "Comments"),
+                    _buildStatItem(Icons.share_outlined, "Share"),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, String label) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.grey),
+        const SizedBox(width: 4),
+        Text("0", style: const TextStyle(color: Colors.grey, fontSize: 13)), // Placeholder 0
+      ],
+    );
+  }
+
+  void _showDeleteDialog(int postId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Post?"),
+        content: const Text("Are you sure you want to delete this post? This action cannot be undone."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deletePost(postId);
+            }, 
+            child: const Text("Delete", style: TextStyle(color: Colors.redAccent))
+          ),
+        ],
       ),
     );
   }
@@ -79,31 +349,47 @@ class _PostCreationPageState extends State<PostCreationPage> {
   Widget _buildMediaSection(bool isDark) {
     return Row(
       children: [
-        _buildMediaButton(Icons.image_rounded, "Add Image", Colors.blue),
-        const SizedBox(width: 16),
-        _buildMediaButton(Icons.videocam_rounded, "Add Video", Colors.purple),
+        _buildMediaButton(
+          Icons.image_rounded, 
+          _selectedImage != null ? "Image Selected" : "Add Image", 
+          Colors.blue,
+          _pickImage,
+          _selectedImage != null
+        ),
       ],
     );
   }
 
-  Widget _buildMediaButton(IconData icon, String label, Color color) {
+  Widget _buildMediaButton(IconData icon, String label, Color color, VoidCallback onTap, bool isSelected) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(color: color, fontWeight: FontWeight.bold),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            decoration: BoxDecoration(
+              color: isSelected ? color.withOpacity(0.2) : color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isSelected ? color : color.withOpacity(0.3), 
+                width: isSelected ? 2 : 1
+              ),
             ),
-          ],
+            child: Column(
+              children: [
+                Icon(icon, color: color, size: 28),
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -120,19 +406,51 @@ class _PostCreationPageState extends State<PostCreationPage> {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        onPressed: () {
+        onPressed: _isUploading ? null : () async {
+          if (_titleController.text.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Please enter a title")),
+            );
+            return;
+          }
+
           setState(() => _isUploading = true);
-          Future.delayed(const Duration(seconds: 2), () {
+          
+          try {
+            await _postService.createPost(
+              title: _titleController.text.trim(),
+              description: _descController.text.trim(),
+              image: _selectedImage,
+            );
+            
             if (mounted) {
-              Navigator.pop(context);
+              _titleController.clear();
+              _descController.clear();
+              setState(() {
+                _selectedImage = null;
+                _activeTab = "Posted";
+              });
+              _fetchMyPosts();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Post Shared Successfully!")),
               );
             }
-          });
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Error: $e"), backgroundColor: Colors.redAccent),
+              );
+            }
+          } finally {
+            if (mounted) setState(() => _isUploading = false);
+          }
         },
         child: _isUploading
-            ? const CircularProgressIndicator(color: Colors.white)
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              )
             : const Text(
                 "Post Update",
                 style: TextStyle(

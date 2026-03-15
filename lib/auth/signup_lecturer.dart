@@ -6,6 +6,7 @@ import '../widgets/animated_background.dart';
 import '../widgets/custom_button.dart';
 import 'login_lecturer.dart';
 import '../l10n/app_localizations.dart';
+import '../services/auth_service.dart';
 
 class SignupLecturerPage extends StatefulWidget {
   const SignupLecturerPage({super.key});
@@ -16,6 +17,12 @@ class SignupLecturerPage extends StatefulWidget {
 
 class _SignupLecturerPageState extends State<SignupLecturerPage> {
   final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+  String? _nameError;
+  String? _emailError;
+  String? _passwordError;
+  String? _confirmPasswordError;
 
   // Controllers
   final TextEditingController _nameController = TextEditingController();
@@ -35,74 +42,106 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
     super.dispose();
   }
 
-  void _handleSignup() {
+  Future<void> _handleSignup() async {
     debugPrint("Sign up button pressed");
     if (_formKey.currentState!.validate()) {
-      debugPrint("Form valid, showing dialog");
-      // Simulate successful signup
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.all(20),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.check_circle_rounded,
-                  color: AppColors.primary,
-                  size: 60,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  AppLocalizations.of(context)?.translate('account_created') ??
-                      "Account Created!",
-                  style: TextDesign.h2.copyWith(color: AppColors.primaryText),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  AppLocalizations.of(
+      setState(() => _isLoading = true);
+      try {
+        await _authService.signup(
+          fullName: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        if (!mounted) return;
+        debugPrint("Form valid, showing dialog");
+        // Simulate successful signup
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(20),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.primary,
+                    size: 60,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    AppLocalizations.of(context)?.translate('account_created') ??
+                        "Account Created!",
+                    style: TextDesign.h2.copyWith(color: AppColors.primaryText),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    AppLocalizations.of(
+                          context,
+                        )?.translate('lecturer_account_created_subtitle') ??
+                        "Your lecturer account has been created successfully.",
+                    textAlign: TextAlign.center,
+                    style: TextDesign.body,
+                  ),
+                  const SizedBox(height: 24),
+                  CustomButton(
+                    text:
+                        AppLocalizations.of(context)?.translate('go_to_login') ??
+                        "Go to Login",
+                    onTap: () {
+                      debugPrint("Navigating to login");
+                      Navigator.pushAndRemoveUntil(
                         context,
-                      )?.translate('lecturer_account_created_subtitle') ??
-                      "Your lecturer account has been created successfully.",
-                  textAlign: TextAlign.center,
-                  style: TextDesign.body,
-                ),
-                const SizedBox(height: 24),
-                CustomButton(
-                  text:
-                      AppLocalizations.of(context)?.translate('go_to_login') ??
-                      "Go to Login",
-                  onTap: () {
-                    debugPrint("Navigating to login");
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const LoginLecturerPage(),
-                      ),
-                      (route) => false,
-                    );
-                  },
-                ),
-              ],
+                        MaterialPageRoute(
+                          builder: (_) => const LoginLecturerPage(),
+                        ),
+                        (route) => false,
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
+        );
+      } catch (e) {
+        if (!mounted) return;
+        final errorMsg = e.toString().toLowerCase();
+
+        setState(() {
+          if (errorMsg.contains("email") || errorMsg.contains("already exists")) {
+            _emailError = e.toString();
+          } else if (errorMsg.contains("password")) {
+            _passwordError = e.toString();
+          } else if (errorMsg.contains("name")) {
+            _nameError = e.toString();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(e.toString()),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+        });
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
     } else {
       debugPrint("Form invalid");
       ScaffoldMessenger.of(context).showSnackBar(
@@ -123,6 +162,8 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
     required TextEditingController controller,
     bool isPassword = false,
     IconData? icon,
+    String? errorText,
+    ValueChanged<String>? onChanged,
     String? Function(String?)? validator,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -174,6 +215,7 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
                 vertical: 16,
               ),
             ),
+            onChanged: onChanged,
             validator:
                 validator ??
                 (value) {
@@ -194,6 +236,18 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
                 },
           ),
         ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              errorText,
+              style: TextDesign.caption.copyWith(
+                color: Colors.redAccent,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -269,6 +323,10 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
                                 "Full Name",
                             controller: _nameController,
                             icon: Icons.person_outline_rounded,
+                            errorText: _nameError,
+                            onChanged: (_) {
+                              if (_nameError != null) setState(() => _nameError = null);
+                            },
                           ),
                           const SizedBox(height: 16),
                           _buildTextField(
@@ -279,6 +337,10 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
                                 "Email",
                             controller: _emailController,
                             icon: Icons.email_outlined,
+                            errorText: _emailError,
+                            onChanged: (_) {
+                              if (_emailError != null) setState(() => _emailError = null);
+                            },
                           ),
                           const SizedBox(height: 16),
                           _buildTextField(
@@ -290,6 +352,10 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
                             controller: _passwordController,
                             isPassword: true,
                             icon: Icons.lock_outline_rounded,
+                            errorText: _passwordError,
+                            onChanged: (_) {
+                              if (_passwordError != null) setState(() => _passwordError = null);
+                            },
                           ),
                           const SizedBox(height: 16),
                           _buildTextField(
@@ -301,14 +367,18 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
                             controller: _confirmPasswordController,
                             isPassword: true,
                             icon: Icons.lock_outline_rounded,
+                            errorText: _confirmPasswordError,
+                            onChanged: (_) {
+                              if (_confirmPasswordError != null) setState(() => _confirmPasswordError = null);
+                            },
                             validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please confirm your password';
-                              }
-                              if (value != _passwordController.text) {
-                                return 'Passwords do not match';
-                              }
-                              return null;
+                               if (value == null || value.isEmpty) {
+                                 return 'Please confirm your password';
+                               }
+                               if (value != _passwordController.text) {
+                                 return 'Passwords do not match';
+                               }
+                               return null;
                             },
                           ),
                           const SizedBox(height: 16),
@@ -380,12 +450,14 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
 
                           const SizedBox(height: 32),
                           CustomButton(
-                            text:
-                                AppLocalizations.of(
+                            text: AppLocalizations.of(
                                   context,
                                 )?.translate('signup') ??
                                 "Sign Up",
-                            onTap: _handleSignup,
+                            isLoading: _isLoading,
+                            onTap: () {
+                              _handleSignup();
+                            },
                           ),
                         ],
                       ),

@@ -3,6 +3,7 @@ import 'dart:ui';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
+import '../services/material_service.dart';
 
 class LectureDetailPage extends StatefulWidget {
   final Map<String, dynamic> lecture;
@@ -15,6 +16,54 @@ class LectureDetailPage extends StatefulWidget {
 
 class _LectureDetailPageState extends State<LectureDetailPage> {
   int _selectedFilterIndex = 0;
+  final MaterialService _materialService = MaterialService();
+  List<dynamic> _resources = [];
+  List<dynamic> _attendance = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContent();
+  }
+
+  void _loadContent() {
+    if (_selectedFilterIndex < 4) {
+      _loadResources();
+    } else {
+      _loadAttendance();
+    }
+  }
+
+  Future<void> _loadResources() async {
+    setState(() => _isLoading = true);
+    try {
+      final filters = ["PDFs", "Assignments", "Quizzes", "Exams", "Attendance"];
+      final response = await _materialService.getResources(
+        widget.lecture['id'],
+        category: filters[_selectedFilterIndex],
+      );
+      setState(() {
+        _resources = response;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadAttendance() async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await _materialService.getAttendance(widget.lecture['id']);
+      setState(() {
+        _attendance = response;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +72,8 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
 
     final List<String> filters = [
       l10n?.translate('pdfs') ?? 'PDFs',
-      l10n?.translate('videos') ?? 'Videos',
       l10n?.translate('assignments') ?? 'Assignments',
+      l10n?.translate('quizzes') ?? 'Quizzes',
       l10n?.translate('exams') ?? 'Exams',
       l10n?.translate('attendance') ?? 'Attendance',
     ];
@@ -106,8 +155,10 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 12),
                           child: GestureDetector(
-                            onTap: () =>
-                                setState(() => _selectedFilterIndex = index),
+                            onTap: () {
+                              setState(() => _selectedFilterIndex = index);
+                              _loadContent();
+                            },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
                               padding: const EdgeInsets.symmetric(
@@ -148,7 +199,9 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
               // Content Area
               SliverPadding(
                 padding: const EdgeInsets.all(20),
-                sliver: _buildFilteredContent(),
+                sliver: _isLoading 
+                  ? const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator()))
+                  : _buildFilteredContent(),
               ),
             ],
           ),
@@ -162,17 +215,27 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
       case 0: // PDFs
         return _buildResourceList(
           Icons.picture_as_pdf_rounded,
-          'Lecture Material',
+          'PDF',
+          _resources,
         );
-      case 1: // Videos
+      case 1: // Assignments
         return _buildResourceList(
-          Icons.play_circle_fill_rounded,
-          'Session Recording',
+          Icons.assignment_rounded,
+          'Assignment',
+          _resources,
         );
-      case 2: // Assignments
-        return _buildAssignmentList();
+      case 2: // Quizzes
+        return _buildResourceList(
+          Icons.quiz_rounded,
+          'Quiz',
+          _resources,
+        );
       case 3: // Exams
-        return _buildExamList();
+        return _buildResourceList(
+          Icons.school_rounded,
+          'Exam',
+          _resources,
+        );
       case 4: // Attendance
         return _buildAttendanceView();
       default:
@@ -183,6 +246,13 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   Widget _buildAttendanceView() {
     final color = widget.lecture['color'] as Color;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Calculate interactive rate
+    double rate = 0;
+    if (_attendance.isNotEmpty) {
+      int attended = _attendance.where((a) => a['status'] == 'Attended').length;
+      rate = attended / _attendance.length;
+    }
 
     return SliverToBoxAdapter(
       child: Column(
@@ -208,22 +278,20 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                       height: 120,
                       width: 120,
                       child: CircularProgressIndicator(
-                        value: 0.94,
+                        value: rate,
                         strokeWidth: 12,
                         backgroundColor: color.withOpacity(0.1),
                         valueColor: AlwaysStoppedAnimation<Color>(color),
                       ),
                     ),
                     Text(
-                      "94%",
+                      "${(rate * 100).toInt()}%",
                       style: TextDesign.h1.copyWith(
                         color: isDark ? Colors.white : AppColors.primaryText,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                const Text("Excellent! Keep showing up."),
               ],
             ),
           ),
@@ -237,15 +305,12 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   Widget _buildAttendanceList() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final records = [
-      {'date': 'Oct 20, 2025', 'status': 'Attended', 'color': Colors.green},
-      {'date': 'Oct 18, 2025', 'status': 'Late', 'color': Colors.orange},
-      {'date': 'Oct 15, 2025', 'status': 'Attended', 'color': Colors.green},
-      {'date': 'Oct 13, 2025', 'status': 'Absent', 'color': Colors.red},
-    ];
-
     return Column(
-      children: records.map((record) {
+      children: _attendance.map((record) {
+        Color statusColor = Colors.green;
+        if (record['status'] == 'Late') statusColor = Colors.orange;
+        if (record['status'] == 'Absent') statusColor = Colors.red;
+
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
@@ -257,7 +322,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                record['date'] as String,
+                record['date'].toString().split('T')[0],
                 style: TextStyle(
                   color: isDark ? Colors.white70 : AppColors.bodyText,
                 ),
@@ -268,13 +333,13 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: (record['color'] as Color).withOpacity(0.1),
+                  color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   record['status'] as String,
                   style: TextStyle(
-                    color: record['color'] as Color,
+                    color: statusColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -287,12 +352,24 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
     );
   }
 
-  Widget _buildResourceList(IconData icon, String suffix) {
+  Widget _buildResourceList(IconData icon, String type, List<dynamic> resources) {
     final color = widget.lecture['color'] as Color;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (resources.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 40),
+            child: Text("No $type uploaded yet."),
+          ),
+        ),
+      );
+    }
+
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
+        final resource = resources[index];
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(16),
@@ -317,14 +394,14 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "${widget.lecture['subject']} $suffix ${index + 1}",
+                      resource['title'],
                       style: TextDesign.h3.copyWith(
                         fontSize: 16,
                         color: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
                     Text(
-                      "Uploaded on Oct ${10 + index}, 2025",
+                      "Uploaded on ${resource['created_at'].toString().split('T')[0]}",
                       style: TextDesign.body.copyWith(
                         fontSize: 12,
                         color: AppColors.mutedText,
@@ -340,227 +417,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
             ],
           ),
         );
-      }, childCount: 5),
-    );
-  }
-
-  Widget _buildAssignmentList() {
-    final l10n = AppLocalizations.of(context);
-    final color = widget.lecture['color'] as Color;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final assignments = [
-      {
-        'title': 'Analysis Report',
-        'submitted': true,
-        'deadline': 'Oct 25, 2025',
-      },
-      {
-        'title': 'Weekly Practice',
-        'submitted': false,
-        'deadline': 'Oct 30, 2025',
-      },
-      {'title': 'Case Study', 'submitted': true, 'deadline': 'Nov 02, 2025'},
-    ];
-
-    return SliverList(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        final assignment = assignments[index];
-        final isSubmitted = assignment['submitted'] as bool;
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: color.withOpacity(0.1)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: (isSubmitted ? Colors.green : Colors.orange)
-                      .withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  isSubmitted
-                      ? Icons.check_circle_rounded
-                      : Icons.pending_actions_rounded,
-                  color: isSubmitted ? Colors.green : Colors.orange,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      assignment['title'] as String,
-                      style: TextDesign.h3.copyWith(
-                        fontSize: 16,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: (isSubmitted ? Colors.green : Colors.orange)
-                                .withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            isSubmitted
-                                ? (l10n?.translate('submitted') ?? 'Submitted')
-                                : (l10n?.translate('not_submitted') ??
-                                      'Not Submitted'),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: isSubmitted ? Colors.green : Colors.orange,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          "${l10n?.translate('deadline') ?? 'Deadline'}: ${assignment['deadline']}",
-                          style: TextDesign.body.copyWith(
-                            fontSize: 11,
-                            color: AppColors.mutedText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: AppColors.mutedText,
-              ),
-            ],
-          ),
-        );
-      }, childCount: assignments.length),
-    );
-  }
-
-  Widget _buildExamList() {
-    final l10n = AppLocalizations.of(context);
-    final color = widget.lecture['color'] as Color;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final exams = [
-      {
-        'title': l10n?.translate('midterm') ?? 'Midterm',
-        'icon': Icons.assignment_rounded,
-        'date': 'Nov 15, 2025',
-        'hall': 'Main Hall A',
-      },
-      {
-        'title': l10n?.translate('final_exam') ?? 'Final',
-        'icon': Icons.school_rounded,
-        'date': 'Jan 20, 2026',
-        'hall': 'Grand Audit B',
-      },
-      {
-        'title': l10n?.translate('quiz') ?? 'Quiz',
-        'icon': Icons.quiz_rounded,
-        'date': 'Dec 05, 2025',
-        'hall': 'Exam Hall 3',
-      },
-    ];
-
-    return SliverList(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        final exam = exams[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: color.withOpacity(0.1)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(exam['icon'] as IconData, color: color),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      exam['title'] as String,
-                      style: TextDesign.h3.copyWith(
-                        fontSize: 16,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today_rounded,
-                          size: 12,
-                          color: AppColors.mutedText,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          exam['date'] as String,
-                          style: TextDesign.body.copyWith(
-                            fontSize: 12,
-                            color: AppColors.mutedText,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Icon(Icons.location_on_rounded, size: 12, color: color),
-                        const SizedBox(width: 4),
-                        Text(
-                          "${l10n?.translate('hall') ?? 'Hall'}: ${exam['hall']}",
-                          style: TextDesign.body.copyWith(
-                            fontSize: 12,
-                            color: color,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.info_outline_rounded, color: color, size: 20),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        "${exam['title']} at ${exam['hall']} on ${exam['date']}",
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      }, childCount: exams.length),
+      }, childCount: resources.length),
     );
   }
 }

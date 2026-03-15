@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
 import '../auth/change_password_lecturer.dart';
 import '../auth/welcome_page.dart';
+import '../providers/user_provider.dart';
 
 class LecturerProfilePage extends StatefulWidget {
   const LecturerProfilePage({super.key});
@@ -13,12 +15,12 @@ class LecturerProfilePage extends StatefulWidget {
 }
 
 class _LecturerProfilePageState extends State<LecturerProfilePage> {
-  String _name = "Dr. James Wilson"; // Mock Name
-  String _email = "james.wilson@university.com"; // Mock Email
+  // Removed mock name and email, will use Provider instead
 
   void _showEditNameDialog() {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
     final TextEditingController nameController = TextEditingController(
-      text: _name,
+      text: userProvider.fullName,
     );
     showDialog(
       context: context,
@@ -45,9 +47,10 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
           ),
           ElevatedButton(
             onPressed: () {
-              setState(() {
-                _name = nameController.text;
-              });
+              Provider.of<UserProvider>(context, listen: false).setUser(
+                nameController.text,
+                Provider.of<UserProvider>(context, listen: false).email ?? "",
+              );
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -73,8 +76,9 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
   }
 
   void _showEditEmailDialog() {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
     final TextEditingController emailController = TextEditingController(
-      text: _email,
+      text: userProvider.email,
     );
     showDialog(
       context: context,
@@ -102,9 +106,10 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
           ),
           ElevatedButton(
             onPressed: () {
-              setState(() {
-                _email = emailController.text;
-              });
+              Provider.of<UserProvider>(context, listen: false).setUser(
+                Provider.of<UserProvider>(context, listen: false).fullName ?? "",
+                emailController.text,
+              );
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -239,6 +244,9 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    final name = userProvider.fullName ?? "Lecturer";
+    
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
@@ -289,7 +297,7 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
             ),
             const SizedBox(height: 20),
             Text(
-              _name,
+              name,
               style: TextDesign.h2.copyWith(
                 color: Theme.of(context).textTheme.bodyLarge?.color,
               ),

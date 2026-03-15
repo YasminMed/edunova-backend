@@ -56,3 +56,6 @@ secrets.json
 *.p12
 *.key
 *.pem
+
+# Local Backend
+python_backend/

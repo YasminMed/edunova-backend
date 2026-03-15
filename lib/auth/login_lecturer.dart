@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../widgets/animated_background.dart';
@@ -7,6 +8,8 @@ import 'signup_lecturer.dart';
 import 'forgot_password_lecturer.dart';
 import '../lecturer/lecturer_main_navigation.dart';
 import '../l10n/app_localizations.dart';
+import '../services/auth_service.dart';
+import '../providers/user_provider.dart';
 
 class LoginLecturerPage extends StatefulWidget {
   const LoginLecturerPage({super.key});
@@ -17,28 +20,70 @@ class LoginLecturerPage extends StatefulWidget {
 
 class _LoginLecturerPageState extends State<LoginLecturerPage> {
   final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+  String? _emailError;
+  String? _passwordError;
 
   // Controllers
-  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   @override
   void dispose() {
-    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
+    setState(() {
+      _emailError = null;
+      _passwordError = null;
+    });
+
     if (_formKey.currentState!.validate()) {
-      // Navigate to Lecturer Dashboard Wrapped in Navigation
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const LecturerMainNavigation()),
-        (route) => false,
-      );
+      setState(() => _isLoading = true);
+      try {
+        final userData = await _authService.login(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+        );
+        if (!mounted) return;
+
+        // Store user data in UserProvider
+        context.read<UserProvider>().setUser(
+          userData['fullName'] ?? 'Lecturer',
+          _emailController.text.trim(),
+        );
+
+        // Navigate to Lecturer Dashboard Wrapped in Navigation
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LecturerMainNavigation()),
+          (route) => false,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        final errorMsg = e.toString().toLowerCase();
+
+        setState(() {
+          if (errorMsg.contains("email") || errorMsg.contains("not registered")) {
+            _emailError = e.toString();
+          } else if (errorMsg.contains("password") || errorMsg.contains("incorrect")) {
+            _passwordError = e.toString();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(e.toString()),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+        });
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -47,6 +92,8 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
     required TextEditingController controller,
     bool isPassword = false,
     IconData? icon,
+    String? errorText,
+    ValueChanged<String>? onChanged,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
@@ -97,6 +144,7 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
                 vertical: 16,
               ),
             ),
+            onChanged: onChanged,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please enter $label';
@@ -115,6 +163,18 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
             },
           ),
         ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              errorText,
+              style: TextDesign.caption.copyWith(
+                color: Colors.redAccent,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -193,16 +253,6 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
                             label:
                                 AppLocalizations.of(
                                   context,
-                                )?.translate('full_name') ??
-                                "Full Name",
-                            controller: _nameController,
-                            icon: Icons.person_outline_rounded,
-                          ),
-                          const SizedBox(height: 20),
-                          _buildTextField(
-                            label:
-                                AppLocalizations.of(
-                                  context,
                                 )?.translate('email') ??
                                 "Email",
                             controller: _emailController,
@@ -247,12 +297,14 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
 
                           const SizedBox(height: 32),
                           CustomButton(
-                            text:
-                                AppLocalizations.of(
+                            text: AppLocalizations.of(
                                   context,
                                 )?.translate('login') ??
                                 "Login",
-                            onTap: _handleLogin,
+                            isLoading: _isLoading,
+                            onTap: () {
+                              _handleLogin();
+                            },
                           ),
                         ],
                       ),

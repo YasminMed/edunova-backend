@@ -5,9 +5,11 @@ import '../widgets/animated_background.dart';
 import '../widgets/custom_button.dart';
 import 'change_password_student.dart';
 import '../l10n/app_localizations.dart';
+import '../services/auth_service.dart';
 
 class VerificationCodeStudentPage extends StatefulWidget {
-  const VerificationCodeStudentPage({super.key});
+  final String email;
+  const VerificationCodeStudentPage({super.key, required this.email});
 
   @override
   State<VerificationCodeStudentPage> createState() =>
@@ -22,6 +24,8 @@ class _VerificationCodeStudentPageState
     (_) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -39,6 +43,37 @@ class _VerificationCodeStudentPageState
       _focusNodes[index + 1].requestFocus();
     } else if (value.isEmpty && index > 0) {
       _focusNodes[index - 1].requestFocus();
+    }
+  }
+
+  Future<void> _handleVerify() async {
+    // Check if all filled
+    String otp = _controllers.map((c) => c.text).join();
+    if (otp.length == 4) {
+      setState(() => _isLoading = true);
+      try {
+        await _authService.verifyOtp(
+          widget.email,
+          otp,
+        );
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const ChangePasswordStudentPage(),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -144,25 +179,13 @@ class _VerificationCodeStudentPageState
                         ),
                         const SizedBox(height: 32),
                         CustomButton(
-                          text:
-                              AppLocalizations.of(
-                                context,
-                              )?.translate('verify') ??
-                              "Verify",
+                          text: AppLocalizations.of(
+                                    context,
+                                  )?.translate('verify') ??
+                                  "Verify",
+                          isLoading: _isLoading,
                           onTap: () {
-                            // Check if all filled
-                            bool allFilled = _controllers.every(
-                              (c) => c.text.isNotEmpty,
-                            );
-                            if (allFilled) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const ChangePasswordStudentPage(),
-                                ),
-                              );
-                            }
+                            _handleVerify();
                           },
                         ),
                         const SizedBox(height: 16),

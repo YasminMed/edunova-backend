@@ -10,6 +10,7 @@ import 'providers/locale_provider.dart';
 import 'l10n/app_localizations.dart';
 import 'l10n/kurdish_material_localizations.dart';
 import 'providers/theme_provider.dart';
+import 'providers/user_provider.dart';
 import 'viewmodels/lecturer/lecturer_materials_viewmodel.dart';
 
 void main() {
@@ -34,6 +35,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => SelectionProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => LecturerMaterialsViewModel()),
       ],
       child: const MyApp(),

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../widgets/animated_background.dart';
 import '../l10n/app_localizations.dart';
 import '../student/music_page.dart';
 import '../student/timetable_page.dart';
+import '../providers/user_provider.dart';
 import 'student_analysis_page.dart';
 import 'post_creation_page.dart';
 import 'lecturer_materials_page.dart';
@@ -54,6 +56,8 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleColor = isDark ? Colors.white : AppColors.primaryText;
+    final userProvider = Provider.of<UserProvider>(context);
+    final lecturerName = userProvider.fullName ?? 'James';
 
     return Stack(
       children: [
@@ -65,7 +69,7 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "${l10n?.translate('lecturer_welcome_back') ?? 'Welcome back'}, Dr. James!",
+                "${l10n?.translate('lecturer_welcome_back') ?? 'Welcome back'}, dr. $lecturerName!",
                 style: TextDesign.h1.copyWith(color: titleColor),
               ),
               const SizedBox(height: 24),
@@ -192,12 +196,10 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem("150", l10n?.translate('students') ?? "Students"),
-          _buildStatSeparator(),
-          _buildStatItem("24", l10n?.translate('materials') ?? "Materials"),
+          _buildStatItem("0", l10n?.translate('materials') ?? "Materials"),
           _buildStatSeparator(),
           _buildStatItem(
-            "12",
+            "0",
             l10n?.translate('years_exp_short') ?? "Years Exp",
           ),
         ],

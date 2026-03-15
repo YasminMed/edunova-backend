@@ -1,67 +1,82 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../../core/viewmodels/base_view_model.dart';
+import '../../services/material_service.dart';
+import '../../services/auth_service.dart';
 
 class LecturerMaterialsViewModel extends BaseViewModel {
+  final MaterialService _materialService = MaterialService();
   List<Map<String, dynamic>> _subjects = [];
+  String? _errorMessage;
 
   List<Map<String, dynamic>> get subjects => _subjects;
+  String? get errorMessage => _errorMessage;
 
   LecturerMaterialsViewModel() {
-    _loadSubjects();
+    loadSubjects();
   }
 
-  void _loadSubjects() {
-    // Simulate loading data
-    _subjects = [
-      {
-        'name': 'Mathematics',
-        'code': 'MATH101',
-        'students': 120,
-        'materials': 15,
-        'image':
-            'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&auto=format&fit=crop&q=60',
-        'color': Colors.blue,
-      },
-      {
-        'name': 'Physics',
-        'code': 'PHYS204',
-        'students': 85,
-        'materials': 12,
-        'image':
-            'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?w=800&auto=format&fit=crop&q=60',
-        'color': Colors.orange,
-      },
-      {
-        'name': 'Programming',
-        'code': 'CS102',
-        'students': 150,
-        'materials': 25,
-        'image':
-            'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=crop&q=60',
-        'color': Colors.purple,
-      },
-      {
-        'name': 'Database Systems',
-        'code': 'CS301',
-        'students': 95,
-        'materials': 18,
-        'image':
-            'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=800&auto=format&fit=crop&q=60',
-        'color': Colors.teal,
-      },
-    ];
-    notifyListeners();
+  Future<void> loadSubjects() async {
+    setBusy(true);
+    try {
+      final response = await _materialService.getCourses();
+      _subjects = response.map((s) => {
+        'id': s['id'] as int,
+        'name': s['name'] as String,
+        'code': s['code'] as String,
+        'students': 0, // Mock for now
+        'materials': 0, // Mock for now
+        'image': s['image_url'] != null ? "${AuthService.baseUrl}${s['image_url']}" : null,
+        'color': Colors.blue, // Default color
+      }).toList().cast<Map<String, dynamic>>();
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = e.toString();
+      debugPrint("Error loading courses: $e");
+    } finally {
+      setBusy(false);
+    }
   }
 
-  void addNewCourse(String name, String code) {
-    _subjects.add({
-      'name': name,
-      'code': code.toUpperCase(),
-      'students': 0,
-      'materials': 0,
-      'image': null,
-      'color': Colors.teal,
-    });
-    notifyListeners();
+  Future<void> addNewCourse(String name, String code, {File? image}) async {
+    setBusy(true);
+    try {
+      await _materialService.createCourse(name, code, image: image);
+      await loadSubjects();
+    } catch (e) {
+      debugPrint("Error creating course: $e");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  Future<void> uploadMaterial({
+    required int courseId,
+    required String category,
+    required String title,
+    required File file,
+  }) async {
+    setBusy(true);
+    try {
+      await _materialService.uploadResource(
+        courseId: courseId,
+        category: category,
+        title: title,
+        file: file,
+      );
+    } catch (e) {
+      debugPrint("Error uploading material: $e");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  Future<void> deleteCourse(int id) async {
+    try {
+      await _materialService.deleteCourse(id);
+      await loadSubjects();
+    } catch (e) {
+      debugPrint("Error deleting course: $e");
+    }
   }
 }

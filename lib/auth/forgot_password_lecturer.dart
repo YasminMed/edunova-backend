@@ -5,6 +5,7 @@ import '../widgets/animated_background.dart';
 import '../widgets/custom_button.dart';
 import 'verification_code_lecturer.dart';
 import '../l10n/app_localizations.dart';
+import '../services/auth_service.dart';
 
 class ForgotPasswordLecturerPage extends StatefulWidget {
   const ForgotPasswordLecturerPage({super.key});
@@ -18,11 +19,43 @@ class _ForgotPasswordLecturerPageState
     extends State<ForgotPasswordLecturerPage> {
   final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleSendCode() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      try {
+        await _authService.sendOtp(
+          _emailController.text.trim(),
+        );
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => VerificationCodeLecturerPage(
+              email: _emailController.text.trim(),
+            ),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -152,21 +185,13 @@ class _ForgotPasswordLecturerPageState
                           ),
                           const SizedBox(height: 32),
                           CustomButton(
-                            text:
-                                AppLocalizations.of(
+                            text: AppLocalizations.of(
                                   context,
                                 )?.translate('send_code') ??
                                 "Send Code",
+                            isLoading: _isLoading,
                             onTap: () {
-                              if (_formKey.currentState!.validate()) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const VerificationCodeLecturerPage(),
-                                  ),
-                                );
-                              }
+                              _handleSendCode();
                             },
                           ),
                         ],

@@ -4,7 +4,7 @@ import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import 'dart:ui';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:file_picker/file_picker.dart';
 import '../viewmodels/lecturer/managed_subject_viewmodel.dart';
 
 class ManagedSubjectDetailPage extends StatelessWidget {
@@ -63,27 +63,13 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                       background: Stack(
                         fit: StackFit.expand,
                         children: [
-                          if (subject['image'] != null && !kIsWeb)
-                            Image.file(
-                              File(subject['image']),
+                          if (subject['image'] != null)
+                            Image.network(
+                              subject['image'],
                               fit: BoxFit.cover,
-                            )
-                          else if (subject['image'] != null && kIsWeb)
-                            Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [color, color.withOpacity(0.8)],
-                                ),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.image_rounded,
-                                  size: 60,
-                                  color: Colors.white.withOpacity(0.3),
-                                ),
-                              ),
+                              width: double.infinity,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(color: color.withOpacity(0.8)),
                             )
                           else
                             Container(
@@ -138,7 +124,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
           ),
           floatingActionButton: FloatingActionButton(
             backgroundColor: color,
-            onPressed: () => _showAddMaterialDialog(context, viewModel),
+            onPressed: () => _showAddMaterialDialog(context, viewModel, subject['id']),
             child: const Icon(Icons.add, color: Colors.white),
           ),
         );
@@ -166,7 +152,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(right: 12),
             child: GestureDetector(
-              onTap: () => viewModel.setFilterIndex(index),
+            onTap: () => viewModel.setFilterIndex(index, subject['id']),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -212,36 +198,37 @@ class ManagedSubjectDetailPage extends StatelessWidget {
         return _buildResourceList(
           context,
           Icons.picture_as_pdf_rounded,
-          "Lecture Note",
+          "PDFs",
           color,
           isDark,
+          viewModel.resources,
         );
       case 1: // Assignments
-        return _buildManagementList(
+        return _buildResourceList(
           context,
           Icons.assignment_rounded,
-          "Assignment",
+          "Assignments",
           color,
           isDark,
-          showGrading: true,
+          viewModel.resources,
         );
       case 2: // Quizzes
-        return _buildManagementList(
+        return _buildResourceList(
           context,
           Icons.quiz_rounded,
-          "Quiz",
+          "Quizzes",
           color,
           isDark,
-          showGrading: true,
+          viewModel.resources,
         );
       case 3: // Exams
-        return _buildManagementList(
+        return _buildResourceList(
           context,
           Icons.school_rounded,
-          "Exam",
+          "Exams",
           color,
           isDark,
-          showGrading: true,
+          viewModel.resources,
         );
       case 4: // Attendance
         return _buildAttendanceView(context, viewModel, color, isDark);
@@ -253,12 +240,29 @@ class ManagedSubjectDetailPage extends StatelessWidget {
   Widget _buildResourceList(
     BuildContext context,
     IconData icon,
-    String label,
+    String categoryName,
     Color color,
     bool isDark,
+    List<dynamic> resources,
   ) {
+    if (resources.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 40),
+              Icon(Icons.folder_open_rounded, size: 64, color: color.withOpacity(0.3)),
+              const SizedBox(height: 16),
+              Text("No $categoryName uploaded yet.", style: TextStyle(color: Colors.grey[500])),
+            ],
+          ),
+        ),
+      );
+    }
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
+        final resource = resources[index];
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(20),
@@ -285,14 +289,14 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "$label ${index + 1}",
+                      resource['title'],
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white : AppColors.primaryText,
                       ),
                     ),
                     Text(
-                      "Uploaded on 15 Dec 2023",
+                      "Uploaded on ${resource['created_at'].toString().split('T')[0]}",
                       style: TextStyle(
                         fontSize: 12,
                         color: isDark ? Colors.white54 : Colors.grey,
@@ -311,189 +315,11 @@ class ManagedSubjectDetailPage extends StatelessWidget {
             ],
           ),
         );
-      }, childCount: 4),
+      }, childCount: resources.length),
     );
   }
 
-  Widget _buildManagementList(
-    BuildContext context,
-    IconData icon,
-    String label,
-    Color color,
-    bool isDark, {
-    bool showGrading = false,
-  }) {
-    return SliverList(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
-            ],
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(icon, color: color),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "$label Topic ${index + 1}",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? Colors.white
-                                : AppColors.primaryText,
-                          ),
-                        ),
-                        Text(
-                          "Uploaded on 25 Dec 2023",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? Colors.white54 : Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 32),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  if (index == 0)
-                    Column(
-                      children: [
-                        Text(
-                          "85/100",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                            fontSize: 16,
-                          ),
-                        ),
-                        Text(
-                          "Good work",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? Colors.white70 : Colors.grey,
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    _buildActionBtn(
-                      Icons.grade_rounded,
-                      "Mark",
-                      Colors.orange,
-                      () => _showGradingDialog(context, index),
-                    ),
-                  _buildActionBtn(
-                    Icons.history_rounded,
-                    "Remark",
-                    Colors.teal,
-                    () => _showGradingDialog(context, index, isRemark: true),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      }, childCount: 3),
-    );
-  }
 
-  Widget _buildActionBtn(
-    IconData icon,
-    String label,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showGradingDialog(
-    BuildContext context,
-    int index, {
-    bool isRemark = false,
-  }) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isRemark ? "Remark Submission" : "Mark Submission"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            TextField(decoration: InputDecoration(labelText: "Student ID")),
-            SizedBox(height: 12),
-            TextField(
-              decoration: InputDecoration(labelText: "Grade (e.g., 85/100)"),
-              keyboardType: TextInputType.number,
-            ),
-            SizedBox(height: 12),
-            TextField(
-              decoration: InputDecoration(labelText: "Notes"),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.secondary,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    "Submission ${isRemark ? 'Remarked' : 'Marked'} Successfully!",
-                  ),
-                ),
-              );
-            },
-            child: const Text("Submit", style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildAttendanceView(
     BuildContext context,
@@ -517,7 +343,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () => viewModel.submitAttendance(context),
+                    onPressed: () => viewModel.submitAttendance(context, subject['id']),
                     child: const Text(
                       "Submit",
                       style: TextStyle(color: Colors.white, fontSize: 16),
@@ -571,11 +397,11 @@ class ManagedSubjectDetailPage extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: _attendanceOption("Attended", Colors.green)),
+                  Expanded(child: _attendanceOption("Attended", Colors.green, viewModel, student)),
                   const SizedBox(width: 8),
-                  Expanded(child: _attendanceOption("Late", Colors.orange)),
+                  Expanded(child: _attendanceOption("Late", Colors.orange, viewModel, student)),
                   const SizedBox(width: 8),
-                  Expanded(child: _attendanceOption("Absent", Colors.red)),
+                  Expanded(child: _attendanceOption("Absent", Colors.red, viewModel, student)),
                 ],
               ),
             ],
@@ -585,21 +411,21 @@ class ManagedSubjectDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _attendanceOption(String label, Color color) {
-    bool isSelected = false;
-
-    return StatefulBuilder(
-      builder: (context, setState) {
+  Widget _attendanceOption(String label, Color color, ManagedSubjectViewModel viewModel, String student) {
+    return Consumer<ManagedSubjectViewModel>(
+      builder: (context, vm, child) {
+        final currentSelection = vm.attendanceMap[student] == label;
+        
         return GestureDetector(
-          onTap: () => setState(() => isSelected = !isSelected),
+          onTap: () => vm.updateAttendanceStatus(student, label),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected ? color : color.withOpacity(0.1),
+              color: currentSelection ? color : color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isSelected ? color : color.withOpacity(0.3),
+                color: currentSelection ? color : color.withOpacity(0.3),
                 width: 1.5,
               ),
             ),
@@ -607,58 +433,84 @@ class ManagedSubjectDetailPage extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : color,
+                color: currentSelection ? Colors.white : color,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
             ),
           ),
         );
-      },
+      }
     );
   }
 
   void _showAddMaterialDialog(
     BuildContext context,
     ManagedSubjectViewModel viewModel,
+    int courseId,
   ) {
+    final titleController = TextEditingController();
+    String? selectedCategory;
+    File? selectedFile;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Add New Material"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const TextField(
-              decoration: InputDecoration(labelText: "Material Title"),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text("Add New Material"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: "Material Title"),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(labelText: "Category"),
+                items: viewModel.filters
+                    .take(4) // Exclude Attendance
+                    .map((f) => DropdownMenuItem(value: f, child: Text(f)))
+                    .toList(),
+                onChanged: (v) => setDialogState(() => selectedCategory = v),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  FilePickerResult? result = await FilePicker.platform.pickFiles();
+                  if (result != null) {
+                    setDialogState(() {
+                      selectedFile = File(result.files.single.path!);
+                    });
+                  }
+                },
+                icon: const Icon(Icons.upload_file_rounded),
+                label: Text(selectedFile != null ? "File Selected" : "Upload File"),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
             ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(labelText: "Category"),
-              items: viewModel.filters
-                  .map((f) => DropdownMenuItem(value: f, child: Text(f)))
-                  .toList(),
-              onChanged: (v) {},
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.upload_file_rounded),
-              label: const Text("Upload File"),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: subject['color']),
+              onPressed: () async {
+                if (titleController.text.isNotEmpty && selectedCategory != null && selectedFile != null) {
+                   await viewModel.addMaterial(
+                     courseId: courseId,
+                     title: titleController.text,
+                     category: selectedCategory!,
+                     file: selectedFile!,
+                   );
+                   Navigator.pop(context);
+                }
+              },
+              child: const Text("Add", style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: subject['color']),
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Add", style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }

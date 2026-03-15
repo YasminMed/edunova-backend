@@ -5,6 +5,7 @@ import '../widgets/animated_background.dart';
 import '../widgets/custom_button.dart';
 import 'verification_code_student.dart';
 import '../l10n/app_localizations.dart';
+import '../services/auth_service.dart';
 
 class ForgotPasswordStudentPage extends StatefulWidget {
   const ForgotPasswordStudentPage({super.key});
@@ -17,11 +18,43 @@ class ForgotPasswordStudentPage extends StatefulWidget {
 class _ForgotPasswordStudentPageState extends State<ForgotPasswordStudentPage> {
   final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleSendCode() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      try {
+        await _authService.sendOtp(
+          _emailController.text.trim(),
+        );
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => VerificationCodeStudentPage(
+              email: _emailController.text.trim(),
+            ),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -150,22 +183,14 @@ class _ForgotPasswordStudentPageState extends State<ForgotPasswordStudentPage> {
                             ),
                           ),
                           const SizedBox(height: 32),
-                          CustomButton(
-                            text:
-                                AppLocalizations.of(
-                                  context,
-                                )?.translate('send_code') ??
-                                "Send Code",
+                           CustomButton(
+                            text: AppLocalizations.of(
+                                      context,
+                                    )?.translate('send_code') ??
+                                    "Send Code",
+                            isLoading: _isLoading,
                             onTap: () {
-                              if (_formKey.currentState!.validate()) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const VerificationCodeStudentPage(),
-                                  ),
-                                );
-                              }
+                              _handleSendCode();
                             },
                           ),
                         ],

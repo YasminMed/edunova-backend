@@ -2,9 +2,43 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
+import '../services/post_service.dart';
+import '../services/auth_service.dart';
 
-class StudentSocialFeedPage extends StatelessWidget {
+class StudentSocialFeedPage extends StatefulWidget {
   const StudentSocialFeedPage({super.key});
+
+  @override
+  State<StudentSocialFeedPage> createState() => _StudentSocialFeedPageState();
+}
+
+class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
+  final PostService _postService = PostService();
+  List<dynamic> _posts = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPosts();
+  }
+
+  Future<void> _fetchPosts() async {
+    try {
+      final posts = await _postService.getPosts();
+      setState(() {
+        _posts = posts;
+        _isLoading = false;
+        _errorMessage = null;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,64 +60,96 @@ class StudentSocialFeedPage extends StatelessWidget {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        physics: const BouncingScrollPhysics(),
-        children: [
-          _buildPostCard(
-            context,
-            userName: "Dean Wilson",
-            time: "2h ago",
-            title:
-                AppLocalizations.of(context)?.translate('post_sports_title') ??
-                "Annual Sports Meet 2024",
-            description:
-                AppLocalizations.of(context)?.translate('post_sports_desc') ??
-                "Join us this Friday for the biggest sports event of the semester! Registration is open now at the faculty office.",
-            image:
-                "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&auto=format&fit=crop&q=60",
-            likes: 124,
-            comments: 18,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh_rounded, color: isDark ? Colors.white : Colors.black87),
+            onPressed: () {
+              setState(() => _isLoading = true);
+              _fetchPosts();
+            },
           ),
-          const SizedBox(height: 20),
-          _buildPostCard(
-            context,
-            userName: "Academic Office",
-            time: "5h ago",
-            title:
-                AppLocalizations.of(
-                  context,
-                )?.translate('post_achievement_title') ??
-                "New Achievement Unlocked!",
-            description:
-                AppLocalizations.of(
-                  context,
-                )?.translate('post_achievement_desc') ??
-                "Congratulations to our Computer Science department for winning the regional Innovation Challenge. Proud of our team!",
-            image:
-                "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&auto=format&fit=crop&q=60",
-            likes: 342,
-            comments: 45,
-          ),
-          const SizedBox(height: 20),
-          _buildPostCard(
-            context,
-            userName: "Student Council",
-            time: "1d ago",
-            title:
-                AppLocalizations.of(context)?.translate('post_ball_title') ??
-                "Winter Ball Tickets",
-            description:
-                AppLocalizations.of(context)?.translate('post_ball_desc') ??
-                "Early bird tickets for the Winter Ball are now available. Get yours before they run out!",
-            likes: 89,
-            comments: 12,
-          ),
-          const SizedBox(height: 40),
         ],
       ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : _errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 60),
+                      const SizedBox(height: 16),
+                      Text("Failed to load posts", style: TextDesign.h3),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        child: Text(_errorMessage!, textAlign: TextAlign.center, style: TextDesign.body),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() => _isLoading = true);
+                          _fetchPosts();
+                        },
+                        child: const Text("Retry"),
+                      ),
+                    ],
+                  ),
+                )
+              : _posts.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.post_add_rounded, color: Colors.grey[400], size: 80),
+                          const SizedBox(height: 16),
+                          Text("No posts yet", style: TextDesign.h3.copyWith(color: Colors.grey)),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _fetchPosts,
+                      color: AppColors.primary,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(20),
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: _posts.length,
+                        itemBuilder: (context, index) {
+                          final post = _posts[index];
+                          final String? imageUrl = post['image_url'];
+                          final fullImageUrl = imageUrl != null ? "${AuthService.baseUrl}$imageUrl" : null;
+                          
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 20),
+                            child: _buildPostCard(
+                              context,
+                              userName: post['author_name'] ?? "Lecturer",
+                              time: _formatTimestamp(post['created_at']),
+                              title: post['title'] ?? "No Title",
+                              description: post['description'] ?? "",
+                              image: fullImageUrl,
+                              likes: 0,
+                              comments: 0,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
     );
+  }
+
+  String _formatTimestamp(String? isoDate) {
+    if (isoDate == null) return "Just now";
+    try {
+      final date = DateTime.parse(isoDate);
+      final now = DateTime.now();
+      final diff = now.difference(date);
+      if (diff.inMinutes < 60) return "${diff.inMinutes}m ago";
+      if (diff.inHours < 24) return "${diff.inHours}h ago";
+      return "${diff.inDays}d ago";
+    } catch (_) {
+      return "Recently";
+    }
   }
 
   Widget _buildPostCard(
