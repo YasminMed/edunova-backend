@@ -595,3 +595,5 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   }
 
   
+
+}

@@ -48,6 +48,7 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
         final userData = await _authService.login(
           _emailController.text.trim(),
           _passwordController.text.trim(),
+          'lecturer',
         );
         if (!mounted) return;
 

@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import '../../core/viewmodels/base_view_model.dart';
@@ -38,10 +39,22 @@ class LecturerMaterialsViewModel extends BaseViewModel {
     }
   }
 
-  Future<void> addNewCourse(String name, String code, {File? image}) async {
+  Future<void> addNewCourse(
+    String name,
+    String code, {
+    File? image,
+    Uint8List? imageBytes,
+    String? imageFileName,
+  }) async {
     setBusy(true);
     try {
-      await _materialService.createCourse(name, code, image: image);
+      await _materialService.createCourse(
+        name,
+        code,
+        image: image,
+        imageBytes: imageBytes,
+        imageFileName: imageFileName,
+      );
       await loadSubjects();
     } catch (e) {
       debugPrint("Error creating course: $e");
@@ -54,7 +67,9 @@ class LecturerMaterialsViewModel extends BaseViewModel {
     required int courseId,
     required String category,
     required String title,
-    required File file,
+    File? file,
+    Uint8List? fileBytes,
+    String? fileName,
   }) async {
     setBusy(true);
     try {
@@ -63,6 +78,8 @@ class LecturerMaterialsViewModel extends BaseViewModel {
         category: category,
         title: title,
         file: file,
+        fileBytes: fileBytes,
+        fileName: fileName,
       );
     } catch (e) {
       debugPrint("Error uploading material: $e");

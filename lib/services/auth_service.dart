@@ -8,11 +8,12 @@ class AuthService {
     receiveTimeout: const Duration(seconds: 10),
   ));
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(String email, String password, String role) async {
     try {
       final response = await _dio.post("/auth/login", data: {
         "email": email,
         "password": password,
+        "role": role,
       });
       return response.data;
     } on DioException catch (e) {
@@ -24,6 +25,7 @@ class AuthService {
     required String fullName,
     required String email,
     required String password,
+    required String role,
     String gender = "Male",
   }) async {
     try {
@@ -32,6 +34,7 @@ class AuthService {
         "email": email,
         "password": password,
         "gender": gender,
+        "role": role,
       });
       return response.data;
     } on DioException catch (e) {

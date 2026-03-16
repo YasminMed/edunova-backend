@@ -48,6 +48,7 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
         await _authService.login(
           _emailController.text.trim(),
           _passwordController.text,
+          'student',
         );
 
         if (!mounted) return;

@@ -59,6 +59,7 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
           email: _emailController.text.trim(),
           password: _passwordController.text,
           gender: _selectedGender,
+          role: 'student',
         );
         
         if (!mounted) return;
