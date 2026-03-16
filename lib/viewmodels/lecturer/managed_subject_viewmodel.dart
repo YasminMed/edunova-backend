@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../core/viewmodels/base_view_model.dart';
 import '../../services/material_service.dart';
@@ -22,8 +23,12 @@ class ManagedSubjectViewModel extends BaseViewModel {
 
   void setFilterIndex(int index, int courseId) {
     _selectedFilterIndex = index;
-    if (index < 4) {
+    if (index == 0 || index == 3) {
       loadResources(courseId, _filters[index]);
+    } else if (index == 1) {
+      loadAssignments(courseId);
+    } else if (index == 2) {
+      loadQuizzes(courseId);
     } else {
       loadAttendance(courseId);
     }
@@ -45,7 +50,9 @@ class ManagedSubjectViewModel extends BaseViewModel {
     required int courseId,
     required String title,
     required String category,
-    required File file,
+    File? file,
+    Uint8List? fileBytes,
+    String? fileName,
   }) async {
     setBusy(true);
     try {
@@ -54,10 +61,125 @@ class ManagedSubjectViewModel extends BaseViewModel {
         category: category,
         title: title,
         file: file,
+        fileBytes: fileBytes,
+        fileName: fileName,
       );
-      await loadResources(courseId, category);
+      if (category == "PDFs" || category == "Quizzes" || category == "Exams") {
+        await loadResources(courseId, category);
+      } else if (category == "Assignments") {
+        await loadAssignments(courseId);
+      }
     } catch (e) {
       debugPrint("Error uploading material: $e");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  Future<void> loadAssignments(int courseId) async {
+    setBusy(true);
+    try {
+      _resources = await _materialService.getAssignments(courseId);
+    } catch (e) {
+      debugPrint("Error loading assignments: $e");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  Future<void> addAssignment({
+    required int courseId,
+    required String title,
+    required String content,
+    File? file,
+    Uint8List? fileBytes,
+    String? fileName,
+  }) async {
+    setBusy(true);
+    try {
+      await _materialService.createAssignment(
+        courseId: courseId,
+        title: title,
+        content: content,
+        file: file,
+        fileBytes: fileBytes,
+        fileName: fileName,
+      );
+      await loadAssignments(courseId);
+    } catch (e) {
+      debugPrint("Error creating assignment: $e");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  Future<void> loadQuizzes(int courseId) async {
+    setBusy(true);
+    try {
+      _resources = await _materialService.getQuizzes(courseId);
+    } catch (e) {
+      debugPrint("Error loading quizzes: $e");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  Future<void> addQuiz({
+    required int courseId,
+    required String title,
+    required String content,
+    File? file,
+    Uint8List? fileBytes,
+    String? fileName,
+  }) async {
+    setBusy(true);
+    try {
+      await _materialService.createQuiz(
+        courseId: courseId,
+        title: title,
+        content: content,
+        file: file,
+        fileBytes: fileBytes,
+        fileName: fileName,
+      );
+      await loadQuizzes(courseId);
+    } catch (e) {
+      debugPrint("Error creating quiz: $e");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  List<dynamic> _submissions = [];
+  List<dynamic> get submissions => _submissions;
+
+  Future<void> loadSubmissions(int assignmentId) async {
+    setBusy(true);
+    try {
+      _submissions = await _materialService.getSubmissions(assignmentId);
+    } catch (e) {
+      debugPrint("Error loading submissions: $e");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  Future<void> gradeSubmission({
+    required int submissionId,
+    required String grade,
+    String? note,
+    required int assignmentId,
+  }) async {
+    setBusy(true);
+    try {
+      await _materialService.gradeSubmission(
+        submissionId: submissionId,
+        grade: grade,
+        note: note,
+      );
+      await loadSubmissions(assignmentId);
+    } catch (e) {
+      debugPrint("Error grading submission: $e");
     } finally {
       setBusy(false);
     }

@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import 'dart:ui';
-import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import '../viewmodels/lecturer/managed_subject_viewmodel.dart';
+import 'assignment_review_page.dart';
+import 'add_material_dialog.dart';
 
 class ManagedSubjectDetailPage extends StatelessWidget {
   final Map<String, dynamic> subject;
@@ -122,11 +122,6 @@ class ManagedSubjectDetailPage extends StatelessWidget {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton(
-            backgroundColor: color,
-            onPressed: () => _showAddMaterialDialog(context, viewModel, subject['id']),
-            child: const Icon(Icons.add, color: Colors.white),
-          ),
         );
       },
     );
@@ -202,6 +197,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
           color,
           isDark,
           viewModel.resources,
+          viewModel,
         );
       case 1: // Assignments
         return _buildResourceList(
@@ -211,6 +207,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
           color,
           isDark,
           viewModel.resources,
+          viewModel,
         );
       case 2: // Quizzes
         return _buildResourceList(
@@ -220,6 +217,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
           color,
           isDark,
           viewModel.resources,
+          viewModel,
         );
       case 3: // Exams
         return _buildResourceList(
@@ -229,6 +227,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
           color,
           isDark,
           viewModel.resources,
+          viewModel,
         );
       case 4: // Attendance
         return _buildAttendanceView(context, viewModel, color, isDark);
@@ -244,78 +243,281 @@ class ManagedSubjectDetailPage extends StatelessWidget {
     Color color,
     bool isDark,
     List<dynamic> resources,
+    ManagedSubjectViewModel viewModel,
   ) {
-    if (resources.isEmpty) {
-      return SliverToBoxAdapter(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 40),
-              Icon(Icons.folder_open_rounded, size: 64, color: color.withOpacity(0.3)),
-              const SizedBox(height: 16),
-              Text("No $categoryName uploaded yet.", style: TextStyle(color: Colors.grey[500])),
-            ],
+    return SliverPadding(
+      padding: const EdgeInsets.only(bottom: 100),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            if (index == resources.length) {
+              return _buildAddButton(context, categoryName, color, viewModel);
+            }
+
+            final resource = resources[index];
+            final isAssignment = viewModel.selectedFilterIndex == 1;
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(icon, color: color),
+                      ),
+                      const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      resource['title'],
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? Colors.white : AppColors.primaryText,
+                                      ),
+                                    ),
+                                    if (resource['file_url'] != null)
+                                      Text(
+                                        "File: ${resource['file_url'].split('/').last}",
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: color.withOpacity(0.8),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    Text(
+                                      resource['created_at'] != null 
+                                        ? "Uploaded on ${resource['created_at'].toString().split('T')[0]}"
+                                        : "Shared recently",
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isDark ? Colors.white54 : Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.delete_outline_rounded,
+                          color: Colors.redAccent,
+                        ),
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+                    if (isAssignment && resource['content'] != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        resource['content'],
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark ? Colors.white70 : Colors.grey[700],
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: color.withOpacity(0.1),
+                          foregroundColor: color,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          // Navigate to review submissions page
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AssignmentReviewPage(
+                                assignment: resource,
+                                viewModel: viewModel,
+                                color: color,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.people_outline_rounded, size: 18),
+                        label: const Text("View Submissions"),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+          childCount: resources.length + 1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddButton(
+    BuildContext context,
+    String categoryName,
+    Color color,
+    ManagedSubjectViewModel viewModel,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Center(
+        child: InkWell(
+          onTap: () {
+          if (categoryName == "Assignments") {
+            _showAddAssignmentDialog(context, viewModel, subject['id']);
+          } else if (categoryName == "Quizzes") {
+            _showAddQuizDialog(context, viewModel, subject['id']);
+          } else if (categoryName == "PDFs") {
+            _showAddMaterialDialog(context, viewModel, subject['id'], forcedCategory: 'PDFs');
+          } else {
+            _showAddMaterialDialog(context, viewModel, subject['id']);
+          }
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            decoration: BoxDecoration(
+              border: Border.all(color: color.withOpacity(0.5), width: 2, style: BorderStyle.solid),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add_rounded, color: color),
+                const SizedBox(width: 8),
+                Text(
+                  "Add ${categoryName.endsWith('s') ? categoryName.substring(0, categoryName.length -1) : categoryName}",
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      );
-    }
-    return SliverList(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        final resource = resources[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
-            ],
+      ),
+    );
+  }
+
+  void _showAddQuizDialog(
+    BuildContext context,
+    ManagedSubjectViewModel viewModel,
+    int courseId,
+  ) {
+    final titleController = TextEditingController();
+    final contentController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Add New Quiz"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(labelText: "Quiz Title"),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: contentController,
+              decoration: const InputDecoration(labelText: "Quiz Content/Questions"),
+              maxLines: 4,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: color),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      resource['title'],
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : AppColors.primaryText,
-                      ),
-                    ),
-                    Text(
-                      "Uploaded on ${resource['created_at'].toString().split('T')[0]}",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? Colors.white54 : Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(
-                  Icons.delete_outline_rounded,
-                  color: Colors.redAccent,
-                ),
-                onPressed: () {},
-              ),
-            ],
+          ElevatedButton(
+            onPressed: () async {
+              if (titleController.text.isNotEmpty && contentController.text.isNotEmpty) {
+                await viewModel.addQuiz(
+                  courseId: courseId,
+                  title: titleController.text,
+                  content: contentController.text,
+                );
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            child: const Text("Create"),
           ),
-        );
-      }, childCount: resources.length),
+        ],
+      ),
+    );
+  }
+
+  void _showAddAssignmentDialog(
+    BuildContext context,
+    ManagedSubjectViewModel viewModel,
+    int courseId,
+  ) {
+    final titleController = TextEditingController();
+    final contentController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Add New Assignment"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(labelText: "Assignment Title"),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: contentController,
+              decoration: const InputDecoration(labelText: "Assignment Content"),
+              maxLines: 4,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (titleController.text.isNotEmpty && contentController.text.isNotEmpty) {
+                await viewModel.addAssignment(
+                  courseId: courseId,
+                  title: titleController.text,
+                  content: contentController.text,
+                );
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            child: const Text("Create"),
+          ),
+        ],
+      ),
     );
   }
 
@@ -447,70 +649,26 @@ class ManagedSubjectDetailPage extends StatelessWidget {
   void _showAddMaterialDialog(
     BuildContext context,
     ManagedSubjectViewModel viewModel,
-    int courseId,
-  ) {
-    final titleController = TextEditingController();
-    String? selectedCategory;
-    File? selectedFile;
-
+    int courseId, {
+    String? forcedCategory,
+  }) {
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text("Add New Material"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: "Material Title"),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: "Category"),
-                items: viewModel.filters
-                    .take(4) // Exclude Attendance
-                    .map((f) => DropdownMenuItem(value: f, child: Text(f)))
-                    .toList(),
-                onChanged: (v) => setDialogState(() => selectedCategory = v),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  FilePickerResult? result = await FilePicker.platform.pickFiles();
-                  if (result != null) {
-                    setDialogState(() {
-                      selectedFile = File(result.files.single.path!);
-                    });
-                  }
-                },
-                icon: const Icon(Icons.upload_file_rounded),
-                label: Text(selectedFile != null ? "File Selected" : "Upload File"),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: subject['color']),
-              onPressed: () async {
-                if (titleController.text.isNotEmpty && selectedCategory != null && selectedFile != null) {
-                   await viewModel.addMaterial(
-                     courseId: courseId,
-                     title: titleController.text,
-                     category: selectedCategory!,
-                     file: selectedFile!,
-                   );
-                   Navigator.pop(context);
-                }
-              },
-              child: const Text("Add", style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
+      builder: (context) => AddMaterialDialog(
+        subjectName: subject['name'],
+        subjectColor: subject['color'],
+        forcedCategory: forcedCategory,
+        categories: viewModel.filters.take(4).toList(),
+        onUpload: ({required title, required category, file, fileBytes, fileName}) async {
+          await viewModel.addMaterial(
+            courseId: courseId,
+            title: title,
+            category: category,
+            file: file,
+            fileBytes: fileBytes,
+            fileName: fileName,
+          );
+        },
       ),
     );
   }
