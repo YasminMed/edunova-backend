@@ -4,6 +4,8 @@ import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
 import '../services/material_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
 
 class LectureDetailPage extends StatefulWidget {
   final Map<String, dynamic> lecture;
@@ -19,6 +21,8 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   final MaterialService _materialService = MaterialService();
   List<dynamic> _resources = [];
   List<dynamic> _attendance = [];
+  Map<int, dynamic> _userSubmissions = {};
+  Set<int> _activeEditStates = {};
   bool _isLoading = true;
 
   @override
@@ -39,14 +43,33 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
     setState(() => _isLoading = true);
     try {
       final filters = ["PDFs", "Assignments", "Quizzes", "Exams", "Attendance"];
-      final response = await _materialService.getResources(
-        widget.lecture['id'],
-        category: filters[_selectedFilterIndex],
-      );
-      setState(() {
-        _resources = response;
-        _isLoading = false;
-      });
+      final category = filters[_selectedFilterIndex];
+      
+      if (category == "Assignments") {
+        final assignments = await _materialService.getAssignments(widget.lecture['id']);
+        setState(() => _resources = assignments);
+        
+        final userEmail = Provider.of<UserProvider>(context, listen: false).email;
+        if (userEmail != null) {
+          for (var assignment in assignments) {
+            try {
+              final sub = await _materialService.getMySubmission(assignment['id'], userEmail);
+              if (sub != null) {
+                setState(() => _userSubmissions[assignment['id']] = sub);
+              }
+            } catch (e) {
+              debugPrint("Error loading submission for ${assignment['id']}: $e");
+            }
+          }
+        }
+      } else {
+        final response = await _materialService.getResources(
+          widget.lecture['id'],
+          category: category,
+        );
+        setState(() => _resources = response);
+      }
+      setState(() => _isLoading = false);
     } catch (e) {
       setState(() => _isLoading = false);
     }
@@ -211,30 +234,41 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   }
 
   Widget _buildFilteredContent() {
+    final color = widget.lecture['color'] as Color;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     switch (_selectedFilterIndex) {
       case 0: // PDFs
         return _buildResourceList(
+          context,
           Icons.picture_as_pdf_rounded,
-          'PDF',
-          _resources,
+          'PDFs',
+          color,
+          isDark,
         );
       case 1: // Assignments
         return _buildResourceList(
+          context,
           Icons.assignment_rounded,
-          'Assignment',
-          _resources,
+          'Assignments',
+          color,
+          isDark,
         );
       case 2: // Quizzes
         return _buildResourceList(
+          context,
           Icons.quiz_rounded,
-          'Quiz',
-          _resources,
+          'Quizzes',
+          color,
+          isDark,
         );
       case 3: // Exams
         return _buildResourceList(
+          context,
           Icons.school_rounded,
-          'Exam',
-          _resources,
+          'Exams',
+          color,
+          isDark,
         );
       case 4: // Attendance
         return _buildAttendanceView();
@@ -352,72 +386,212 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
     );
   }
 
-  Widget _buildResourceList(IconData icon, String type, List<dynamic> resources) {
-    final color = widget.lecture['color'] as Color;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    if (resources.isEmpty) {
+  Widget _buildResourceList(
+    BuildContext context,
+    IconData icon,
+    String categoryName,
+    Color color,
+    bool isDark,
+  ) {
+    if (_resources.isEmpty) {
       return SliverToBoxAdapter(
         child: Center(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 40),
-            child: Text("No $type uploaded yet."),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 40),
+              Icon(Icons.folder_open_rounded,
+                  size: 64, color: color.withOpacity(0.3)),
+              const SizedBox(height: 16),
+              Text("No $categoryName uploaded yet.",
+                  style: TextStyle(color: Colors.grey[500])),
+            ],
           ),
         ),
       );
     }
-
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
-        final resource = resources[index];
+        final resource = _resources[index];
+        final isAssignment = _selectedFilterIndex == 1;
+        final submission = isAssignment ? _userSubmissions[resource['id']] : null;
+
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: color.withOpacity(0.1)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
+            ],
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: color),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      resource['title'],
-                      style: TextDesign.h3.copyWith(
-                        fontSize: 16,
-                        color: isDark ? Colors.white : Colors.black87,
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: color),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          resource['title'],
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : AppColors.primaryText,
+                          ),
+                        ),
+                        Text(
+                          resource['created_at'] != null
+                            ? "Shared on ${resource['created_at'].toString().split('T')[0]}"
+                            : "Shared recently",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.white54 : Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (submission != null && submission['is_graded'])
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "Grade: ${submission['grade']}",
+                        style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    )
+                  else if (submission != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        "Uploaded",
+                        style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                     ),
-                    Text(
-                      "Uploaded on ${resource['created_at'].toString().split('T')[0]}",
-                      style: TextDesign.body.copyWith(
-                        fontSize: 12,
-                        color: AppColors.mutedText,
-                      ),
-                    ),
-                  ],
+                ],
+              ),
+              if (isAssignment) ...[
+                const SizedBox(height: 12),
+                Text(
+                  resource['content'] ?? "",
+                  style: TextStyle(fontSize: 14, color: isDark ? Colors.white70 : Colors.grey[700]),
                 ),
-              ),
-              IconButton(
-                icon: Icon(Icons.download_rounded, color: color),
-                onPressed: () {},
-              ),
+                if (resource['file_url'] != null) ...[
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () {},
+                    child: Row(
+                      children: [
+                        Icon(Icons.attach_file_rounded, size: 14, color: color),
+                        const SizedBox(width: 4),
+                        const Text("Reference Material", style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  maxLines: 5,
+                  decoration: InputDecoration(
+                    hintText: "Your answer here...",
+                    filled: true,
+                    fillColor: isDark ? Colors.grey[800] : Colors.grey[100],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final email = Provider.of<UserProvider>(context, listen: false).email;
+                      if (email != null && controller != null && controller.text.isNotEmpty) {
+                        try {
+                          await _materialService.submitAssignmentSolution(
+                            assignmentId: resource['id'],
+                            studentEmail: email,
+                            solutionText: controller.text,
+                          );
+                          _loadContent(); // Refresh
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Assignment Submitted Successfully'), backgroundColor: Colors.green));
+                          }
+                        } catch(e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to submit assignment. Check backend connection.')));
+                          }
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: submission != null ? Colors.orange : color,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text(submission != null ? "Edit Submission" : "Submit Answer"),
+                  ),
+                ),
+                if (submission != null && (submission['is_graded'] == true || submission['is_graded'] == 1)) ...[
+                  const Divider(height: 32),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20),
+                            const SizedBox(width: 8),
+                            Text("Lecturer Feedback", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16)),
+                          ],
+                        ),
+                        if (submission['lecturer_note'] != null && submission['lecturer_note'].toString().isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            "Grade: ${submission['grade']} - Note: ${submission['lecturer_note']}",
+                            style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+                          ),
+                        ]
+                      ],
+                    ),
+                  ),
+                ]
+              ],
             ],
           ),
         );
-      }, childCount: resources.length),
+      }, childCount: _resources.length),
     );
   }
-}
+
+  
