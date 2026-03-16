@@ -24,6 +24,15 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   Map<int, dynamic> _userSubmissions = {};
   Set<int> _activeEditStates = {};
   bool _isLoading = true;
+  final Map<int, TextEditingController> _controllers = {};
+
+  @override
+  void dispose() {
+    for (var controller in _controllers.values) {
+      if (controller != null) controller.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -413,8 +422,14 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
         final resource = _resources[index];
-        final isAssignment = _selectedFilterIndex == 1;
-        final submission = isAssignment ? _userSubmissions[resource['id']] : null;
+        final isAssignmentOrQuiz = _selectedFilterIndex == 1 || _selectedFilterIndex == 2;
+        final isExam = _selectedFilterIndex == 3;
+        final submission = isAssignmentOrQuiz ? _userSubmissions[resource['id']] : null;
+        
+        TextEditingController? controller;
+        if (isAssignmentOrQuiz) {
+            controller = _controllers.putIfAbsent(resource['id'], () => TextEditingController());
+        }
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
@@ -489,7 +504,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                     ),
                 ],
               ),
-              if (isAssignment) ...[
+              if (isAssignmentOrQuiz) ...[
                 const SizedBox(height: 12),
                 Text(
                   resource['content'] ?? "",
