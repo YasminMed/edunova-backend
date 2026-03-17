@@ -545,18 +545,29 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                       final email = Provider.of<UserProvider>(context, listen: false).email;
                       if (email != null && controller != null && controller.text.isNotEmpty) {
                         try {
-                          await _materialService.submitAssignmentSolution(
-                            assignmentId: resource['id'],
-                            studentEmail: email,
-                            solutionText: controller.text,
-                          );
+                          if (isQuiz) {
+                            await _materialService.submitQuizSolution(
+                              quizId: resource['id'],
+                              studentEmail: email,
+                              solutionText: controller.text,
+                            );
+                          } else {
+                            await _materialService.submitAssignmentSolution(
+                              assignmentId: resource['id'],
+                              studentEmail: email,
+                              solutionText: controller.text,
+                            );
+                          }
                           _loadContent(); // Refresh
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Assignment Submitted Successfully'), backgroundColor: Colors.green));
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text(isQuiz ? 'Quiz Submitted Successfully' : 'Assignment Submitted Successfully'),
+                              backgroundColor: Colors.green,
+                            ));
                           }
                         } catch(e) {
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to submit assignment. Check backend connection.')));
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to submit. Check backend connection.')));
                           }
                         }
                       }

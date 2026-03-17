@@ -153,23 +153,14 @@ class ManagedSubjectViewModel extends BaseViewModel {
   List<dynamic> _submissions = [];
   List<dynamic> get submissions => _submissions;
 
-  Future<void> loadSubmissions(int assignmentId) async {
-    setBusy(true);
-    try {
-      _submissions = await _materialService.getSubmissions(assignmentId);
-    } catch (e) {
+ catch (e) {
       debugPrint("Error loading submissions: $e");
     } finally {
       setBusy(false);
     }
   }
 
-  Future<void> gradeSubmission({
-    required int submissionId,
-    required String grade,
-    String? note,
-    required int assignmentId,
-  }) async {
+) async {
     setBusy(true);
     try {
       await _materialService.gradeSubmission(

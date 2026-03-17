@@ -7,12 +7,14 @@ class AssignmentReviewPage extends StatefulWidget {
   final Map<String, dynamic> assignment;
   final ManagedSubjectViewModel viewModel;
   final Color color;
+  final bool isQuiz;
 
   const AssignmentReviewPage({
     super.key,
     required this.assignment,
     required this.viewModel,
     required this.color,
+    this.isQuiz = false,
   });
 
   @override
@@ -23,7 +25,7 @@ class _AssignmentReviewPageState extends State<AssignmentReviewPage> {
   @override
   void initState() {
     super.initState();
-    widget.viewModel.loadSubmissions(widget.assignment['id']);
+    widget.viewModel.loadSubmissions(widget.assignment['id'], isQuiz: widget.isQuiz);
   }
 
   @override
@@ -196,7 +198,8 @@ class _AssignmentReviewPageState extends State<AssignmentReviewPage> {
                   submissionId: sub['id'],
                   grade: gradeController.text,
                   note: noteController.text,
-                  assignmentId: widget.assignment['id'],
+                  parentId: widget.assignment['id'],
+                  isQuiz: widget.isQuiz,
                 );
                 if (context.mounted) Navigator.pop(context);
               }
