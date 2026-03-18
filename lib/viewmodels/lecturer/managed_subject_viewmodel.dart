@@ -23,8 +23,11 @@ class ManagedSubjectViewModel extends BaseViewModel {
 
   void setFilterIndex(int index, int courseId) {
     _selectedFilterIndex = index;
-    if (index == 0 || index == 3) {
+    if (index == 0) {
       loadResources(courseId, _filters[index]);
+    } else if (index == 3) {
+      loadExamMarks(courseId);
+      loadAllStudents();
     } else if (index == 1) {
       loadAssignments(courseId);
     } else if (index == 2) {
@@ -153,22 +156,44 @@ class ManagedSubjectViewModel extends BaseViewModel {
   List<dynamic> _submissions = [];
   List<dynamic> get submissions => _submissions;
 
- catch (e) {
+  Future<void> loadSubmissions(int parentId, {bool isQuiz = false}) async {
+    setBusy(true);
+    try {
+      if (isQuiz) {
+        _submissions = await _materialService.getQuizSubmissions(parentId);
+      } else {
+        _submissions = await _materialService.getSubmissions(parentId);
+      }
+    } catch (e) {
       debugPrint("Error loading submissions: $e");
     } finally {
       setBusy(false);
     }
   }
 
-) async {
+  Future<void> gradeSubmission({
+    required int submissionId,
+    required String grade,
+    required String note,
+    required int parentId,
+    bool isQuiz = false,
+  }) async {
     setBusy(true);
     try {
-      await _materialService.gradeSubmission(
-        submissionId: submissionId,
-        grade: grade,
-        note: note,
-      );
-      await loadSubmissions(assignmentId);
+      if (isQuiz) {
+        await _materialService.gradeQuizSubmission(
+          submissionId: submissionId,
+          grade: grade,
+          note: note,
+        );
+      } else {
+        await _materialService.gradeSubmission(
+          submissionId: submissionId,
+          grade: grade,
+          note: note,
+        );
+      }
+      await loadSubmissions(parentId, isQuiz: isQuiz);
     } catch (e) {
       debugPrint("Error grading submission: $e");
     } finally {
@@ -176,32 +201,80 @@ class ManagedSubjectViewModel extends BaseViewModel {
     }
   }
 
+  // Exam Marks Logic
+  List<dynamic> _examMarks = [];
+  List<dynamic> get examMarks => _examMarks;
+
+  Future<void> loadExamMarks(int courseId) async {
+    setBusy(true);
+    try {
+      _examMarks = await _materialService.getExamMarksFull(courseId);
+    } catch (e) {
+      debugPrint("Error loading exam marks: $e");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  Future<void> addExamMark({
+    required int courseId,
+    required int studentId,
+    required String examType,
+    required String mark,
+  }) async {
+    setBusy(true);
+    try {
+      await _materialService.saveExamMark(courseId, studentId, examType, mark);
+      await loadExamMarks(courseId);
+    } catch (e) {
+      debugPrint("Error adding exam mark: $e");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  Future<void> updateExamMark(int markId, String mark, int courseId) async {
+    setBusy(true);
+    try {
+      await _materialService.updateExamMark(markId, mark);
+      await loadExamMarks(courseId);
+    } catch (e) {
+      debugPrint("Error updating exam mark: $e");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Students list for dropdowns
+  List<dynamic> _allStudents = [];
+  List<dynamic> get allStudents => _allStudents;
+
+  Future<void> loadAllStudents() async {
+    try {
+      _allStudents = await _materialService.getAllStudents();
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error loading students: $e");
+    }
+  }
+
   // Attendance Logic
-  final List<String> _dummyStudents = [
-    "Ali Hassan",
-    "Sarah Ahmed",
-    "Yousif Mohammed",
-    "Dalia Saman",
-    "Zaid Karim",
-  ];
+  Map<int, String> attendanceMap = {};
 
-  List<String> get students => _dummyStudents;
-  Map<String, String> attendanceMap = {};
-
-  void updateAttendanceStatus(String student, String status) {
-    attendanceMap[student] = status;
+  void updateAttendanceStatus(int studentId, String status) {
+    attendanceMap[studentId] = status;
     notifyListeners();
   }
 
   Future<void> submitAttendance(BuildContext context, int courseId) async {
     setBusy(true);
     try {
-      List<Map<String, String>> records = attendanceMap.entries.map((e) => {
-        "student_name": e.key,
+      List<Map<String, dynamic>> records = attendanceMap.entries.map((e) => {
+        "student_id": e.key,
         "status": e.value,
       }).toList();
       
-      await _materialService.submitAttendance(courseId, records);
+      await _materialService.submitBatchAttendance(courseId, records);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Attendance Submitted Successfully"),
@@ -216,7 +289,12 @@ class ManagedSubjectViewModel extends BaseViewModel {
   }
 
   Future<void> loadAttendance(int courseId) async {
-    // For now, students list is static, but we can fetch it if needed.
-    notifyListeners();
+    setBusy(true);
+    try {
+      // We can also fetch existing attendance for today if we wanted to
+      await loadAllStudents();
+    } finally {
+      setBusy(false);
+    }
   }
 }

@@ -65,6 +65,57 @@ class AuthService {
     }
   }
 
+  Future<Map<String, dynamic>> updateProfile({
+    required String fullName,
+    required String email,
+    required String role,
+  }) async {
+    try {
+      final response = await _dio.put("/auth/update-profile", data: {
+        "fullName": fullName,
+        "email": email,
+        "role": role,
+      });
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> changePassword({
+    required String email,
+    required String oldPassword,
+    required String newPassword,
+    required String role,
+  }) async {
+    try {
+      final response = await _dio.post("/auth/change-password", data: {
+        "email": email,
+        "oldPassword": oldPassword,
+        "newPassword": newPassword,
+        "role": role,
+      });
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteAccount({
+    required String email,
+    required String role,
+  }) async {
+    try {
+      final response = await _dio.delete("/auth/delete-account", data: {
+        "email": email,
+        "role": role,
+      });
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   String _handleError(DioException error) {
     if (error.response != null) {
       return error.response?.data['detail'] ?? "Server error occurred";

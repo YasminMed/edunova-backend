@@ -6,6 +6,9 @@ import '../widgets/animated_background.dart';
 import '../widgets/custom_button.dart';
 import 'login_student.dart';
 import '../l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
+import '../services/auth_service.dart';
 
 class ChangePasswordStudentPage extends StatefulWidget {
   const ChangePasswordStudentPage({super.key});
@@ -16,74 +19,107 @@ class ChangePasswordStudentPage extends StatefulWidget {
 }
 
 class _ChangePasswordStudentPageState extends State<ChangePasswordStudentPage> {
+  final _oldPassController = TextEditingController();
   final _newPassController = TextEditingController();
   final _confirmPassController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+  String? _oldPassError;
 
   @override
   void dispose() {
+    _oldPassController.dispose();
     _newPassController.dispose();
     _confirmPassController.dispose();
     super.dispose();
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
+    setState(() {
+      _oldPassError = null;
+    });
+
     if (_formKey.currentState!.validate()) {
-      // Simulate success
-      showDialog(
-        context: context,
-        builder: (context) => Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.check_circle_rounded,
-                  color: AppColors.primary,
-                  size: 60,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  AppLocalizations.of(context)?.translate('success') ??
-                      "Success!",
-                  style: TextDesign.h2,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  AppLocalizations.of(context)?.translate('password_changed') ??
-                      "Your password has been changed.",
-                  textAlign: TextAlign.center,
-                  style: TextDesign.body,
-                ),
-                const SizedBox(height: 24),
-                CustomButton(
-                  text:
-                      AppLocalizations.of(
+      setState(() => _isLoading = true);
+      final userProvider = context.read<UserProvider>();
+      try {
+        await _authService.changePassword(
+          email: userProvider.email!,
+          oldPassword: _oldPassController.text,
+          newPassword: _newPassController.text,
+          role: 'student',
+        );
+
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+
+        showDialog(
+          context: context,
+          builder: (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.primary,
+                    size: 60,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    AppLocalizations.of(context)?.translate('success') ??
+                        "Success!",
+                    style: TextDesign.h2,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    AppLocalizations.of(context)?.translate('password_changed') ??
+                        "Your password has been changed.",
+                    textAlign: TextAlign.center,
+                    style: TextDesign.body,
+                  ),
+                  const SizedBox(height: 24),
+                  CustomButton(
+                    text:
+                        AppLocalizations.of(
+                          context,
+                        )?.translate('back_to_login') ??
+                        "Back to Login",
+                    onTap: () {
+                      // Navigate back to Login and remove all previous routes
+                      Navigator.pushAndRemoveUntil(
                         context,
-                      )?.translate('back_to_login') ??
-                      "Back to Login",
-                  onTap: () {
-                    // Navigate back to Login and remove all previous routes
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const LoginStudentPage(),
-                      ),
-                      (route) => false,
-                    );
-                  },
-                ),
-              ],
+                        MaterialPageRoute(
+                          builder: (_) => const LoginStudentPage(),
+                        ),
+                        (route) => false,
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
+        );
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+          if (e.toString().contains("Incorrect previous password")) {
+            _oldPassError = "Incorrect previous password";
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+            );
+          }
+        });
+      }
     }
   }
 
@@ -205,6 +241,17 @@ class _ChangePasswordStudentPageState extends State<ChangePasswordStudentPage> {
                       child: Column(
                         children: [
                           _buildTextField(
+                            label: "Previous Password",
+                            controller: _oldPassController,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Required';
+                              }
+                              return _oldPassError;
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          _buildTextField(
                             label:
                                 AppLocalizations.of(
                                   context,
@@ -234,14 +281,16 @@ class _ChangePasswordStudentPageState extends State<ChangePasswordStudentPage> {
                             },
                           ),
                           const SizedBox(height: 32),
-                          CustomButton(
-                            text:
-                                AppLocalizations.of(
-                                  context,
-                                )?.translate('change_password') ??
-                                "Change Password",
-                            onTap: _handleSubmit,
-                          ),
+                          _isLoading
+                              ? const CircularProgressIndicator()
+                              : CustomButton(
+                                  text:
+                                      AppLocalizations.of(
+                                        context,
+                                      )?.translate('change_password') ??
+                                      "Change Password",
+                                  onTap: _handleSubmit,
+                                ),
                         ],
                       ),
                     ),

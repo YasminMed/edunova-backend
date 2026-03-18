@@ -56,6 +56,7 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
         context.read<UserProvider>().setUser(
           userData['fullName'] ?? 'Lecturer',
           _emailController.text.trim(),
+          'lecturer',
         );
 
         // Navigate to Lecturer Dashboard Wrapped in Navigation

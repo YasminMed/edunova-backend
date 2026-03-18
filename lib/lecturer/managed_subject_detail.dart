@@ -220,15 +220,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
           viewModel,
         );
       case 3: // Exams
-        return _buildResourceList(
-          context,
-          Icons.school_rounded,
-          "Exams",
-          color,
-          isDark,
-          viewModel.resources,
-          viewModel,
-        );
+        return _buildExamMarksView(context, viewModel, color, isDark);
       case 4: // Attendance
         return _buildAttendanceView(context, viewModel, color, isDark);
       default:
@@ -256,6 +248,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
 
             final resource = resources[index];
             final isAssignment = viewModel.selectedFilterIndex == 1;
+            final isQuiz = viewModel.selectedFilterIndex == 2;
 
             return Container(
               margin: const EdgeInsets.only(bottom: 16),
@@ -354,6 +347,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                                 assignment: resource,
                                 viewModel: viewModel,
                                 color: color,
+                                isQuiz: isQuiz,
                               ),
                             ),
                           );
@@ -531,7 +525,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
   ) {
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
-        if (index == viewModel.students.length) {
+        if (index == viewModel.allStudents.length) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Row(
@@ -574,7 +568,10 @@ class ManagedSubjectDetailPage extends StatelessWidget {
           );
         }
 
-        final student = viewModel.students[index];
+        final student = viewModel.allStudents[index];
+        final String studentName = student['full_name'] ?? "Unknown";
+        final int studentId = student['id'];
+
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -589,7 +586,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                student,
+                studentName,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -599,27 +596,27 @@ class ManagedSubjectDetailPage extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: _attendanceOption("Attended", Colors.green, viewModel, student)),
+                  Expanded(child: _attendanceOption("Attended", Colors.green, viewModel, studentId)),
                   const SizedBox(width: 8),
-                  Expanded(child: _attendanceOption("Late", Colors.orange, viewModel, student)),
+                  Expanded(child: _attendanceOption("Late", Colors.orange, viewModel, studentId)),
                   const SizedBox(width: 8),
-                  Expanded(child: _attendanceOption("Absent", Colors.red, viewModel, student)),
+                  Expanded(child: _attendanceOption("Absent", Colors.red, viewModel, studentId)),
                 ],
               ),
             ],
           ),
         );
-      }, childCount: viewModel.students.length + 1),
+      }, childCount: viewModel.allStudents.length + 1),
     );
   }
 
-  Widget _attendanceOption(String label, Color color, ManagedSubjectViewModel viewModel, String student) {
+  Widget _attendanceOption(String label, Color color, ManagedSubjectViewModel viewModel, int studentId) {
     return Consumer<ManagedSubjectViewModel>(
       builder: (context, vm, child) {
-        final currentSelection = vm.attendanceMap[student] == label;
+        final currentSelection = vm.attendanceMap[studentId] == label;
         
         return GestureDetector(
-          onTap: () => vm.updateAttendanceStatus(student, label),
+          onTap: () => vm.updateAttendanceStatus(studentId, label),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -669,6 +666,206 @@ class ManagedSubjectDetailPage extends StatelessWidget {
             fileName: fileName,
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildExamMarksView(
+    BuildContext context,
+    ManagedSubjectViewModel viewModel,
+    Color color,
+    bool isDark,
+  ) {
+    return SliverFillRemaining(
+      hasScrollBody: true,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: ElevatedButton.icon(
+              onPressed: () => _showAddExamMarkDialog(context, viewModel, subject['id']),
+              icon: const Icon(Icons.add),
+              label: const Text("Add Exam Mark"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: color,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: viewModel.examMarks.length,
+              itemBuilder: (context, index) {
+                final mark = viewModel.examMarks[index];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: color.withOpacity(0.1),
+                        child: Text(
+                          mark['student_name']?[0] ?? "U",
+                          style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              mark['student_name'] ?? "Unknown Student",
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              "${mark['exam_type']} - Mark: ${mark['mark']}%",
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 20),
+                        onPressed: () => _showEditExamMarkDialog(context, viewModel, mark),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddExamMarkDialog(
+    BuildContext context,
+    ManagedSubjectViewModel viewModel,
+    int courseId,
+  ) {
+    int? selectedStudentId;
+    String selectedExamType = "Midterm Exam";
+    final markController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text("Add Exam Mark"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<int>(
+                value: selectedStudentId,
+                decoration: const InputDecoration(labelText: "Select Student"),
+                items: viewModel.allStudents.map((s) {
+                  return DropdownMenuItem<int>(
+                    value: s['id'],
+                    child: Text(s['full_name'] ?? "Unknown"),
+                  );
+                }).toList(),
+                onChanged: (val) => setState(() => selectedStudentId = val),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: selectedExamType,
+                decoration: const InputDecoration(labelText: "Exam Type"),
+                items: ["Midterm Exam", "Final Exam"].map((t) {
+                  return DropdownMenuItem<String>(
+                    value: t,
+                    child: Text(t),
+                  );
+                }).toList(),
+                onChanged: (val) => setState(() => selectedExamType = val!),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: markController,
+                decoration: const InputDecoration(labelText: "Exam Mark %"),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (selectedStudentId != null && markController.text.isNotEmpty) {
+                  await viewModel.addExamMark(
+                    courseId: courseId,
+                    studentId: selectedStudentId!,
+                    examType: selectedExamType,
+                    mark: markController.text,
+                  );
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditExamMarkDialog(
+    BuildContext context,
+    ManagedSubjectViewModel viewModel,
+    Map<String, dynamic> markData,
+  ) {
+    final markController = TextEditingController(text: markData['mark'].toString());
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Edit ${markData['exam_type']}"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Student: ${markData['student_name']}"),
+            const SizedBox(height: 12),
+            TextField(
+              controller: markController,
+              decoration: const InputDecoration(labelText: "Exam Mark %"),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (markController.text.isNotEmpty) {
+                await viewModel.updateExamMark(
+                  markData['id'],
+                  markController.text,
+                  subject['id'],
+                );
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            child: const Text("Update"),
+          ),
+        ],
       ),
     );
   }

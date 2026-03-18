@@ -4,6 +4,8 @@ import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../widgets/animated_background.dart';
 import '../l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
 import 'chat_page.dart';
 import 'student_profile_page.dart';
 import 'student_chatbot_page.dart';
@@ -163,14 +165,18 @@ class _StudentDashboardState extends State<StudentDashboard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header (Greeting)
-                Text(
-                  AppLocalizations.of(context)?.translate('hello_student') ??
-                      "Hello, Student!",
-                  style: TextDesign.h1.copyWith(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black87,
-                  ),
+                Consumer<UserProvider>(
+                  builder: (context, userProvider, child) {
+                    final name = userProvider.fullName ?? "Student";
+                    return Text(
+                      "${AppLocalizations.of(context)?.translate('hello') ?? 'Hello'}, $name!",
+                      style: TextDesign.h1.copyWith(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
+                    );
+                  },
                 ),
                 Text(
                   AppLocalizations.of(context)?.translate('ready_to_learn') ??

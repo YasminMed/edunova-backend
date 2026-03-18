@@ -4,6 +4,9 @@ import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
 import '../auth/change_password_student.dart';
 import '../auth/welcome_page.dart';
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
+import '../services/auth_service.dart';
 
 class StudentProfilePage extends StatefulWidget {
   const StudentProfilePage({super.key});
@@ -13,12 +16,12 @@ class StudentProfilePage extends StatefulWidget {
 }
 
 class _StudentProfilePageState extends State<StudentProfilePage> {
-  String _name = "Student Name"; // Mock Name
-  String _email = "student@university.com"; // Mock Email
+  final AuthService _authService = AuthService();
 
   void _showEditNameDialog() {
+    final userProvider = context.read<UserProvider>();
     final TextEditingController nameController = TextEditingController(
-      text: _name,
+      text: userProvider.fullName,
     );
     showDialog(
       context: context,
@@ -44,20 +47,35 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _name = nameController.text;
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)?.translate('name_updated') ??
-                        'Name updated successfully',
+            onPressed: () async {
+              final userProvider = context.read<UserProvider>();
+              try {
+                await _authService.updateProfile(
+                  fullName: nameController.text.trim(),
+                  email: userProvider.email!,
+                  role: userProvider.role!,
+                );
+                userProvider.setUser(
+                  nameController.text.trim(),
+                  userProvider.email!,
+                  userProvider.role!,
+                );
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      AppLocalizations.of(context)?.translate('name_updated') ??
+                          'Name updated successfully',
+                    ),
+                    backgroundColor: AppColors.primary,
                   ),
-                  backgroundColor: AppColors.primary,
-                ),
-              );
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -71,10 +89,11 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       ),
     );
   }
-
+  
   void _showEditEmailDialog() {
+    final userProvider = context.read<UserProvider>();
     final TextEditingController emailController = TextEditingController(
-      text: _email,
+      text: userProvider.email,
     );
     showDialog(
       context: context,
@@ -101,20 +120,28 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _email = emailController.text;
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)?.translate('email_updated') ??
-                        'Email updated successfully',
-                  ),
-                  backgroundColor: AppColors.primary,
-                ),
-              );
+            onPressed: () async {
+              final userProvider = context.read<UserProvider>();
+              try {
+                await _authService.updateProfile(
+                  fullName: userProvider.fullName!,
+                  email: emailController.text.trim(),
+                  role: userProvider.role!,
+                );
+                
+                if (!mounted) return;
+                Navigator.pop(context);
+                
+                // Since email changed, user should re-login or at least we update the provider
+                // User said: "cannot loggin with old email because it will be replaced with the new one"
+                // It's safer to logout and force re-login with new email.
+                _logoutWithReloginMessage();
+
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -156,6 +183,9 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
           ),
           ElevatedButton(
             onPressed: () {
+              // Clear user provider
+              context.read<UserProvider>().clearUser();
+
               // Navigate to Welcome Page and remove all previous routes
               Navigator.pushAndRemoveUntil(
                 context,
@@ -218,24 +248,39 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
-              // Mock Delete -> Go to Welcome
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const WelcomePage()),
-                (route) => false,
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(
-                          context,
-                        )?.translate('account_deleted') ??
-                        'Account deleted',
+            onPressed: () async {
+              final userProvider = context.read<UserProvider>();
+              try {
+                await _authService.deleteAccount(
+                  email: userProvider.email!,
+                  role: userProvider.role!,
+                );
+                
+                if (!mounted) return;
+                userProvider.clearUser();
+                
+                // Navigate to Welcome Page and remove all previous routes
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const WelcomePage()),
+                  (route) => false,
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      AppLocalizations.of(
+                            context,
+                          )?.translate('account_deleted') ??
+                          'Account deleted',
+                    ),
+                    backgroundColor: Colors.red,
                   ),
-                  backgroundColor: Colors.red,
-                ),
-              );
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -250,8 +295,24 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     );
   }
 
+  void _logoutWithReloginMessage() {
+    context.read<UserProvider>().clearUser();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const WelcomePage()),
+      (route) => false,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Email updated. Please login with your new email."),
+        backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
@@ -304,7 +365,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             ),
             const SizedBox(height: 20),
             Text(
-              _name,
+              userProvider.fullName ?? "Student Name",
               style: TextDesign.h2.copyWith(
                 color: Theme.of(context).textTheme.bodyLarge?.color,
               ),

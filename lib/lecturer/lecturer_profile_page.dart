@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../auth/change_password_lecturer.dart';
 import '../auth/welcome_page.dart';
 import '../providers/user_provider.dart';
+import '../services/auth_service.dart';
 
 class LecturerProfilePage extends StatefulWidget {
   const LecturerProfilePage({super.key});
@@ -15,7 +16,7 @@ class LecturerProfilePage extends StatefulWidget {
 }
 
 class _LecturerProfilePageState extends State<LecturerProfilePage> {
-  // Removed mock name and email, will use Provider instead
+  final AuthService _authService = AuthService();
 
   void _showEditNameDialog() {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -46,21 +47,35 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
-              Provider.of<UserProvider>(context, listen: false).setUser(
-                nameController.text,
-                Provider.of<UserProvider>(context, listen: false).email ?? "",
-              );
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)?.translate('name_updated') ??
-                        'Name updated successfully',
+            onPressed: () async {
+              final userProvider = context.read<UserProvider>();
+              try {
+                await _authService.updateProfile(
+                  fullName: nameController.text.trim(),
+                  email: userProvider.email!,
+                  role: 'lecturer',
+                );
+                userProvider.setUser(
+                  nameController.text.trim(),
+                  userProvider.email!,
+                  'lecturer',
+                );
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      AppLocalizations.of(context)?.translate('name_updated') ??
+                          'Name updated successfully',
+                    ),
+                    backgroundColor: AppColors.secondary,
                   ),
-                  backgroundColor: AppColors.secondary,
-                ),
-              );
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.secondary,
@@ -105,21 +120,25 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
-              Provider.of<UserProvider>(context, listen: false).setUser(
-                Provider.of<UserProvider>(context, listen: false).fullName ?? "",
-                emailController.text,
-              );
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)?.translate('email_updated') ??
-                        'Email updated successfully',
-                  ),
-                  backgroundColor: AppColors.secondary,
-                ),
-              );
+            onPressed: () async {
+              final userProvider = context.read<UserProvider>();
+              try {
+                await _authService.updateProfile(
+                  fullName: userProvider.fullName!,
+                  email: emailController.text.trim(),
+                  role: 'lecturer',
+                );
+                
+                if (!mounted) return;
+                Navigator.pop(context);
+                
+                _logoutWithReloginMessage();
+
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.secondary,
@@ -161,6 +180,9 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
           ),
           ElevatedButton(
             onPressed: () {
+              // Clear user provider
+              context.read<UserProvider>().clearUser();
+
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const WelcomePage()),
@@ -222,12 +244,28 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const WelcomePage()),
-                (route) => false,
-              );
+            onPressed: () async {
+              final userProvider = context.read<UserProvider>();
+              try {
+                // Call backend to delete account
+                await _authService.deleteAccount(
+                  email: userProvider.email!,
+                  role: 'lecturer',
+                );
+                
+                if (!mounted) return;
+                userProvider.clearUser();
+
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const WelcomePage()),
+                  (route) => false,
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -238,6 +276,21 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _logoutWithReloginMessage() {
+    context.read<UserProvider>().clearUser();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const WelcomePage()),
+      (route) => false,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Email updated. Please login with your new email."),
+        backgroundColor: AppColors.secondary,
       ),
     );
   }

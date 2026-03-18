@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/user_provider.dart';
+import '../services/chat_service.dart';
+import '../models/chat_session.dart';
 import 'chat_detail_page.dart';
 import 'create_group_sheet.dart';
 import 'saved_messages_page.dart';
@@ -19,55 +23,11 @@ class _ChatPageState extends State<ChatPage>
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
   String _searchQuery = "";
+  bool _isLoading = true;
 
-  // Mock data moved to state for filtering
-  final List<Map<String, dynamic>> _allChats = [
-    {
-      'name': 'Dr. Sarah Smith',
-      'message': 'Please submit your assignment by Friday.',
-      'time': '10:30 AM',
-      'unread': true,
-      'avatarColor': Colors.blueAccent,
-    },
-    {
-      'name': 'John Doe',
-      'message': 'Hey, did you finish the project?',
-      'time': 'Yesterday',
-      'unread': false,
-      'avatarColor': Colors.green,
-    },
-    {
-      'name': 'Alice Johnson',
-      'message': 'Thanks for the help!',
-      'time': 'Yesterday',
-      'unread': false,
-      'avatarColor': Colors.orange,
-    },
-  ];
-
-  final List<Map<String, dynamic>> _allGroups = [
-    {
-      'name': 'Computer Science 101',
-      'message': 'New lecture notes uploaded.',
-      'time': '11:45 AM',
-      'unread': true,
-      'avatarColor': Colors.purple,
-    },
-    {
-      'name': 'Project Team A',
-      'message': 'Meeting at 3 PM in the library.',
-      'time': '9:15 AM',
-      'unread': true,
-      'avatarColor': Colors.teal,
-    },
-    {
-      'name': 'University Events',
-      'message': 'Don\'t miss the career fair tomorrow!',
-      'time': 'Mon',
-      'unread': false,
-      'avatarColor': Colors.redAccent,
-    },
-  ];
+  final ChatService _chatService = ChatService();
+  final List<Map<String, dynamic>> _allChats = [];
+  final List<Map<String, dynamic>> _allGroups = []; // Keeping groups mock for now
 
   @override
   void initState() {
@@ -78,6 +38,43 @@ class _ChatPageState extends State<ChatPage>
         _searchQuery = _searchController.text.toLowerCase();
       });
     });
+    _loadChats();
+  }
+
+  void _loadChats() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (userProvider.email == null) return;
+
+    final sessions = await _chatService.getUserChatSessions(userProvider.email!);
+
+    if (!mounted) return;
+    setState(() {
+      _allChats.clear();
+      for (var s in sessions) {
+        _allChats.add({
+          'session_id': s.sessionId,
+          'other_user_id': s.otherUser.id,
+          'other_user_email': s.otherUser.email,
+          'name': s.otherUser.fullName,
+          'message': s.latestMessage.isEmpty ? 'Say Hi!' : s.latestMessage,
+          'time': _formatTime(s.latestMessageTime),
+          'unread': s.unreadCount > 0,
+          'unreadCount': s.unreadCount,
+          'avatarColor': Colors.blueAccent,
+        });
+      }
+      _isLoading = false;
+    });
+  }
+
+  String _formatTime(String isoString) {
+    if (isoString.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(isoString).toLocal();
+      return "${dt.hour}:${dt.minute.toString().padLeft(2, '0')}";
+    } catch (e) {
+      return '';
+    }
   }
 
   @override
@@ -88,46 +85,96 @@ class _ChatPageState extends State<ChatPage>
   }
 
   void _showAddFriendDialog(BuildContext context) {
+    String searchQuery = "";
+    List<ChatUser> searchResults = [];
+    bool isSearching = false;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          AppLocalizations.of(context)?.translate('add_friend') ?? 'Add Friend',
-          style: TextDesign.h3,
-        ),
-        content: TextField(
-          decoration: InputDecoration(
-            hintText:
-                AppLocalizations.of(context)?.translate('enter_email') ??
-                'Enter email or username',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              AppLocalizations.of(context)?.translate('cancel') ?? 'Cancel',
-              style: const TextStyle(color: AppColors.mutedText),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text(
+              AppLocalizations.of(context)?.translate('add_friend') ?? 'Add Friend',
+              style: TextDesign.h3,
             ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // TODO: Implement Add Friend logic
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    onChanged: (value) => searchQuery = value,
+                    decoration: InputDecoration(
+                      hintText: AppLocalizations.of(context)?.translate('enter_email') ?? 'Enter email or username',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.search),
+                        onPressed: () async {
+                          if (searchQuery.isEmpty) return;
+                          setDialogState(() => isSearching = true);
+                          final results = await _chatService.searchUsers(searchQuery);
+                          setDialogState(() {
+                            searchResults = results;
+                            isSearching = false;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  if (isSearching)
+                    const CircularProgressIndicator()
+                  else
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 200),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: searchResults.length,
+                        itemBuilder: (context, index) {
+                          final user = searchResults[index];
+                          return ListTile(
+                            title: Text(user.fullName),
+                            subtitle: Text(user.email),
+                            onTap: () async {
+                              final currentUserEmail = Provider.of<UserProvider>(context, listen: false).email;
+                              if (currentUserEmail != null) {
+                                final session = await _chatService.startChatSession(currentUserEmail, user.id);
+                                if (session != null && mounted) {
+                                  Navigator.pop(context); // close dialog
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ChatDetailPage(
+                                        sessionId: session.sessionId,
+                                        otherUserEmail: session.otherUser.email,
+                                        name: session.otherUser.fullName,
+                                        avatarColor: Colors.blueAccent,
+                                        isGroup: false,
+                                      ),
+                                    ),
+                                  ).then((_) => _loadChats());
+                                }
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                ],
               ),
             ),
-            child: Text(
-              AppLocalizations.of(context)?.translate('add') ?? 'Add',
-            ),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  AppLocalizations.of(context)?.translate('cancel') ?? 'Cancel',
+                  style: const TextStyle(color: AppColors.mutedText),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -142,6 +189,7 @@ class _ChatPageState extends State<ChatPage>
   }
 
   void _markAllAsRead() {
+    // Actually we should hit backend for this, but for now just local UI
     setState(() {
       for (var chat in _allChats) {
         chat['unread'] = false;
@@ -162,9 +210,7 @@ class _ChatPageState extends State<ChatPage>
                 controller: _searchController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText:
-                      AppLocalizations.of(context)?.translate('search_chats') ??
-                      'Search...',
+                  hintText: AppLocalizations.of(context)?.translate('search_chats') ?? 'Search...',
                   border: InputBorder.none,
                   hintStyle: TextStyle(color: Colors.grey[400]),
                 ),
@@ -174,8 +220,7 @@ class _ChatPageState extends State<ChatPage>
                 ),
               )
             : Text(
-                AppLocalizations.of(context)?.translate('messages') ??
-                    'Messages',
+                AppLocalizations.of(context)?.translate('messages') ?? 'Messages',
                 style: TextDesign.h2.copyWith(
                   color: Theme.of(context).textTheme.bodyLarge?.color,
                 ),
@@ -222,19 +267,13 @@ class _ChatPageState extends State<ChatPage>
                   PopupMenuItem<String>(
                     value: 'mark_read',
                     child: Text(
-                      AppLocalizations.of(
-                            context,
-                          )?.translate('mark_all_read') ??
-                          'Mark all as read',
+                      AppLocalizations.of(context)?.translate('mark_all_read') ?? 'Mark all as read',
                     ),
                   ),
                   PopupMenuItem<String>(
                     value: 'saved',
                     child: Text(
-                      AppLocalizations.of(
-                            context,
-                          )?.translate('saved_messages') ??
-                          'Saved Messages',
+                      AppLocalizations.of(context)?.translate('saved_messages') ?? 'Saved Messages',
                     ),
                   ),
                 ];
@@ -249,22 +288,19 @@ class _ChatPageState extends State<ChatPage>
           indicatorWeight: 3,
           labelStyle: TextDesign.h3.copyWith(fontSize: 16),
           tabs: [
-            Tab(
-              text: AppLocalizations.of(context)?.translate('chats') ?? 'Chats',
-            ),
-            Tab(
-              text:
-                  AppLocalizations.of(context)?.translate('groups') ?? 'Groups',
-            ),
+            Tab(text: AppLocalizations.of(context)?.translate('chats') ?? 'Chats'),
+            Tab(text: AppLocalizations.of(context)?.translate('groups') ?? 'Groups'),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [_buildChatsList(), _buildGroupsList()],
-      ),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator()) 
+        : TabBarView(
+            controller: _tabController,
+            children: [_buildChatsList(), _buildGroupsList()],
+          ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80), // Avoid Nav Bar overlap
+        padding: const EdgeInsets.only(bottom: 80),
         child: FloatingActionButton(
           onPressed: () {
             if (_tabController.index == 0) {
@@ -275,9 +311,7 @@ class _ChatPageState extends State<ChatPage>
           },
           backgroundColor: AppColors.primary,
           child: Icon(
-            _tabController.index == 0
-                ? Icons.person_add_rounded
-                : Icons.group_add_rounded,
+            _tabController.index == 0 ? Icons.person_add_rounded : Icons.group_add_rounded,
             color: Colors.white,
           ),
         ),
@@ -286,6 +320,9 @@ class _ChatPageState extends State<ChatPage>
   }
 
   Widget _buildChatsList() {
+    if (_allChats.isEmpty) {
+      return const Center(child: Text("No chats yet. Click the + button to start one!"));
+    }
     final filteredChats = _allChats.where((chat) {
       final name = chat['name'].toString().toLowerCase();
       final message = chat['message'].toString().toLowerCase();
@@ -299,10 +336,13 @@ class _ChatPageState extends State<ChatPage>
         final chat = filteredChats[index];
         return _buildChatTile(
           context: context,
+          sessionId: chat['session_id'],
+          otherUserEmail: chat['other_user_email'],
           name: chat['name'],
           message: chat['message'],
           time: chat['time'],
           unread: chat['unread'],
+          unreadCount: chat['unreadCount'],
           avatarColor: chat['avatarColor'],
           isGroup: false,
         );
@@ -311,36 +351,18 @@ class _ChatPageState extends State<ChatPage>
   }
 
   Widget _buildGroupsList() {
-    final filteredGroups = _allGroups.where((group) {
-      final name = group['name'].toString().toLowerCase();
-      final message = group['message'].toString().toLowerCase();
-      return name.contains(_searchQuery) || message.contains(_searchQuery);
-    }).toList();
-
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 10, bottom: 80),
-      itemCount: filteredGroups.length,
-      itemBuilder: (context, index) {
-        final group = filteredGroups[index];
-        return _buildChatTile(
-          context: context,
-          name: group['name'],
-          message: group['message'],
-          time: group['time'],
-          unread: group['unread'],
-          avatarColor: group['avatarColor'],
-          isGroup: true,
-        );
-      },
-    );
+    return const Center(child: Text("Groups coming soon"));
   }
 
   Widget _buildChatTile({
     required BuildContext context,
+    required int sessionId,
+    required String otherUserEmail,
     required String name,
     required String message,
     required String time,
     required bool unread,
+    required int unreadCount,
     required Color avatarColor,
     required bool isGroup,
   }) {
@@ -350,12 +372,14 @@ class _ChatPageState extends State<ChatPage>
           context,
           MaterialPageRoute(
             builder: (context) => ChatDetailPage(
+              sessionId: sessionId,
+              otherUserEmail: otherUserEmail,
               name: name,
               avatarColor: avatarColor,
               isGroup: isGroup,
             ),
           ),
-        );
+        ).then((_) => _loadChats()); // reload chats on return
       },
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       leading: Stack(
@@ -425,7 +449,7 @@ class _ChatPageState extends State<ChatPage>
               fontSize: 12,
             ),
           ),
-          if (unread) ...[
+          if (unread && unreadCount > 0) ...[
             const SizedBox(height: 3),
             Container(
               padding: const EdgeInsets.all(5),
@@ -433,9 +457,9 @@ class _ChatPageState extends State<ChatPage>
                 color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
-              child: const Text(
-                '1', // Mock unread count
-                style: TextStyle(
+              child: Text(
+                unreadCount.toString(),
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,

@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:async';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/user_provider.dart';
+import '../services/chat_service.dart';
+import '../models/chat_session.dart';
 import 'group_info_page.dart';
 
 class ChatDetailPage extends StatefulWidget {
+  final int sessionId;
+  final String otherUserEmail;
   final String name;
   final Color avatarColor;
   final bool isGroup;
 
   const ChatDetailPage({
     super.key,
+    required this.sessionId,
+    required this.otherUserEmail,
     required this.name,
     required this.avatarColor,
     required this.isGroup,
@@ -24,45 +33,82 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isMuted = false;
+  
+  final ChatService _chatService = ChatService();
+  List<ChatMessage> _messages = [];
+  Timer? _pollingTimer;
 
-  // Mock Messages
-  final List<Map<String, dynamic>> _messages = [
-    {
-      'isMe': false,
-      'text': 'Hello! How are you doing today?',
-      'time': '10:00 AM',
-    },
-    {
-      'isMe': true,
-      'text': 'I am doing great, thanks! Just working on the project.',
-      'time': '10:05 AM',
-    },
-    {
-      'isMe': false,
-      'text': 'That sounds good. Let me know if you need any help.',
-      'time': '10:10 AM',
-    },
-    {'isMe': true, 'text': 'Will do! Thanks.', 'time': '10:12 AM'},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadMessages();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      _loadMessages(isPolling: true);
+    });
+  }
 
-  void _sendMessage() {
-    if (_messageController.text.trim().isEmpty) return;
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _loadMessages({bool isPolling = false}) async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (userProvider.email == null) return;
+    
+    final msgs = await _chatService.getChatMessages(widget.sessionId, userProvider.email!);
+    if (!mounted) return;
+    
     setState(() {
-      _messages.add({
-        'isMe': true,
-        'text': _messageController.text,
-        'time': 'Now',
-      });
-      _messageController.clear();
+      _messages = msgs;
     });
-    // Scroll to bottom
+    
+    if (!isPolling) {
+      // scroll down only initially
+      _scrollToBottom();
+    }
+  }
+
+  void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     });
+  }
+
+  void _sendMessage() async {
+    if (_messageController.text.trim().isEmpty) return;
+    
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (userProvider.email == null) return;
+    
+    final content = _messageController.text.trim();
+    _messageController.clear();
+    
+    // Optimistic UI
+    final tempMsg = ChatMessage(
+      id: 0,
+      senderId: -1, // current user temp
+      senderName: 'Me',
+      content: content,
+      createdAt: DateTime.now().toIso8601String(),
+      isRead: false
+    );
+    setState(() {
+      _messages.add(tempMsg);
+    });
+    _scrollToBottom();
+
+    await _chatService.sendChatMessage(widget.sessionId, userProvider.email!, content);
+    _loadMessages();
   }
 
   void _toggleMute() {
@@ -73,14 +119,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       SnackBar(
         content: Text(
           _isMuted
-              ? AppLocalizations.of(
-                      context,
-                    )?.translate('notifications_muted') ??
-                    'Notifications Muted'
-              : AppLocalizations.of(
-                      context,
-                    )?.translate('notifications_unmuted') ??
-                    'Notifications Unmuted',
+              ? AppLocalizations.of(context)?.translate('notifications_muted') ?? 'Notifications Muted'
+              : AppLocalizations.of(context)?.translate('notifications_unmuted') ?? 'Notifications Unmuted',
         ),
         duration: const Duration(seconds: 2),
         backgroundColor: AppColors.primary,
@@ -96,17 +136,27 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           builder: (context) => GroupInfoPage(
             name: widget.name,
             avatarColor: widget.avatarColor,
-            isAdmin: true, // Mock logic
+            isAdmin: true,
           ),
         ),
       );
-    } else {
-      // Open User Profile logic (Placeholder)
+    }
+  }
+
+  String _formatTime(String isoString) {
+    if (isoString.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(isoString).toLocal();
+      return "${dt.hour}:${dt.minute.toString().padLeft(2, '0')}";
+    } catch (e) {
+      return '';
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -149,12 +199,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     ),
                     Text(
                       widget.isGroup
-                          ? AppLocalizations.of(
-                                  context,
-                                )?.translate('tap_for_info') ??
-                                'Tap for info'
-                          : AppLocalizations.of(context)?.translate('online') ??
-                                'Online',
+                          ? AppLocalizations.of(context)?.translate('tap_for_info') ?? 'Tap for info'
+                          : AppLocalizations.of(context)?.translate('online') ?? 'Online',
                       style: TextDesign.body.copyWith(
                         color: Colors.green,
                         fontSize: 12,
@@ -170,21 +216,10 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         actions: [
           IconButton(
             icon: Icon(
-              _isMuted
-                  ? Icons.notifications_off_rounded
-                  : Icons.notifications_active_rounded,
+              _isMuted ? Icons.notifications_off_rounded : Icons.notifications_active_rounded,
               color: _isMuted ? Colors.grey : AppColors.primary,
             ),
             onPressed: _toggleMute,
-            tooltip: _isMuted
-                ? AppLocalizations.of(
-                        context,
-                      )?.translate('unmute_notifications') ??
-                      'Unmute Notifications'
-                : AppLocalizations.of(
-                        context,
-                      )?.translate('mute_notifications') ??
-                      'Mute Notifications',
           ),
           IconButton(
             icon: const Icon(Icons.videocam_rounded, color: AppColors.primary),
@@ -205,11 +240,11 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                final isMe = message['isMe'] as bool;
+                final isMe = message.senderId == -1 || (userProvider.email != null && _messages[index].senderName != widget.name);
+                // We assume if senderName != otherUser's name (which is widget.name), it's probably me. 
+                // A better check would be senderEmail, but we don't have it in ChatMessage. We can check by ID if we stored current user ID.
                 return Align(
-                  alignment: isMe
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
+                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     constraints: BoxConstraints(
@@ -226,12 +261,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(16),
                         topRight: const Radius.circular(16),
-                        bottomLeft: isMe
-                            ? const Radius.circular(16)
-                            : Radius.zero,
-                        bottomRight: isMe
-                            ? Radius.zero
-                            : const Radius.circular(16),
+                        bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
+                        bottomRight: isMe ? Radius.zero : const Radius.circular(16),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -245,21 +276,32 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          message['text'],
+                          message.content,
                           style: TextDesign.body.copyWith(
-                            color: isMe
-                                ? Colors.white
-                                : Theme.of(context).textTheme.bodyLarge?.color,
+                            color: isMe ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color,
                             height: 1.4,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          message['time'],
-                          style: TextStyle(
-                            color: isMe ? Colors.white70 : Colors.black45,
-                            fontSize: 10,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _formatTime(message.createdAt),
+                              style: TextStyle(
+                                color: isMe ? Colors.white70 : Colors.black45,
+                                fontSize: 10,
+                              ),
+                            ),
+                            if (isMe) ...[
+                              const SizedBox(width: 4),
+                              Icon(
+                                message.isRead ? Icons.done_all : Icons.check,
+                                size: 12,
+                                color: message.isRead ? Colors.blue[200] : Colors.white70,
+                              ),
+                            ]
+                          ],
                         ),
                       ],
                     ),
@@ -306,11 +348,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               child: TextField(
                 controller: _messageController,
                 decoration: InputDecoration(
-                  hintText:
-                      AppLocalizations.of(context)?.translate('type_message') ??
-                      'Type a message...',
+                  hintText: AppLocalizations.of(context)?.translate('type_message') ?? 'Type a message...',
                   border: InputBorder.none,
-                  hintStyle: TextStyle(color: AppColors.mutedText),
+                  hintStyle: const TextStyle(color: AppColors.mutedText),
                 ),
               ),
             ),

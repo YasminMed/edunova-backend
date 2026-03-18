@@ -8,6 +8,8 @@ import 'forgot_password_student.dart';
 import '../student/student_dashboard.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
+import '../providers/user_provider.dart';
+import 'package:provider/provider.dart';
 
 class LoginStudentPage extends StatefulWidget {
   const LoginStudentPage({super.key});
@@ -45,9 +47,18 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        await _authService.login(
+        final userData = await _authService.login(
           _emailController.text.trim(),
           _passwordController.text,
+          'student',
+        );
+        
+        if (!mounted) return;
+
+        // Store user data in UserProvider
+        context.read<UserProvider>().setUser(
+          userData['fullName'] ?? 'Student',
+          _emailController.text.trim(),
           'student',
         );
 

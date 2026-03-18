@@ -22,14 +22,13 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   List<dynamic> _resources = [];
   List<dynamic> _attendance = [];
   Map<int, dynamic> _userSubmissions = {};
-  Set<int> _activeEditStates = {};
   bool _isLoading = true;
   final Map<int, TextEditingController> _controllers = {};
 
   @override
   void dispose() {
     for (var controller in _controllers.values) {
-      if (controller != null) controller.dispose();
+      controller.dispose();
     }
     super.dispose();
   }
@@ -54,22 +53,36 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
       final filters = ["PDFs", "Assignments", "Quizzes", "Exams", "Attendance"];
       final category = filters[_selectedFilterIndex];
       
-      if (category == "Assignments") {
-        final assignments = await _materialService.getAssignments(widget.lecture['id']);
-        setState(() => _resources = assignments);
+      if (category == "Assignments" || category == "Quizzes") {
+        final bool isQuiz = category == "Quizzes";
+        final items = isQuiz 
+            ? await _materialService.getQuizzes(widget.lecture['id'])
+            : await _materialService.getAssignments(widget.lecture['id']);
+            
+        setState(() => _resources = items);
         
         final userEmail = Provider.of<UserProvider>(context, listen: false).email;
         if (userEmail != null) {
-          for (var assignment in assignments) {
+          for (var item in items) {
             try {
-              final sub = await _materialService.getMySubmission(assignment['id'], userEmail);
+              final sub = isQuiz
+                  ? await _materialService.getMyQuizSubmission(item['id'], userEmail)
+                  : await _materialService.getMySubmission(item['id'], userEmail);
               if (sub != null) {
-                setState(() => _userSubmissions[assignment['id']] = sub);
+                setState(() => _userSubmissions[item['id']] = sub);
               }
             } catch (e) {
-              debugPrint("Error loading submission for ${assignment['id']}: $e");
+              debugPrint("Error loading submission for ${item['id']}: $e");
             }
           }
+        }
+      } else if (category == "Exams") {
+        final userEmail = Provider.of<UserProvider>(context, listen: false).email;
+        if (userEmail != null) {
+          final response = await _materialService.getMyExamMarks(widget.lecture['id'], userEmail);
+          setState(() => _resources = response);
+        } else {
+          setState(() => _resources = []);
         }
       } else {
         final response = await _materialService.getResources(
@@ -255,6 +268,8 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
           color,
           isDark,
         );
+      case 3: // Exams
+        return _buildExamsView(color, isDark);
       case 1: // Assignments
         return _buildResourceList(
           context,
@@ -268,14 +283,6 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
           context,
           Icons.quiz_rounded,
           'Quizzes',
-          color,
-          isDark,
-        );
-      case 3: // Exams
-        return _buildResourceList(
-          context,
-          Icons.school_rounded,
-          'Exams',
           color,
           isDark,
         );
@@ -421,9 +428,10 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
     }
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
+        if (index >= _resources.length) return null;
         final resource = _resources[index];
         final isAssignmentOrQuiz = _selectedFilterIndex == 1 || _selectedFilterIndex == 2;
-        final isExam = _selectedFilterIndex == 3;
+        final isQuiz = _selectedFilterIndex == 2;
         final submission = isAssignmentOrQuiz ? _userSubmissions[resource['id']] : null;
         
         TextEditingController? controller;
@@ -478,7 +486,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                       ],
                     ),
                   ),
-                  if (submission != null && submission['is_graded'])
+                  if (submission != null && (submission['is_graded'] == true || submission['is_graded'] == 1))
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
@@ -620,6 +628,69 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
     );
   }
 
-  
+  Widget _buildExamsView(Color color, bool isDark) {
+    if (_resources.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 40),
+              Icon(Icons.assignment_turned_in_rounded, size: 64, color: color.withOpacity(0.3)),
+              const SizedBox(height: 16),
+              const Text("No exams recorded yet.", style: TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+      );
+    }
 
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final exam = _resources[index];
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8),
+              ],
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.school_rounded, color: color),
+              ),
+              title: Text(
+                exam['exam_type'] ?? "Exam",
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                exam['created_at'] != null 
+                  ? "Recorded on ${exam['created_at'].toString().split('T')[0]}"
+                  : "Recently recorded",
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              trailing: Text(
+                "${exam['mark']}%",
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          );
+        },
+        childCount: _resources.length,
+      ),
+    );
+  }
 }
