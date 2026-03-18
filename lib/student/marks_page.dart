@@ -49,15 +49,25 @@ class _MarksPageState extends State<MarksPage> {
           _marksData = response.data;
           _isLoading = false;
         });
-      } else {
-        setState(() {
-          _errorMessage = "Failed to load marks: ${response.statusCode}";
-          _isLoading = false;
-        });
       }
+    } on DioException catch (e) {
+      String message = "Error connecting to server";
+      if (e.response != null) {
+        final detail = e.response?.data?['detail'];
+        message = detail ?? "Server error: ${e.response?.statusCode}";
+      } else if (e.type == DioExceptionType.connectionTimeout) {
+        message = "Connection timed out";
+      } else if (e.type == DioExceptionType.connectionError) {
+        message = "No internet connection or server unreachable";
+      }
+      
+      setState(() {
+        _errorMessage = message;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
-        _errorMessage = "Error connecting to server";
+        _errorMessage = "An unexpected error occurred: $e";
         _isLoading = false;
       });
     }
