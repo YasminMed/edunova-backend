@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../models/chat_session.dart';
+import '../models/group_chat.dart';
 
 class ChatService {
   static const String baseUrl = "https://web-production-06d8c.up.railway.app";
@@ -81,4 +82,73 @@ class ChatService {
       return null;
     }
   }
+
+  Future<List<GroupChat>> getUserGroupChats(String userEmail) async {
+    try {
+      final response = await _dio.get("/groups/user/$userEmail");
+      return (response.data as List).map((item) => GroupChat.fromJson(item)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<int?> createGroupChat(String name, String adminEmail, List<String> memberEmails, {String? imagePath}) async {
+    try {
+      final Map<String, dynamic> formDataMap = {
+        "name": name,
+        "admin_email": adminEmail,
+        "member_emails": memberEmails, // Backend parses strings 
+      };
+
+      if (imagePath != null && imagePath.isNotEmpty) {
+        formDataMap["photo"] = await MultipartFile.fromFile(imagePath);
+      }
+
+      final formData = FormData.fromMap(formDataMap);
+
+      final response = await _dio.post(
+        "/groups",
+        data: formData,
+      );
+      return response.data['group_id'];
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<List<ChatMessage>> getGroupMessages(int groupId) async {
+    try {
+      final response = await _dio.get("/groups/$groupId/messages");
+      return (response.data as List).map((item) => ChatMessage.fromJson(item)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<ChatMessage?> sendGroupMessage(int groupId, String senderEmail, String content) async {
+    try {
+      final response = await _dio.post(
+        "/groups/$groupId/messages",
+        data: FormData.fromMap({
+          "sender_email": senderEmail,
+          "content": content,
+        }),
+      );
+      return ChatMessage.fromJson(response.data);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<List<ChatUser>> getAllUsers() async {
+    try {
+      final response = await _dio.get("/users/all");
+      return (response.data as List)
+          .map((item) => ChatUser.fromJson(item))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
 }
+

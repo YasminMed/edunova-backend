@@ -7,6 +7,7 @@ import '../providers/user_provider.dart';
 import '../services/chat_service.dart';
 import '../models/chat_session.dart';
 import '../student/chat_detail_page.dart';
+import '../student/group_chat_detail_page.dart';
 import '../student/create_group_sheet.dart';
 import '../student/saved_messages_page.dart';
 
@@ -41,6 +42,7 @@ class _LecturerChatPageState extends State<LecturerChatPage>
     if (userProvider.email == null) return;
 
     final sessions = await _chatService.getUserChatSessions(userProvider.email!);
+    final groups = await _chatService.getUserGroupChats(userProvider.email!);
 
     if (!mounted) return;
     setState(() {
@@ -58,6 +60,22 @@ class _LecturerChatPageState extends State<LecturerChatPage>
           'avatarColor': Colors.blueAccent,
         });
       }
+      
+      _allGroups.clear();
+      for (var g in groups) {
+        _allGroups.add({
+          'group_id': g.id,
+          'name': g.name,
+          'photo_url': g.photoUrl,
+          'admin_id': g.adminId,
+          'message': g.latestMessage.isEmpty ? 'Group created' : g.latestMessage,
+          'time': _formatTime(g.latestMessageTime),
+          'unread': false,
+          'unreadCount': 0,
+          'avatarColor': Colors.green, // default color
+        });
+      }
+      
       _isLoading = false;
     });
   }
@@ -256,22 +274,25 @@ class _LecturerChatPageState extends State<LecturerChatPage>
           ? const Center(child: CircularProgressIndicator())
           : TabBarView(
               controller: _tabController,
-              children: [_buildList(_allChats), const Center(child: Text("Groups not implemented"))],
+              children: [_buildList(_allChats, false), _buildList(_allGroups, true)],
             ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 80),
         child: FloatingActionButton(
           backgroundColor: AppColors.secondary,
-          onPressed: () {
+          onPressed: () async {
             if (_tabController.index == 0) {
               _showAddFriendDialog(context);
             } else {
-              showModalBottomSheet(
+              final shouldRefresh = await showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (context) => const CreateGroupSheet(),
               );
+              if (shouldRefresh == true) {
+                _loadChats();
+              }
             }
           },
           child: const Icon(Icons.add_comment_rounded, color: Colors.white),
@@ -280,9 +301,9 @@ class _LecturerChatPageState extends State<LecturerChatPage>
     );
   }
 
-  Widget _buildList(List<Map<String, dynamic>> list) {
+  Widget _buildList(List<Map<String, dynamic>> list, bool isGroupView) {
     if (list.isEmpty) {
-      return const Center(child: Text("No chats yet. Click the + button to start one!"));
+      return Center(child: Text(isGroupView ? "No groups yet. Click the + button to create one!" : "No chats yet. Click the + button to start one!"));
     }
     
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -300,24 +321,43 @@ class _LecturerChatPageState extends State<LecturerChatPage>
         
         return ListTile(
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatDetailPage(
-                  sessionId: chat['session_id'],
-                  otherUserEmail: chat['other_user_email'],
-                  name: chat['name'],
-                  avatarColor: chat['avatarColor'],
-                  isGroup: false,
+            if (isGroupView) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GroupChatDetailPage(
+                    groupId: chat['group_id'],
+                    groupName: chat['name'],
+                    photoUrl: chat['photo_url'],
+                    adminId: chat['admin_id'],
+                  ),
                 ),
-              ),
-            ).then((_) => _loadChats());
+              ).then((_) => _loadChats());
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatDetailPage(
+                    sessionId: chat['session_id'],
+                    otherUserEmail: chat['other_user_email'],
+                    name: chat['name'],
+                    avatarColor: chat['avatarColor'],
+                    isGroup: false,
+                  ),
+                ),
+              ).then((_) => _loadChats());
+            }
           },
           leading: Stack(
             children: [
               CircleAvatar(
                 backgroundColor: (chat['avatarColor'] as Color).withOpacity(0.1),
-                child: Icon(Icons.person, color: chat['avatarColor']),
+                backgroundImage: isGroupView && chat['photo_url'] != null 
+                    ? NetworkImage("${ChatService.baseUrl}${chat['photo_url']}") 
+                    : null,
+                child: isGroupView && chat['photo_url'] == null 
+                    ? Icon(Icons.groups, color: chat['avatarColor'])
+                    : (!isGroupView ? Icon(Icons.person, color: chat['avatarColor']) : null),
               ),
               if (unread)
                 Positioned(

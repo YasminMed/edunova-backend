@@ -7,6 +7,7 @@ import '../providers/user_provider.dart';
 import '../services/chat_service.dart';
 import '../models/chat_session.dart';
 import 'chat_detail_page.dart';
+import 'group_chat_detail_page.dart';
 import 'create_group_sheet.dart';
 import 'saved_messages_page.dart';
 
@@ -46,6 +47,7 @@ class _ChatPageState extends State<ChatPage>
     if (userProvider.email == null) return;
 
     final sessions = await _chatService.getUserChatSessions(userProvider.email!);
+    final groups = await _chatService.getUserGroupChats(userProvider.email!);
 
     if (!mounted) return;
     setState(() {
@@ -63,6 +65,22 @@ class _ChatPageState extends State<ChatPage>
           'avatarColor': Colors.blueAccent,
         });
       }
+      
+      _allGroups.clear();
+      for (var g in groups) {
+        _allGroups.add({
+          'group_id': g.id,
+          'name': g.name,
+          'photo_url': g.photoUrl,
+          'admin_id': g.adminId,
+          'message': g.latestMessage.isEmpty ? 'Group created' : g.latestMessage,
+          'time': _formatTime(g.latestMessageTime),
+          'unread': false,
+          'unreadCount': 0,
+          'avatarColor': Colors.green, // default color
+        });
+      }
+      
       _isLoading = false;
     });
   }
@@ -179,13 +197,16 @@ class _ChatPageState extends State<ChatPage>
     );
   }
 
-  void _openCreateGroupSheet(BuildContext context) {
-    showModalBottomSheet(
+  void _openCreateGroupSheet(BuildContext context) async {
+    final shouldRefresh = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const CreateGroupSheet(),
     );
+    if (shouldRefresh == true) {
+      _loadChats();
+    }
   }
 
   void _markAllAsRead() {
@@ -351,7 +372,76 @@ class _ChatPageState extends State<ChatPage>
   }
 
   Widget _buildGroupsList() {
-    return const Center(child: Text("Groups coming soon"));
+    if (_allGroups.isEmpty) {
+      return const Center(child: Text("No groups yet. Click the + button to create one!"));
+    }
+    final filteredGroups = _allGroups.where((group) {
+      final name = group['name'].toString().toLowerCase();
+      final message = group['message'].toString().toLowerCase();
+      return name.contains(_searchQuery) || message.contains(_searchQuery);
+    }).toList();
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 10, bottom: 80),
+      itemCount: filteredGroups.length,
+      itemBuilder: (context, index) {
+        final group = filteredGroups[index];
+        return ListTile(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => GroupChatDetailPage(
+                  groupId: group['group_id'],
+                  groupName: group['name'],
+                  photoUrl: group['photo_url'],
+                  adminId: group['admin_id'],
+                ),
+              ),
+            ).then((_) => _loadChats());
+          },
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          leading: Stack(
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: (group['avatarColor'] as Color).withOpacity(0.2),
+                backgroundImage: group['photo_url'] != null ? NetworkImage("${ChatService.baseUrl}${group['photo_url']}") : null,
+                child: group['photo_url'] == null ? Icon(Icons.groups_rounded, color: group['avatarColor'], size: 28) : null,
+              ),
+            ],
+          ),
+          title: Text(
+            group['name'],
+            style: TextDesign.h3.copyWith(
+              fontSize: 16,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              group['message'],
+              style: TextDesign.body.copyWith(
+                color: AppColors.mutedText,
+                fontSize: 14,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          trailing: Text(
+            group['time'],
+            style: TextDesign.body.copyWith(
+              color: AppColors.mutedText,
+              fontSize: 12,
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildChatTile({
