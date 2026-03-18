@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
@@ -8,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
 import '../services/chat_service.dart';
 import '../models/chat_session.dart';
+import 'group_settings_page.dart';
 
 class GroupChatDetailPage extends StatefulWidget {
   final int groupId;
@@ -90,8 +90,9 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
     // Optimistic UI
     final tempMsg = ChatMessage(
       id: 0,
-      senderId: -1, // current user temp
+      senderId: -1, 
       senderName: 'Me',
+      senderEmail: userProvider.email,
       content: content,
       createdAt: DateTime.now().toIso8601String(),
       isRead: false
@@ -200,6 +201,29 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
             ),
             onPressed: _toggleMute,
           ),
+          IconButton(
+            icon: const Icon(Icons.settings_rounded, color: AppColors.primary),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GroupSettingsPage(
+                    groupId: widget.groupId,
+                    groupName: widget.groupName,
+                    photoUrl: widget.photoUrl,
+                    adminId: widget.adminId,
+                  ),
+                ),
+              ).then((shouldReload) {
+                if (shouldReload == true) {
+                  // If the user modified info (like group name or photo), 
+                  // we might want to reload or pop back to ChatPage to refresh.
+                  // For now let's just pop and let ChatPage reload on resume.
+                  Navigator.pop(context, true);
+                }
+              });
+            },
+          ),
         ],
       ),
       body: Column(
@@ -212,23 +236,13 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
               itemBuilder: (context, index) {
                 final message = _messages[index];
                 
-                // In group chat, if it's the optimistic message or if we can identify it by email/id
-                // Since ChatMessage doesn't easily let us know if it's "me" purely by ID unless we store our own ID,
-                // we'll rely on the pessimistic hack: if senderName == my name or id == -1.
-                // Ideally, backend returns sender_email or we fetch user data. 
-                // We'll use a simple heuristic for now.
-                final isMe = message.senderId == -1 || (userProvider.email != null && message.senderId.toString() == 'MY_ID_HERE'); // Needs better check
-                // Let's just use the optimistic id == -1 for this demo unless we retrieve user ID in Provider.
-                // We can fetch user ID using api or just assume it's NOT ME if senderId > 0 for now?
-                // Actually, let's fix this in the builder. We'll use senderName as fallback.
+                bool senderIsMe = message.senderId == -1 || 
+                    (userProvider.email != null && message.senderEmail == userProvider.email);
                 
-                // To do it correctly, we should store user_id in userProvider. But this is simple solution:
-                bool senderIsMe = message.senderId == -1;
-                // Wait, since we don't have user ID, let's just make it NOT me if it's from backend, 
-                // but actually we do know `name`. We can compare `userProvider.name` but Provider only gives email.
-                // Let's just do:
-                // TODO: Update backend to return sender_email, but for now we'll just show it left if it's from backend.
-                // Actually we can pass isMe = false.
+                String displayName = message.senderName;
+                if (message.senderId == widget.adminId) {
+                  displayName = "$displayName (Owner)";
+                }
                 
                 return Align(
                   alignment: senderIsMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -264,7 +278,7 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
                       children: [
                         if (!senderIsMe) 
                           Text(
-                            message.senderName,
+                            displayName,
                             style: TextStyle(
                               color: AppColors.secondary,
                               fontSize: 12,

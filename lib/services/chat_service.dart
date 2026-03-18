@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../models/chat_session.dart';
 import '../models/group_chat.dart';
@@ -148,6 +149,71 @@ class ChatService {
           .toList();
     } catch (e) {
       return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> getGroupDetails(int groupId) async {
+    try {
+      final response = await _dio.get("/groups/$groupId");
+      return response.data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<bool> updateGroupChat(int groupId, String adminEmail, {String? name, String? imagePath}) async {
+    try {
+      final Map<String, dynamic> data = {"admin_email": adminEmail};
+      if (name != null) data["name"] = name;
+      if (imagePath != null && imagePath.isNotEmpty) {
+        data["photo"] = await MultipartFile.fromFile(imagePath);
+      }
+      final response = await _dio.put("/groups/$groupId", data: FormData.fromMap(data));
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> addGroupMembers(int groupId, String adminEmail, List<String> memberEmails) async {
+    try {
+      final response = await _dio.post(
+        "/groups/$groupId/members",
+        data: FormData.fromMap({
+          "admin_email": adminEmail,
+          "member_emails": jsonEncode(memberEmails),
+        })
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> removeGroupMember(int groupId, String adminEmail, String userEmail) async {
+    try {
+      final response = await _dio.delete(
+        "/groups/$groupId/members/$userEmail",
+        queryParameters: {"admin_email": adminEmail}
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> transferGroupOwnership(int groupId, String adminEmail, String newOwnerEmail) async {
+    try {
+      final response = await _dio.put(
+        "/groups/$groupId/owner",
+        data: FormData.fromMap({
+          "admin_email": adminEmail,
+          "new_owner_email": newOwnerEmail,
+        })
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
     }
   }
 }
