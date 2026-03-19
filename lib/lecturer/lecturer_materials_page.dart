@@ -18,6 +18,17 @@ class LecturerMaterialsPage extends StatefulWidget {
 }
 
 class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = context.read<UserProvider>();
+      context.read<LecturerMaterialsViewModel>().loadSubjects(
+        email: user.email,
+        role: user.role,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

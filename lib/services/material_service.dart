@@ -11,9 +11,12 @@ class MaterialService {
     receiveTimeout: const Duration(seconds: 30),
   ));
 
-  Future<List<dynamic>> getCourses() async {
+  Future<List<dynamic>> getCourses({String? email, String? role}) async {
     try {
-      final response = await _dio.get("/courses");
+      final response = await _dio.get("/courses", queryParameters: {
+        if (email != null) "email": email,
+        if (role != null) "role": role,
+      });
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);

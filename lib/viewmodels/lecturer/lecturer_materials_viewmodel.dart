@@ -13,14 +13,12 @@ class LecturerMaterialsViewModel extends BaseViewModel {
   List<Map<String, dynamic>> get subjects => _subjects;
   String? get errorMessage => _errorMessage;
 
-  LecturerMaterialsViewModel() {
-    loadSubjects();
-  }
+  LecturerMaterialsViewModel();
 
-  Future<void> loadSubjects() async {
+  Future<void> loadSubjects({String? email, String? role}) async {
     setBusy(true);
     try {
-      final response = await _materialService.getCourses();
+      final response = await _materialService.getCourses(email: email, role: role);
       _subjects = response.map((s) => {
         'id': s['id'] as int,
         'name': s['name'] as String,

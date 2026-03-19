@@ -4,6 +4,8 @@ import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
 import '../services/material_service.dart';
 import '../services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
 import 'lecture_detail_page.dart';
 
 class LecturesPage extends StatefulWidget {
@@ -26,7 +28,11 @@ class _LecturesPageState extends State<LecturesPage> {
 
   Future<void> _loadLectures() async {
     try {
-      final courses = await _materialService.getCourses();
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final courses = await _materialService.getCourses(
+        email: userProvider.email,
+        role: userProvider.role,
+      );
       setState(() {
         _lectures = courses.map((c) {
           final String? imageUrl = c['image_url'];
