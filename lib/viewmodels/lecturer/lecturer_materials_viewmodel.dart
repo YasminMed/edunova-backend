@@ -42,18 +42,24 @@ class LecturerMaterialsViewModel extends BaseViewModel {
   Future<void> addNewCourse(
     String name,
     String code, {
+    String department = "Software Engineering",
+    String stage = "1st",
     File? image,
     Uint8List? imageBytes,
     String? imageFileName,
+    String? lecturerEmail,
   }) async {
     setBusy(true);
     try {
       await _materialService.createCourse(
         name,
         code,
+        department: department,
+        stage: stage,
         image: image,
         imageBytes: imageBytes,
         imageFileName: imageFileName,
+        lecturerEmail: lecturerEmail,
       );
       await loadSubjects();
     } catch (e) {

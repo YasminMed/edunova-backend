@@ -23,15 +23,21 @@ class MaterialService {
   Future<Map<String, dynamic>> createCourse(
     String name,
     String code, {
+    String department = "Software Engineering",
+    String stage = "1st",
     File? image, // Native fallback
     Uint8List? imageBytes, // Web support
     String? imageFileName,
+    String? lecturerEmail,
   }) async {
     try {
       final Map<String, dynamic> formDataMap = {
         "name": name,
         "code": code,
+        "department": department,
+        "stage": stage,
       };
+      if (lecturerEmail != null) formDataMap["lecturer_email"] = lecturerEmail;
       if (imageBytes != null && imageFileName != null) {
         formDataMap["image"] = MultipartFile.fromBytes(
           imageBytes,

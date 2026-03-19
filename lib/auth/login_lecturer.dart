@@ -57,6 +57,8 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
           userData['fullName'] ?? 'Lecturer',
           _emailController.text.trim(),
           'lecturer',
+          department: userData['department'],
+          stage: userData['stage'],
         );
 
         // Navigate to Lecturer Dashboard Wrapped in Navigation

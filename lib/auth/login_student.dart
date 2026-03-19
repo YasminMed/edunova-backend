@@ -60,6 +60,8 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
           userData['fullName'] ?? 'Student',
           _emailController.text.trim(),
           'student',
+          department: userData['department'],
+          stage: userData['stage'],
         );
 
         if (!mounted) return;

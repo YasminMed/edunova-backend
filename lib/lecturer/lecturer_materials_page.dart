@@ -8,6 +8,7 @@ import '../l10n/app_localizations.dart';
 import '../viewmodels/lecturer/lecturer_materials_viewmodel.dart';
 import 'managed_subject_detail.dart';
 import '../viewmodels/lecturer/managed_subject_viewmodel.dart';
+import '../providers/user_provider.dart';
 
 class LecturerMaterialsPage extends StatefulWidget {
   const LecturerMaterialsPage({super.key});
@@ -152,10 +153,19 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
     LecturerMaterialsViewModel viewModel,
   ) {
     final l10n = AppLocalizations.of(context);
+    final userProvider = context.read<UserProvider>();
     final nameController = TextEditingController();
     final codeController = TextEditingController();
     final descriptionController = TextEditingController();
     File? selectedImage;
+    
+    // Parse allowed departments and stages from user profile
+    final List<String> allowedDepts = userProvider.department?.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList() ?? ["Software Engineering"];
+    final List<String> allowedStages = userProvider.stage?.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList() ?? ["1st"];
+
+    String selectedDept = allowedDepts.first;
+    String selectedStage = allowedStages.first;
+    int currentStep = 0;
 
     showDialog(
       context: context,
@@ -170,94 +180,162 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
             }
           }
 
-          return AlertDialog(
-            title: Text(
-              l10n?.translate('create_new_course') ?? "Create New Course",
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GestureDetector(
-                    onTap: pickImage,
-                    child: Container(
-                      height: 120,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey[300]!),
-                        image: selectedImage != null
-                            ? DecorationImage(
-                                image: FileImage(selectedImage!),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                      ),
-                      child: selectedImage == null
-                          ? Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.add_photo_alternate_rounded,
-                                  color: Colors.grey[600],
-                                  size: 32,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  l10n?.translate('select_course_image') ??
-                                      "Select Course Image",
-                                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                                ),
-                              ],
+          Widget buildStep0() {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: pickImage,
+                  child: Container(
+                    height: 120,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey[300]!),
+                      image: selectedImage != null
+                          ? DecorationImage(
+                              image: FileImage(selectedImage!),
+                              fit: BoxFit.cover,
                             )
                           : null,
                     ),
+                    child: selectedImage == null
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_photo_alternate_rounded,
+                                color: Colors.grey[600],
+                                size: 32,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                l10n?.translate('select_course_image') ??
+                                    "Select Course Image",
+                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                              ),
+                            ],
+                          )
+                        : null,
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: l10n?.translate('course_name') ?? "Course Name",
-                      hintText: "e.g. Advanced Physics",
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: l10n?.translate('course_name') ?? "Course Name",
+                    hintText: "e.g. Advanced Physics",
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: codeController,
+                  decoration: InputDecoration(
+                    labelText: l10n?.translate('course_code') ?? "Course Code",
+                    hintText: "e.g. PHYS301",
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descriptionController,
+                  decoration: InputDecoration(
+                    labelText: l10n?.translate('description') ?? "Description",
+                    hintText: "Course overview and objectives...",
+                  ),
+                  maxLines: 2,
+                ),
+              ],
+            );
+          }
+
+          Widget buildStep1() {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n?.translate('select_department') ?? "Select Department",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedDept,
+                      isExpanded: true,
+                      onChanged: (val) => setDialogState(() => selectedDept = val!),
+                      items: allowedDepts.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: codeController,
-                    decoration: InputDecoration(
-                      labelText: l10n?.translate('course_code') ?? "Course Code",
-                      hintText: "e.g. PHYS301",
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  l10n?.translate('select_stage') ?? "Select Stage",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedStage,
+                      isExpanded: true,
+                      onChanged: (val) => setDialogState(() => selectedStage = val!),
+                      items: allowedStages.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: descriptionController,
-                    decoration: InputDecoration(
-                      labelText: l10n?.translate('description') ?? "Description",
-                      hintText: "Course overview and objectives...",
-                    ),
-                    maxLines: 2,
-                  ),
-                ],
-              ),
+                ),
+              ],
+            );
+          }
+
+          return AlertDialog(
+            title: Text(
+              currentStep == 0 
+                ? (l10n?.translate('create_new_course') ?? "Create New Course")
+                : (l10n?.translate('target_audience') ?? "Target Audience"),
+            ),
+            content: SingleChildScrollView(
+              child: currentStep == 0 ? buildStep0() : buildStep1(),
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(l10n?.translate('cancel') ?? "Cancel"),
-              ),
+              if (currentStep == 1)
+                TextButton(
+                  onPressed: () => setDialogState(() => currentStep = 0),
+                  child: Text(l10n?.translate('back') ?? "Back"),
+                ),
+              if (currentStep == 0)
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(l10n?.translate('cancel') ?? "Cancel"),
+                ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.secondary,
                 ),
                 onPressed: () async {
-                  if (nameController.text.isNotEmpty &&
-                      codeController.text.isNotEmpty) {
+                  if (currentStep == 0) {
+                    if (nameController.text.isNotEmpty && codeController.text.isNotEmpty) {
+                      setDialogState(() => currentStep = 1);
+                    }
+                  } else {
                     await viewModel.addNewCourse(
                       nameController.text,
                       codeController.text,
+                      department: selectedDept,
+                      stage: selectedStage,
                       image: selectedImage,
+                      lecturerEmail: userProvider.email,
                     );
                     if (context.mounted) {
                       Navigator.pop(context);
@@ -271,7 +349,9 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                   }
                 },
                 child: Text(
-                  l10n?.translate('create') ?? "Create",
+                  currentStep == 0 
+                    ? (l10n?.translate('continue') ?? "Continue")
+                    : (l10n?.translate('create') ?? "Create"),
                   style: const TextStyle(color: Colors.white),
                 ),
               ),
