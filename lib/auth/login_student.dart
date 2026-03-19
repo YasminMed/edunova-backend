@@ -9,16 +9,11 @@ import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../providers/user_provider.dart';
 import 'package:provider/provider.dart';
-import 'signup_student.dart';
+import 'department_stage_selection.dart';
 
 class LoginStudentPage extends StatefulWidget {
-  final String? department;
-  final String? stage;
-
   const LoginStudentPage({
     super.key,
-    this.department,
-    this.stage,
   });
 
   @override
@@ -361,9 +356,9 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => SignupStudentPage(
-                                  department: widget.department ?? "Software Engineering",
-                                  stage: widget.stage ?? "First Stage",
+                                builder: (_) => const DepartmentStageSelectionPage(
+                                  role: 'student',
+                                  isLogin: false,
                                 ),
                               ),
                             );

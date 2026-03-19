@@ -8,17 +8,12 @@ import 'forgot_password_lecturer.dart';
 import '../lecturer/lecturer_main_navigation.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
-import 'signup_lecturer.dart';
+import 'department_stage_selection.dart';
 import '../providers/user_provider.dart';
 
 class LoginLecturerPage extends StatefulWidget {
-  final String? departments;
-  final String? stages;
-
   const LoginLecturerPage({
     super.key,
-    this.departments,
-    this.stages,
   });
 
   @override
@@ -336,9 +331,9 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => SignupLecturerPage(
-                                  departments: widget.departments ?? "Software Engineering",
-                                  stages: widget.stages ?? "First Stage",
+                                builder: (_) => const DepartmentStageSelectionPage(
+                                  role: 'lecturer',
+                                  isLogin: false,
                                 ),
                               ),
                             );

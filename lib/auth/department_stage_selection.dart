@@ -8,10 +8,12 @@ import 'signup_lecturer.dart';
 
 class DepartmentStageSelectionPage extends StatefulWidget {
   final String role; // 'student' or 'lecturer'
+  final bool isLogin; // Whether we're going to login or signup
 
   const DepartmentStageSelectionPage({
     super.key,
     required this.role,
+    this.isLogin = true,
   });
 
   @override
