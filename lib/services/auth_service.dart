@@ -26,6 +26,8 @@ class AuthService {
     required String email,
     required String password,
     required String role,
+    String? department,
+    String? stage,
     String gender = "Male",
   }) async {
     try {
@@ -35,6 +37,8 @@ class AuthService {
         "password": password,
         "gender": gender,
         "role": role,
+        "department": department,
+        "stage": stage,
       });
       return response.data;
     } on DioException catch (e) {

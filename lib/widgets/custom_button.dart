@@ -12,7 +12,12 @@ class CustomButton extends StatefulWidget {
     required this.text,
     required this.onTap,
     this.isLoading = false,
+    this.color,
+    this.gradient,
   });
+
+  final Color? color;
+  final Gradient? gradient;
 
   @override
   State<CustomButton> createState() => _CustomButtonState();
@@ -74,11 +79,12 @@ class _CustomButtonState extends State<CustomButton>
           width: double.infinity,
           height: 55,
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
+            color: widget.color,
+            gradient: widget.color != null ? null : (widget.gradient ?? AppColors.primaryGradient),
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.25), // Softer
+                color: (widget.color ?? AppColors.primary).withOpacity(0.25), // Softer
                 blurRadius: 20, // Increased blur
                 spreadRadius: 2, // Slight spread
                 offset: const Offset(0, 8), // Deeper offset

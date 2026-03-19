@@ -3,13 +3,13 @@ import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../widgets/animated_background.dart';
 import '../widgets/custom_button.dart';
-import 'signup_student.dart';
 import 'forgot_password_student.dart';
 import '../student/student_dashboard.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../providers/user_provider.dart';
 import 'package:provider/provider.dart';
+import 'department_stage_selection.dart';
 
 class LoginStudentPage extends StatefulWidget {
   const LoginStudentPage({super.key});
@@ -352,7 +352,7 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const SignupStudentPage(),
+                                builder: (_) => const DepartmentStageSelectionPage(role: 'student'),
                               ),
                             );
                           },

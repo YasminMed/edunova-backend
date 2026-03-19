@@ -4,11 +4,11 @@ import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../widgets/animated_background.dart';
 import '../widgets/custom_button.dart';
-import 'signup_lecturer.dart';
 import 'forgot_password_lecturer.dart';
 import '../lecturer/lecturer_main_navigation.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
+import 'department_stage_selection.dart';
 import '../providers/user_provider.dart';
 
 class LoginLecturerPage extends StatefulWidget {
@@ -327,7 +327,7 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const SignupLecturerPage(),
+                                builder: (_) => const DepartmentStageSelectionPage(role: 'lecturer'),
                               ),
                             );
                           },

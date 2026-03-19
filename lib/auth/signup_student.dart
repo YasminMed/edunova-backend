@@ -9,7 +9,14 @@ import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 
 class SignupStudentPage extends StatefulWidget {
-  const SignupStudentPage({super.key});
+  final String department;
+  final String stage;
+
+  const SignupStudentPage({
+    super.key,
+    required this.department,
+    required this.stage,
+  });
 
   @override
   State<SignupStudentPage> createState() => _SignupStudentPageState();
@@ -60,6 +67,8 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
           password: _passwordController.text,
           gender: _selectedGender,
           role: 'student',
+          department: widget.department,
+          stage: widget.stage,
         );
         
         if (!mounted) return;

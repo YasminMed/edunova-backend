@@ -5,8 +5,7 @@ import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../widgets/animated_background.dart';
 import '../widgets/custom_button.dart';
-import 'login_student.dart';
-import 'login_lecturer.dart';
+import 'department_stage_selection.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/locale_provider.dart';
 
@@ -84,7 +83,12 @@ class _SelectionPageView extends StatelessWidget {
                   Navigator.pop(context); // Close dialog
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const LoginStudentPage()),
+                    MaterialPageRoute(
+                      builder: (_) => const DepartmentStageSelectionPage(
+                        role: 'student',
+                        isLogin: true,
+                      ),
+                    ),
                   );
                 }
               },
@@ -150,7 +154,10 @@ class _SelectionPageView extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const LoginLecturerPage(),
+                      builder: (_) => const DepartmentStageSelectionPage(
+                        role: 'lecturer',
+                        isLogin: true,
+                      ),
                     ),
                   );
                 }
@@ -263,7 +270,12 @@ class _SelectionPageView extends StatelessWidget {
                     color: AppColors.primary,
                     onTap: () {
                       context.read<SelectionProvider>().selectRole('student');
-                      _showStudentIdDialog(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const DepartmentStageSelectionPage(role: 'student'),
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 24),
@@ -275,7 +287,12 @@ class _SelectionPageView extends StatelessWidget {
                     color: AppColors.secondary,
                     onTap: () {
                       context.read<SelectionProvider>().selectRole('lecturer');
-                      _showLecturerIdDialog(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const DepartmentStageSelectionPage(role: 'lecturer'),
+                        ),
+                      );
                     },
                   ),
                 ],
