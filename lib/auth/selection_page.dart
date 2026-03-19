@@ -135,7 +135,10 @@ class _SelectionPageView extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const DepartmentStageSelectionPage(role: 'student'),
+                          builder: (_) => const DepartmentStageSelectionPage(
+                            role: 'student',
+                            isLogin: true,
+                          ),
                         ),
                       );
                     },
@@ -152,7 +155,10 @@ class _SelectionPageView extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const DepartmentStageSelectionPage(role: 'lecturer'),
+                          builder: (_) => const DepartmentStageSelectionPage(
+                            role: 'lecturer',
+                            isLogin: true,
+                          ),
                         ),
                       );
                     },

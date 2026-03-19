@@ -468,6 +468,48 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
                               _handleSignup();
                             },
                           ),
+                          const SizedBox(height: 24),
+                          Center(
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LoginStudentPage(),
+                                  ),
+                                );
+                              },
+                              child: RichText(
+                                text: TextSpan(
+                                  text:
+                                      AppLocalizations.of(
+                                            context,
+                                          )?.translate('already_have_account') ??
+                                      "Already have an account? ",
+                                  style: TextDesign.body.copyWith(
+                                    color:
+                                        Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.white70
+                                            : AppColors.mutedText,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text:
+                                          AppLocalizations.of(
+                                                context,
+                                              )?.translate('login') ??
+                                          "Login",
+                                      style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),

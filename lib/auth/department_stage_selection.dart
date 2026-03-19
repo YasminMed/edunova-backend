@@ -15,7 +15,7 @@ class DepartmentStageSelectionPage extends StatefulWidget {
   const DepartmentStageSelectionPage({
     super.key,
     required this.role,
-    this.isLogin = false,
+    this.isLogin = true,
   });
 
   @override
