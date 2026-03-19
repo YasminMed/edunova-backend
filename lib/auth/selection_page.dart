@@ -5,6 +5,8 @@ import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../widgets/animated_background.dart';
 import 'department_stage_selection.dart';
+import 'login_student.dart';
+import 'login_lecturer.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/locale_provider.dart';
 
@@ -16,19 +18,21 @@ class SelectionProvider extends ChangeNotifier {
 }
 
 class SelectionPage extends StatelessWidget {
-  const SelectionPage({super.key});
+  final bool isLogin;
+  const SelectionPage({super.key, this.isLogin = true});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => SelectionProvider(),
-      child: const _SelectionPageView(),
+      child: _SelectionPageView(isLogin: isLogin),
     );
   }
 }
 
 class _SelectionPageView extends StatelessWidget {
-  const _SelectionPageView();
+  final bool isLogin;
+  const _SelectionPageView({required this.isLogin});
 
 
   @override
@@ -132,15 +136,23 @@ class _SelectionPageView extends StatelessWidget {
                     color: AppColors.primary,
                     onTap: () {
                       context.read<SelectionProvider>().selectRole('student');
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const DepartmentStageSelectionPage(
-                            role: 'student',
-                            isLogin: true,
+                      if (isLogin) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LoginStudentPage(),
                           ),
-                        ),
-                      );
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DepartmentStageSelectionPage(
+                              role: 'student',
+                            ),
+                          ),
+                        );
+                      }
                     },
                   ),
                   const SizedBox(height: 24),
@@ -152,15 +164,23 @@ class _SelectionPageView extends StatelessWidget {
                     color: AppColors.secondary,
                     onTap: () {
                       context.read<SelectionProvider>().selectRole('lecturer');
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const DepartmentStageSelectionPage(
-                            role: 'lecturer',
-                            isLogin: true,
+                      if (isLogin) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LoginLecturerPage(),
                           ),
-                        ),
-                      );
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DepartmentStageSelectionPage(
+                              role: 'lecturer',
+                            ),
+                          ),
+                        );
+                      }
                     },
                   ),
                 ],

@@ -5,17 +5,13 @@ import '../widgets/animated_background.dart';
 import '../widgets/custom_button.dart';
 import 'signup_student.dart';
 import 'signup_lecturer.dart';
-import 'login_student.dart';
-import 'login_lecturer.dart';
 
 class DepartmentStageSelectionPage extends StatefulWidget {
   final String role; // 'student' or 'lecturer'
-  final bool isLogin; // Whether we're going to login or signup
 
   const DepartmentStageSelectionPage({
     super.key,
     required this.role,
-    this.isLogin = true,
   });
 
   @override
@@ -67,27 +63,15 @@ class _DepartmentStageSelectionPageState
     if (widget.role == 'student') {
       if (selectedDepartment == null || selectedStage == null) return;
       
-      if (widget.isLogin) {
-         Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => LoginStudentPage(
-              department: selectedDepartment,
-              stage: selectedStage,
-            ),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SignupStudentPage(
+            department: selectedDepartment!,
+            stage: selectedStage!,
           ),
-        );
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SignupStudentPage(
-              department: selectedDepartment!,
-              stage: selectedStage!,
-            ),
-          ),
-        );
-      }
+        ),
+      );
     } else {
       // Lecturer
       if (selectedDepartments.isEmpty || selectedStages.isEmpty) {
@@ -100,27 +84,15 @@ class _DepartmentStageSelectionPageState
       final deptString = selectedDepartments.join(", ");
       final stageString = selectedStages.join(", ");
 
-      if (widget.isLogin) {
-         Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => LoginLecturerPage(
-              departments: deptString,
-              stages: stageString,
-            ),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SignupLecturerPage(
+            departments: deptString,
+            stages: stageString,
           ),
-        );
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SignupLecturerPage(
-              departments: deptString,
-              stages: stageString,
-            ),
-          ),
-        );
-      }
+        ),
+      );
     }
   }
 

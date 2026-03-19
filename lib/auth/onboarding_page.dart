@@ -3,7 +3,7 @@ import 'package:lottie/lottie.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
-import 'selection_page.dart';
+import 'auth_choice_page.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -31,7 +31,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     } else {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const SelectionPage()),
+        MaterialPageRoute(builder: (_) => const AuthChoicePage()),
       );
     }
   }
@@ -146,7 +146,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             : () => Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const SelectionPage(),
+                                  builder: (_) => const AuthChoicePage(),
                                 ),
                               ),
                         child: Text(
