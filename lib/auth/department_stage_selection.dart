@@ -71,7 +71,10 @@ class _DepartmentStageSelectionPageState
          Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const LoginStudentPage(),
+            builder: (_) => LoginStudentPage(
+              department: selectedDepartment,
+              stage: selectedStage,
+            ),
           ),
         );
       } else {
@@ -101,7 +104,10 @@ class _DepartmentStageSelectionPageState
          Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const LoginLecturerPage(),
+            builder: (_) => LoginLecturerPage(
+              departments: deptString,
+              stages: stageString,
+            ),
           ),
         );
       } else {
