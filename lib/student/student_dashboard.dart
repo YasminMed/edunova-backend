@@ -627,6 +627,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       ),
     );
   }
+}
 
 
 class _DashboardGridItem extends StatefulWidget {
