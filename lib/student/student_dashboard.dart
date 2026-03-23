@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import '../services/material_service.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../widgets/animated_background.dart';
@@ -35,7 +36,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   double _progressValue = 0.0;
   String _rankText = "Loading...";
-  bool _isLoadingProgress = true;
 
   @override
   void initState() {
@@ -47,22 +47,18 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     if (userProvider.email == null) return;
 
-    setState(() => _isLoadingProgress = true);
-
     try {
       final data = await _materialService.getStudentProgress(userProvider.email!);
       if (mounted) {
         setState(() {
           _progressValue = (data['progress'] as num).toDouble() / 100.0;
           _rankText = data['rank_text'] ?? "Rank Pending";
-          _isLoadingProgress = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _rankText = "Score Pending";
-          _isLoadingProgress = false;
         });
       }
     }

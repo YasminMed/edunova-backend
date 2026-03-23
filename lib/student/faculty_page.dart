@@ -89,7 +89,6 @@ class _FacultyPageState extends State<FacultyPage> {
   }
 
   Widget _buildTeacherCard(BuildContext context, Map<String, dynamic> teacher) {
-    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = Colors.primaries[teacher['id'] % Colors.primaries.length];
 
