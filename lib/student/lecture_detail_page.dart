@@ -124,7 +124,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
     ];
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           // Background Aesthetic
@@ -171,7 +171,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                       gradient: LinearGradient(
                         colors: [
                           AppColors.primary,
-                          AppColors.primary.withBlue(150), // Slight variation
+                          AppColors.secondary,
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -235,7 +235,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                               child: Text(
                                 filters[index],
                                 style: TextStyle(
-                                  color: isSelected ? Colors.white : AppColors.primary,
+                                  color: isSelected ? Colors.white : Colors.black87,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -264,7 +264,6 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
 
   Widget _buildFilteredContent() {
     final color = widget.lecture['color'] as Color;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     switch (_selectedFilterIndex) {
       case 0: // PDFs
@@ -273,17 +272,15 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
           Icons.picture_as_pdf_rounded,
           'PDFs',
           color,
-          isDark,
         );
       case 3: // Exams
-        return _buildExamsView(color, isDark);
+        return _buildExamsView(color);
       case 1: // Assignments
         return _buildResourceList(
           context,
           Icons.assignment_rounded,
           'Assignments',
           color,
-          isDark,
         );
       case 2: // Quizzes
         return _buildResourceList(
@@ -291,7 +288,6 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
           Icons.quiz_rounded,
           'Quizzes',
           color,
-          isDark,
         );
       case 4: // Attendance
         return _buildAttendanceView();
@@ -302,7 +298,6 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
 
   Widget _buildAttendanceView() {
     final color = widget.lecture['color'] as Color;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Calculate interactive rate
     double rate = 0;
@@ -344,7 +339,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                     Text(
                       "${(rate * 100).toInt()}%",
                       style: TextDesign.h1.copyWith(
-                        color: isDark ? Colors.white : AppColors.primaryText,
+                        color: Colors.black,
                       ),
                     ),
                   ],
@@ -360,8 +355,6 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   }
 
   Widget _buildAttendanceList() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Column(
       children: _attendance.map((record) {
         Color statusColor = Colors.green;
@@ -381,7 +374,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
               Text(
                 record['date'].toString().split('T')[0],
                 style: TextStyle(
-                  color: isDark ? Colors.white70 : Colors.black87,
+                  color: Colors.black,
                 ),
               ),
               Container(
@@ -414,7 +407,6 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
     IconData icon,
     String categoryName,
     Color color,
-    bool isDark,
   ) {
     if (_resources.isEmpty) {
       return SliverToBoxAdapter(
@@ -427,7 +419,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                   size: 64, color: color.withOpacity(0.3)),
               const SizedBox(height: 16),
               Text("No $categoryName uploaded yet.",
-                  style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)),
+                  style: const TextStyle(color: Colors.black)),
             ],
           ),
         ),
@@ -478,7 +470,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                             resource['title'],
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black87,
+                              color: Colors.black,
                             ),
                           ),
                           Text(
@@ -487,7 +479,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                               : "Shared recently"),
                             style: TextStyle(
                               fontSize: 12,
-                              color: isDark ? Colors.white54 : Colors.black54,
+                              color: Colors.black54,
                             ),
                           ),
                       ],
@@ -523,7 +515,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                 const SizedBox(height: 12),
                 Text(
                   resource['content'] ?? "",
-                  style: TextStyle(fontSize: 14, color: isDark ? Colors.white70 : Colors.grey[700]),
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
                 ),
                 if (resource['file_url'] != null) ...[
                   const SizedBox(height: 8),
@@ -545,7 +537,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                   decoration: InputDecoration(
                     hintText: "Your answer here...",
                     filled: true,
-                    fillColor: isDark ? Colors.grey[800] : Colors.grey[100],
+                    fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.grey[200],
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -620,7 +612,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                           const SizedBox(height: 8),
                           Text(
                             "Grade: ${submission['grade']} - Note: ${submission['lecturer_note']}",
-                            style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+                            style: const TextStyle(color: Colors.black),
                           ),
                         ]
                       ],
@@ -635,7 +627,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
     );
   }
 
-  Widget _buildExamsView(Color color, bool isDark) {
+  Widget _buildExamsView(Color color) {
     if (_resources.isEmpty) {
       return SliverToBoxAdapter(
         child: Center(
@@ -679,7 +671,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                 exam['exam_type'] ?? "Exam",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
+                  color: Colors.black,
                 ),
               ),
               subtitle: Text(
