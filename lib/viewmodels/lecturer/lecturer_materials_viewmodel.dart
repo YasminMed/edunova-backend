@@ -23,6 +23,8 @@ class LecturerMaterialsViewModel extends BaseViewModel {
         'id': s['id'] as int,
         'name': s['name'] as String,
         'code': s['code'] as String,
+        'department': s['department'] as String?,
+        'stage': s['stage'] as String?,
         'students': 0, // Mock for now
         'materials': 0, // Mock for now
         'image': s['image_url'] != null ? "${AuthService.baseUrl}${s['image_url']}" : null,
@@ -41,7 +43,7 @@ class LecturerMaterialsViewModel extends BaseViewModel {
     String name,
     String code, {
     String department = "Software Engineering",
-    String stage = "1st",
+    String stage = "First Stage",
     File? image,
     Uint8List? imageBytes,
     String? imageFileName,

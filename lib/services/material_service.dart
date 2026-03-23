@@ -27,7 +27,7 @@ class MaterialService {
     String name,
     String code, {
     String department = "Software Engineering",
-    String stage = "1st",
+    String stage = "First Stage",
     File? image, // Native fallback
     Uint8List? imageBytes, // Web support
     String? imageFileName,
