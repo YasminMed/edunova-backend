@@ -20,10 +20,7 @@ import 'faculty_page.dart';
 import 'lectures_page.dart';
 import 'student_challenges_page.dart';
 import 'student_social_feed_page.dart';
-import '../services/material_service.dart';
-import '../services/chat_service.dart';
-import '../services/auth_service.dart';
-import 'chat_detail_page.dart';
+import 'student_social_feed_page.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
