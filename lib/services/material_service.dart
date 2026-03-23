@@ -417,4 +417,31 @@ class MaterialService {
       throw _handleError(e);
     }
   }
+
+  Future<Map<String, dynamic>> getStudentProgress(String email) async {
+    try {
+      final response = await _dio.get("/student/progress/$email");
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<dynamic>> getWeeklyChallenges() async {
+    try {
+      final response = await _dio.get("/challenges");
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> completeWeeklyChallenge(int challengeId, String email) async {
+    try {
+      final formData = FormData.fromMap({"student_email": email});
+      await _dio.post("/challenges/$challengeId/complete", data: formData);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
 }

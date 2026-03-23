@@ -31,10 +31,41 @@ class StudentDashboard extends StatefulWidget {
 class _StudentDashboardState extends State<StudentDashboard> {
   int _selectedIndex = 2; // Default to Dashboard
   final ScrollController _scrollController = ScrollController();
+  final MaterialService _materialService = MaterialService();
+
+  double _progressValue = 0.0;
+  String _rankText = "Loading...";
+  bool _isLoadingProgress = true;
 
   @override
   void initState() {
     super.initState();
+    _loadProgressData();
+  }
+
+  Future<void> _loadProgressData() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (userProvider.email == null) return;
+
+    setState(() => _isLoadingProgress = true);
+
+    try {
+      final data = await _materialService.getStudentProgress(userProvider.email!);
+      if (mounted) {
+        setState(() {
+          _progressValue = (data['progress'] as num).toDouble() / 100.0;
+          _rankText = data['rank_text'] ?? "Rank Pending";
+          _isLoadingProgress = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _rankText = "Score Pending";
+          _isLoadingProgress = false;
+        });
+      }
+    }
   }
 
   @override
@@ -547,8 +578,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    AppLocalizations.of(context)?.translate('top_class') ??
-                        "Top 5% of Class",
+                    _rankText,
                     style: TextDesign.body.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
@@ -578,7 +608,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   ],
                 ),
                 child: CircularProgressIndicator(
-                  value: 0.78,
+                  value: _progressValue,
                   backgroundColor: AppColors.primary.withOpacity(0.1),
                   color: AppColors.primary,
                   strokeWidth: 8,
@@ -589,7 +619,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    "78%",
+                    "${(_progressValue * 100).toInt()}%",
                     style: TextDesign.h3.copyWith(
                       fontSize: 20,
                       color: Theme.of(context).brightness == Brightness.dark
