@@ -113,7 +113,10 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final color = widget.lecture['color'] as Color;
+    final Color color = (widget.lecture['color'] as Color?) ?? 
+                        ((widget.lecture['gradient'] as List<Color>?)?.isNotEmpty == true 
+                            ? (widget.lecture['gradient'] as List<Color>)[0] 
+                            : AppColors.primary);
 
     final List<String> filters = [
       l10n?.translate('pdfs') ?? 'PDFs',
@@ -263,7 +266,10 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   }
 
   Widget _buildFilteredContent() {
-    final color = widget.lecture['color'] as Color;
+    final Color color = (widget.lecture['color'] as Color?) ?? 
+                        ((widget.lecture['gradient'] as List<Color>?)?.isNotEmpty == true 
+                            ? (widget.lecture['gradient'] as List<Color>)[0] 
+                            : AppColors.primary);
 
     switch (_selectedFilterIndex) {
       case 0: // PDFs
@@ -297,7 +303,10 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   }
 
   Widget _buildAttendanceView() {
-    final color = widget.lecture['color'] as Color;
+    final Color color = (widget.lecture['color'] as Color?) ?? 
+                        ((widget.lecture['gradient'] as List<Color>?)?.isNotEmpty == true 
+                            ? (widget.lecture['gradient'] as List<Color>)[0] 
+                            : AppColors.primary);
 
     // Calculate interactive rate
     double rate = 0;
