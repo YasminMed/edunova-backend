@@ -41,7 +41,7 @@ class _LecturesPageState extends State<LecturesPage> {
             'description': c['description'] ?? 'No description available.',
             'professor': c['lecturer_name'] ?? 'Lecturer',
             'progress': 0.0,
-            'color': _getPastelColor(c['id']),
+            'gradient': _getGradientColors(c['id']),
           };
         }).toList();
         _isLoading = false;
@@ -98,7 +98,8 @@ class _LecturesPageState extends State<LecturesPage> {
 
   Widget _buildLectureCard(BuildContext context, Map<String, dynamic> lecture) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = lecture['color'] as Color;
+    final gradient = lecture['gradient'] as List<Color>;
+    final mainColor = gradient[0];
 
     return Hero(
       tag: 'lecture_card_${lecture['id']}',
@@ -116,12 +117,23 @@ class _LecturesPageState extends State<LecturesPage> {
           borderRadius: BorderRadius.circular(24),
           child: Container(
             decoration: BoxDecoration(
-              color: color.withOpacity(isDark ? 0.15 : 0.1),
+              gradient: LinearGradient(
+                colors: gradient.map((c) => c.withOpacity(isDark ? 0.2 : 0.3)).toList(),
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: color.withOpacity(0.3),
+                color: mainColor.withOpacity(0.4),
                 width: 1.5,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: mainColor.withOpacity(isDark ? 0.05 : 0.1),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -131,12 +143,12 @@ class _LecturesPageState extends State<LecturesPage> {
                    Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(isDark ? 0.1 : 0.5),
+                      color: Colors.white.withOpacity(isDark ? 0.1 : 0.6),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       _getIconForCourse(lecture['subject']),
-                      color: isDark ? color : color.withOpacity(0.8),
+                      color: isDark ? mainColor : mainColor.withOpacity(0.9),
                       size: 24,
                     ),
                   ),
@@ -155,7 +167,7 @@ class _LecturesPageState extends State<LecturesPage> {
                   Text(
                     lecture['code'],
                     style: TextStyle(
-                      color: isDark ? Colors.white54 : Colors.grey[600],
+                      color: isDark ? Colors.white54 : AppColors.primaryText.withOpacity(0.6),
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
@@ -164,13 +176,13 @@ class _LecturesPageState extends State<LecturesPage> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.person, size: 12, color: Colors.grey),
+                      Icon(Icons.person, size: 12, color: isDark ? Colors.white54 : AppColors.primaryText.withOpacity(0.5)),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           lecture['professor'],
                           style: TextStyle(
-                            color: isDark ? Colors.white70 : Colors.grey[700],
+                            color: isDark ? Colors.white70 : AppColors.primaryText.withOpacity(0.7),
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
@@ -198,15 +210,15 @@ class _LecturesPageState extends State<LecturesPage> {
     if (name.contains('it') || name.contains('soft')) return Icons.computer_rounded;
     return Icons.menu_book_rounded;
   }
-  Color _getPastelColor(int seed) {
-    final List<Color> colors = [
-      const Color(0xFFE3F2FD), // Light Blue
-      const Color(0xFFF1F8E9), // Light Green
-      const Color(0xFFFFF3E0), // Light Orange
-      const Color(0xFFF3E5F5), // Light Purple
-      const Color(0xFFE0F2F1), // Light Teal
-      const Color(0xFFFFFDE7), // Light Yellow
+  List<Color> _getGradientColors(int seed) {
+    final List<List<Color>> gradients = [
+      [const Color(0xFFE3F2FD), const Color(0xFF64B5F6)], // Blue
+      [const Color(0xFFF1F8E9), const Color(0xFF81C784)], // Green
+      [const Color(0xFFFFF3E0), const Color(0xFFFFB74D)], // Orange
+      [const Color(0xFFF3E5F5), const Color(0xFFBA68C8)], // Purple
+      [const Color(0xFFE0F2F1), const Color(0xFF4DB6AC)], // Teal
+      [const Color(0xFFFFFDE7), const Color(0xFFD4E157)], // Lime
     ];
-    return colors[seed % colors.length];
+    return gradients[seed % gradients.length];
   }
 }

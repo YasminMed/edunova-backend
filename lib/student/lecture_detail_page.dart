@@ -152,13 +152,31 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
               SliverAppBar(
                 expandedHeight: 120,
                 pinned: true,
-                backgroundColor: color,
-                elevation: 0,
                 flexibleSpace: FlexibleSpaceBar(
                   centerTitle: true,
                   title: Text(
                     widget.lecture['subject'],
-                    style: TextDesign.h3.copyWith(color: Colors.white),
+                    style: TextDesign.h3.copyWith(
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                  ),
+                  background: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primary,
+                          AppColors.primary.withBlue(150), // Slight variation
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
                   ),
                 ),
                 leading: IconButton(
@@ -195,13 +213,19 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                               ),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? color
-                                    : color.withOpacity(0.1),
+                                    ? AppColors.primary
+                                    : AppColors.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isSelected 
+                                      ? AppColors.primary 
+                                      : AppColors.primary.withOpacity(0.2),
+                                  width: 1.5,
+                                ),
                                 boxShadow: isSelected
                                     ? [
                                         BoxShadow(
-                                          color: color.withOpacity(0.3),
+                                          color: AppColors.primary.withOpacity(0.3),
                                           blurRadius: 10,
                                           offset: const Offset(0, 4),
                                         ),
@@ -211,7 +235,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                               child: Text(
                                 filters[index],
                                 style: TextStyle(
-                                  color: isSelected ? Colors.white : color,
+                                  color: isSelected ? Colors.white : AppColors.primary,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -301,7 +325,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
               children: [
                 Text(
                   "Attendance Rate",
-                  style: TextDesign.h3.copyWith(color: color),
+                  style: TextDesign.h3.copyWith(color: AppColors.primary),
                 ),
                 const SizedBox(height: 16),
                 Stack(
@@ -357,7 +381,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
               Text(
                 record['date'].toString().split('T')[0],
                 style: TextStyle(
-                  color: isDark ? Colors.white70 : AppColors.bodyText,
+                  color: isDark ? Colors.white70 : Colors.black87,
                 ),
               ),
               Container(
@@ -403,7 +427,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                   size: 64, color: color.withOpacity(0.3)),
               const SizedBox(height: 16),
               Text("No $categoryName uploaded yet.",
-                  style: TextStyle(color: Colors.grey[500])),
+                  style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)),
             ],
           ),
         ),
@@ -450,22 +474,22 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          resource['title'],
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : AppColors.primaryText,
+                          Text(
+                            resource['title'],
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
                           ),
-                        ),
-                        Text(
-                          resource['created_at'] != null
-                            ? "Shared on ${resource['created_at'].toString().split('T')[0]}"
-                            : "Shared recently",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? Colors.white54 : Colors.grey,
+                          Text(
+                            resource['resource_date'] ?? (resource['created_at'] != null
+                              ? "Shared on ${resource['created_at'].toString().split('T')[0]}"
+                              : "Shared recently"),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.white54 : Colors.black54,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -621,7 +645,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
               const SizedBox(height: 40),
               Icon(Icons.assignment_turned_in_rounded, size: 64, color: color.withOpacity(0.3)),
               const SizedBox(height: 16),
-              const Text("No exams recorded yet.", style: TextStyle(color: Colors.grey)),
+              const Text("No exams recorded yet.", style: TextStyle(color: Colors.black54)),
             ],
           ),
         ),
@@ -653,7 +677,10 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
               ),
               title: Text(
                 exam['exam_type'] ?? "Exam",
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
               ),
               subtitle: Text(
                 exam['created_at'] != null 
