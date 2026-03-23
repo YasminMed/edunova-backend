@@ -20,7 +20,6 @@ import 'faculty_page.dart';
 import 'lectures_page.dart';
 import 'student_challenges_page.dart';
 import 'student_social_feed_page.dart';
-import 'student_social_feed_page.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -629,13 +628,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-  }
-}
 
 class _DashboardGridItem extends StatefulWidget {
   final String title;
