@@ -3,7 +3,6 @@ import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
 import '../services/material_service.dart';
-import '../services/auth_service.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import 'lecture_detail_page.dart';
@@ -35,14 +34,14 @@ class _LecturesPageState extends State<LecturesPage> {
       );
       setState(() {
         _lectures = courses.map((c) {
-          final String? imageUrl = c['image_url'];
           return {
             'id': c['id'],
             'subject': c['name'],
+            'code': c['code'] ?? 'CODE123',
+            'description': c['description'] ?? 'No description available.',
             'professor': 'Lecturer', // Mock for now
             'progress': 0.0,
-            'image': imageUrl != null ? "${AuthService.baseUrl}$imageUrl" : 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&auto=format&fit=crop&q=60',
-            'color': Colors.blue,
+            'color': _getPastelColor(c['id']),
           };
         }).toList();
         _isLoading = false;
@@ -122,60 +121,43 @@ class _LecturesPageState extends State<LecturesPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image Section
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
+            // Course Header with colorful background
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [color.withOpacity(0.15), color.withOpacity(0.05)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              child: Stack(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.network(
-                    lecture['image'],
-                    height: 160,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 160,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [color.withOpacity(0.8), color.withOpacity(0.4)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.image_not_supported_outlined, color: Colors.white.withOpacity(0.5), size: 40),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Image Not Available",
-                            style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
-                          ),
-                        ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      lecture['code'],
+                      style: TextStyle(
+                        color: color.withOpacity(0.8),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        letterSpacing: 1.0,
                       ),
                     ),
                   ),
-                  Positioned(
-                    top: 16,
-                    right: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        "${(progress * 100).toInt()}%",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
+                  const SizedBox(height: 12),
+                  Text(
+                    lecture['subject'],
+                    style: TextDesign.h2.copyWith(
+                      color: isDark ? Colors.white : AppColors.primaryText,
+                      fontSize: 22,
                     ),
                   ),
                 ],
@@ -188,22 +170,16 @@ class _LecturesPageState extends State<LecturesPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          lecture['subject'],
-                          style: TextDesign.h3.copyWith(
-                            color: isDark ? Colors.white : Colors.black87,
-                            fontSize: 18,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                   Text(
+                    lecture['description'],
+                    style: TextDesign.body.copyWith(
+                      color: isDark ? Colors.white70 : Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Icon(
@@ -211,35 +187,35 @@ class _LecturesPageState extends State<LecturesPage> {
                         size: 16,
                         color: AppColors.mutedText,
                       ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          lecture['professor'],
-                          style: TextDesign.body.copyWith(
-                            color: AppColors.mutedText,
-                            fontSize: 14,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: 8),
+                      Text(
+                        lecture['professor'],
+                        style: TextDesign.body.copyWith(
+                          color: AppColors.mutedText,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        "${(progress * 100).toInt()}% Complete",
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-
-                  // Progress Bar
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          backgroundColor: color.withOpacity(0.1),
-                          valueColor: AlwaysStoppedAnimation<Color>(color),
-                          minHeight: 8,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: color.withOpacity(0.1),
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                      minHeight: 6,
+                    ),
                   ),
                 ],
               ),
@@ -248,5 +224,16 @@ class _LecturesPageState extends State<LecturesPage> {
         ),
       ),
     );
+  }
+  Color _getPastelColor(int seed) {
+    final List<Color> colors = [
+      const Color(0xFFE3F2FD), // Light Blue
+      const Color(0xFFF1F8E9), // Light Green
+      const Color(0xFFFFF3E0), // Light Orange
+      const Color(0xFFF3E5F5), // Light Purple
+      const Color(0xFFE0F2F1), // Light Teal
+      const Color(0xFFFFFDE7), // Light Yellow
+    ];
+    return colors[seed % colors.length];
   }
 }
