@@ -1,46 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
+import '../services/material_service.dart';
+import '../services/auth_service.dart';
+import '../services/chat_service.dart';
+import '../providers/user_provider.dart';
+import 'chat_detail_page.dart';
 
-class FacultyPage extends StatelessWidget {
+class FacultyPage extends StatefulWidget {
   const FacultyPage({super.key});
+
+  @override
+  State<FacultyPage> createState() => _FacultyPageState();
+}
+
+class _FacultyPageState extends State<FacultyPage> {
+  final MaterialService _materialService = MaterialService();
+  List<dynamic> _lecturers = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLecturers();
+  }
+
+  Future<void> _loadLecturers() async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final data = await _materialService.getTeachingStaff(
+        department: userProvider.department,
+        stage: userProvider.stage,
+      );
+      if (mounted) {
+        setState(() {
+          _lecturers = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final List<Map<String, dynamic>> teachers = [
-      {
-        'name': 'Dr. Sarah Ahmed',
-        'dept': 'Computer Science',
-        'exp': 12,
-        'image': 'https://i.pravatar.cc/150?u=sarah',
-        'color': Colors.blue,
-      },
-      {
-        'name': 'Prof. James Wilson',
-        'dept': 'Mathematics',
-        'exp': 20,
-        'image': 'https://i.pravatar.cc/150?u=james',
-        'color': Colors.purple,
-      },
-      {
-        'name': 'Ms. Elena Rodriguez',
-        'dept': 'English Literature',
-        'exp': 8,
-        'image': 'https://i.pravatar.cc/150?u=elena',
-        'color': Colors.orange,
-      },
-      {
-        'name': 'Dr. Robert Chen',
-        'dept': 'Physics',
-        'exp': 15,
-        'image': 'https://i.pravatar.cc/150?u=robert',
-        'color': Colors.teal,
-      },
-    ];
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -61,19 +69,29 @@ class FacultyPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(24),
-        itemCount: teachers.length,
-        itemBuilder: (context, index) {
-          return _buildTeacherCard(context, teachers[index]);
-        },
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _lecturers.isEmpty
+              ? Center(
+                  child: Text(
+                    "No lecturers found for your stage.",
+                    style: TextDesign.body.copyWith(color: AppColors.mutedText),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(24),
+                  itemCount: _lecturers.length,
+                  itemBuilder: (context, index) {
+                    return _buildTeacherCard(context, _lecturers[index]);
+                  },
+                ),
     );
   }
 
   Widget _buildTeacherCard(BuildContext context, Map<String, dynamic> teacher) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = Colors.primaries[teacher['id'] % Colors.primaries.length];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -83,7 +101,7 @@ class FacultyPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: (teacher['color'] as Color).withOpacity(0.1),
+            color: color.withOpacity(0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -93,31 +111,42 @@ class FacultyPage extends StatelessWidget {
         children: [
           Row(
             children: [
-              // Teacher Photo with dynamic border
               Container(
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [
-                      teacher['color'],
-                      (teacher['color'] as Color).withOpacity(0.3),
+                      color,
+                      color.withOpacity(0.3),
                     ],
                   ),
                 ),
                 child: CircleAvatar(
                   radius: 35,
-                  backgroundImage: NetworkImage(teacher['image']),
+                  backgroundColor: color.withOpacity(0.2),
+                  backgroundImage: teacher['image_url'] != null
+                      ? NetworkImage("${AuthService.baseUrl}${teacher['image_url']}")
+                      : null,
+                  child: teacher['image_url'] == null
+                      ? Text(
+                          teacher['fullName'][0].toUpperCase(),
+                          style: TextStyle(
+                            color: color,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                          ),
+                        )
+                      : null,
                 ),
               ),
               const SizedBox(width: 20),
-              // Name and Experience
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      teacher['name'],
+                      teacher['fullName'],
                       style: TextDesign.h3.copyWith(
                         color: isDark ? Colors.white : Colors.black87,
                         fontSize: 18,
@@ -125,7 +154,7 @@ class FacultyPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      teacher['dept'],
+                      teacher['department'] ?? "",
                       style: TextDesign.body.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w600,
@@ -134,13 +163,7 @@ class FacultyPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      l10n
-                              ?.translate('years_exp')
-                              .replaceAll(
-                                '{count}',
-                                teacher['exp'].toString(),
-                              ) ??
-                          "${teacher['exp']} Years Experience",
+                      "${teacher['years_of_experience']} Years Experience",
                       style: TextDesign.body.copyWith(
                         color: AppColors.mutedText,
                         fontSize: 13,
@@ -152,63 +175,31 @@ class FacultyPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          // Buttons
           Row(
             children: [
-              // View Details - Premium Style
               Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          "Coming Soon: ${teacher['name']} Details",
-                        ),
-                      ),
-                    );
-                  },
-                  child: Container(
+                child: ElevatedButton(
+                  onPressed: () => _contactLecturer(teacher),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          teacher['color'],
-                          (teacher['color'] as Color).withOpacity(0.8),
-                        ],
-                      ),
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (teacher['color'] as Color).withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
-                    child: Center(
-                      child: Text(
-                        l10n?.translate('view_details') ?? 'View Details',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    "Contact",
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
-              // Feedback Button
               GestureDetector(
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        l10n?.translate('feedback_submitted') ??
-                            'Feedback Submitted!',
-                      ),
-                    ),
+                    const SnackBar(content: Text('Profile feature coming soon!')),
                   );
                 },
                 child: Container(
@@ -218,7 +209,7 @@ class FacultyPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: const Icon(
-                    Icons.rate_review_rounded,
+                    Icons.person_outline_rounded,
                     color: AppColors.primary,
                     size: 24,
                   ),
@@ -229,5 +220,32 @@ class FacultyPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _contactLecturer(Map<String, dynamic> lecturer) async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final chatService = ChatService();
+    
+    if (userProvider.email != null) {
+      final session = await chatService.startChatSession(
+        userProvider.email!,
+        lecturer['id'],
+      );
+      
+      if (session != null && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatDetailPage(
+              sessionId: session.sessionId,
+              otherUserEmail: lecturer['email'],
+              name: lecturer['fullName'],
+              avatarColor: Colors.blueAccent,
+              isGroup: false,
+            ),
+          ),
+        );
+      }
+    }
   }
 }

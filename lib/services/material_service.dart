@@ -405,4 +405,16 @@ class MaterialService {
       throw _handleError(e);
     }
   }
+
+  Future<List<dynamic>> getTeachingStaff({String? department, String? stage}) async {
+    try {
+      final response = await _dio.get("/users/lecturers", queryParameters: {
+        if (department != null) "department": department,
+        if (stage != null) "stage": stage,
+      });
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
 }
