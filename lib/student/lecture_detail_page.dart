@@ -150,56 +150,15 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
             slivers: [
               // Custom Silver AppBar
               SliverAppBar(
-                expandedHeight: 220,
+                expandedHeight: 120,
                 pinned: true,
-                stretch: true,
                 backgroundColor: color,
                 elevation: 0,
                 flexibleSpace: FlexibleSpaceBar(
-                  expandedTitleScale: 1.2,
+                  centerTitle: true,
                   title: Text(
                     widget.lecture['subject'],
-                    style: TextDesign.h3.copyWith(
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(color: Colors.black.withOpacity(0.3), blurRadius: 10),
-                      ],
-                    ),
-                  ),
-                  background: Hero(
-                    tag: 'lecture_card_${widget.lecture['id']}',
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            color,
-                            color.withBlue((color.blue + 40).clamp(0, 255)).withGreen((color.green + 20).clamp(0, 255)),
-                          ],
-                        ),
-                      ),
-                      child: Stack(
-                        children: [
-                          Positioned(
-                            right: -30,
-                            bottom: -30,
-                            child: Icon(
-                              _getIconForCourse(widget.lecture['subject']),
-                              size: 200,
-                              color: Colors.white.withOpacity(0.15),
-                            ),
-                          ),
-                          Center(
-                             child: Icon(
-                               _getIconForCourse(widget.lecture['subject']),
-                               size: 80,
-                               color: Colors.white.withOpacity(0.2),
-                             ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    style: TextDesign.h3.copyWith(color: Colors.white),
                   ),
                 ),
                 leading: IconButton(
@@ -716,15 +675,5 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
         childCount: _resources.length,
       ),
     );
-  }
-
-  IconData _getIconForCourse(String name) {
-    name = name.toLowerCase();
-    if (name.contains('math') || name.contains('calc')) return Icons.functions_rounded;
-    if (name.contains('coding') || name.contains('program') || name.contains('se')) return Icons.code_rounded;
-    if (name.contains('design') || name.contains('art')) return Icons.palette_rounded;
-    if (name.contains('phys')) return Icons.science_rounded;
-    if (name.contains('it') || name.contains('soft')) return Icons.computer_rounded;
-    return Icons.menu_book_rounded;
   }
 }
