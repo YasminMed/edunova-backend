@@ -13,6 +13,10 @@ class UserProvider extends ChangeNotifier {
   String? get department => _department;
   String? get stage => _stage;
 
+  bool get isProfileComplete => 
+      _department != null && _department!.isNotEmpty && 
+      _stage != null && _stage!.isNotEmpty;
+
   void setUser(String fullName, String email, String role, {String? department, String? stage}) {
     _fullName = fullName;
     _email = email;

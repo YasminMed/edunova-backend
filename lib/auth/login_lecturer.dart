@@ -54,8 +54,8 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
         );
         if (!mounted) return;
 
-        // Store user data in UserProvider
-        context.read<UserProvider>().setUser(
+        final userProvider = context.read<UserProvider>();
+        userProvider.setUser(
           userData['fullName'] ?? 'Lecturer',
           _emailController.text.trim(),
           'lecturer',
@@ -63,12 +63,27 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
           stage: userData['stage'],
         );
 
-        // Navigate to Lecturer Dashboard Wrapped in Navigation
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const LecturerMainNavigation()),
-          (route) => false,
-        );
+        if (!userProvider.isProfileComplete) {
+          // Redirect to complete profile
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const DepartmentStageSelectionPage(
+                role: 'lecturer',
+                isLogin: true,
+                isUpdateProfile: true,
+              ),
+            ),
+            (route) => false,
+          );
+        } else {
+          // Navigate to Lecturer Dashboard
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const LecturerMainNavigation()),
+            (route) => false,
+          );
+        }
       } catch (e) {
         if (!mounted) return;
         final errorMsg = e.toString().toLowerCase();

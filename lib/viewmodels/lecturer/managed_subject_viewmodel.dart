@@ -21,19 +21,19 @@ class ManagedSubjectViewModel extends BaseViewModel {
   int get selectedFilterIndex => _selectedFilterIndex;
   List<String> get filters => _filters;
 
-  void setFilterIndex(int index, int courseId) {
+  void setFilterIndex(int index, int courseId, {String? department, String? stage}) {
     _selectedFilterIndex = index;
     if (index == 0) {
       loadResources(courseId, _filters[index]);
     } else if (index == 3) {
       loadExamMarks(courseId);
-      loadAllStudents();
+      loadAllStudents(department: department, stage: stage);
     } else if (index == 1) {
       loadAssignments(courseId);
     } else if (index == 2) {
       loadQuizzes(courseId);
     } else {
-      loadAttendance(courseId);
+      loadAttendance(courseId, department: department, stage: stage);
     }
     notifyListeners();
   }
@@ -249,9 +249,9 @@ class ManagedSubjectViewModel extends BaseViewModel {
   List<dynamic> _allStudents = [];
   List<dynamic> get allStudents => _allStudents;
 
-  Future<void> loadAllStudents() async {
+  Future<void> loadAllStudents({String? department, String? stage}) async {
     try {
-      _allStudents = await _materialService.getAllStudents();
+      _allStudents = await _materialService.getAllStudents(department: department, stage: stage);
       notifyListeners();
     } catch (e) {
       debugPrint("Error loading students: $e");
@@ -288,11 +288,11 @@ class ManagedSubjectViewModel extends BaseViewModel {
     }
   }
 
-  Future<void> loadAttendance(int courseId) async {
+  Future<void> loadAttendance(int courseId, {String? department, String? stage}) async {
     setBusy(true);
     try {
       // We can also fetch existing attendance for today if we wanted to
-      await loadAllStudents();
+      await loadAllStudents(department: department, stage: stage);
     } finally {
       setBusy(false);
     }

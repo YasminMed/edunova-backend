@@ -133,6 +133,28 @@ class _LecturesPageState extends State<LecturesPage> {
                     height: 160,
                     width: double.infinity,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 160,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [color.withOpacity(0.8), color.withOpacity(0.4)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.image_not_supported_outlined, color: Colors.white.withOpacity(0.5), size: 40),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Image Not Available",
+                            style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   Positioned(
                     top: 16,

@@ -342,9 +342,12 @@ class MaterialService {
 
   // --- Exams & Attendance Batch Methods ---
 
-  Future<List<dynamic>> getAllStudents() async {
+  Future<List<dynamic>> getAllStudents({String? department, String? stage}) async {
     try {
-      final response = await _dio.get("/users/students");
+      final response = await _dio.get("/users/students", queryParameters: {
+        if (department != null) "department": department,
+        if (stage != null) "stage": stage,
+      });
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);

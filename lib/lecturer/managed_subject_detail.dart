@@ -147,7 +147,12 @@ class ManagedSubjectDetailPage extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(right: 12),
             child: GestureDetector(
-            onTap: () => viewModel.setFilterIndex(index, subject['id']),
+            onTap: () => viewModel.setFilterIndex(
+              index, 
+              subject['id'], 
+              department: subject['department'], 
+              stage: subject['stage']
+            ),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 padding: const EdgeInsets.symmetric(horizontal: 28),

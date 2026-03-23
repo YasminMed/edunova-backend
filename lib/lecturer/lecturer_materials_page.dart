@@ -172,7 +172,7 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
     
     // Parse allowed departments and stages from user profile
     final List<String> allowedDepts = userProvider.department?.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList() ?? ["Software Engineering"];
-    final List<String> allowedStages = userProvider.stage?.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList() ?? ["1st"];
+    final List<String> allowedStages = userProvider.stage?.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList() ?? ["First Stage"];
 
     String selectedDept = allowedDepts.first;
     String selectedStage = allowedStages.first;
@@ -428,6 +428,51 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                                   Icon(Icons.book_rounded, color: color, size: 40),
                             )
                           : Icon(Icons.book_rounded, color: color, size: 40),
+                    ),
+                    // Delete Button
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: GestureDetector(
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text("Delete Course"),
+                              content: Text("Are you sure you want to delete \"${subject['name']}\"? This action cannot be undone."),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text("Cancel"),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    final viewModel = context.read<LecturerMaterialsViewModel>();
+                                    viewModel.deleteCourse(subject['id']);
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text("Course deleted successfully")),
+                                    );
+                                  },
+                                  child: const Text("Delete", style: TextStyle(color: Colors.red)),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.35),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),

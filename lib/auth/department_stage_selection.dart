@@ -5,15 +5,23 @@ import '../widgets/animated_background.dart';
 import '../widgets/custom_button.dart';
 import 'signup_student.dart';
 import 'signup_lecturer.dart';
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
+import '../services/auth_service.dart';
+import '../student/student_dashboard.dart';
+import '../lecturer/lecturer_main_navigation.dart';
+import '../l10n/app_localizations.dart';
 
 class DepartmentStageSelectionPage extends StatefulWidget {
   final String role; // 'student' or 'lecturer'
   final bool isLogin; // Whether we're going to login or signup
+  final bool isUpdateProfile;
 
   const DepartmentStageSelectionPage({
     super.key,
     required this.role,
-    this.isLogin = true,
+    this.isLogin = false,
+    this.isUpdateProfile = false,
   });
 
   @override
@@ -52,6 +60,9 @@ class _DepartmentStageSelectionPageState
   final Set<String> selectedDepartments = {};
   final Set<String> selectedStages = {};
 
+  bool _isLoading = false;
+  final AuthService _authService = AuthService();
+
   @override
   void initState() {
     super.initState();
@@ -59,21 +70,82 @@ class _DepartmentStageSelectionPageState
       selectedDepartment = departments.first;
       selectedStage = stages.first;
     }
+    // If updating profile, pre-fill selections
+    if (widget.isUpdateProfile) {
+      final userProvider = context.read<UserProvider>();
+      if (widget.role == 'student') {
+        selectedDepartment = userProvider.department;
+        selectedStage = userProvider.stage;
+      } else {
+        // For lecturer, department and stage might be comma-separated strings
+        if (userProvider.department != null) {
+          selectedDepartments.addAll(userProvider.department!.split(', ').map((e) => e.trim()));
+        }
+        if (userProvider.stage != null) {
+          selectedStages.addAll(userProvider.stage!.split(', ').map((e) => e.trim()));
+        }
+      }
+    }
   }
 
-  void _handleContinue() {
+  void _handleContinue() async { // Made async
     if (widget.role == 'student') {
-      if (selectedDepartment == null || selectedStage == null) return;
-      
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SignupStudentPage(
+      if (selectedDepartment == null || selectedStage == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please select a department and stage")),
+        );
+        return;
+      }
+
+      if (widget.isUpdateProfile) {
+        setState(() => _isLoading = true);
+        try {
+          final userProvider = context.read<UserProvider>();
+          await _authService.updateProfile(
+            fullName: userProvider.fullName ?? "Student",
+            email: userProvider.email!,
+            role: widget.role,
             department: selectedDepartment!,
             stage: selectedStage!,
+          );
+
+          // Update local provider
+          userProvider.setUser(
+            userProvider.fullName ?? "Student",
+            userProvider.email!,
+            widget.role,
+            department: selectedDepartment!,
+            stage: selectedStage!,
+          );
+
+          if (!mounted) return;
+          // Navigate to Dashboard
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const StudentDashboard(),
+            ),
+            (route) => false,
+          );
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString()), backgroundColor: Colors.redAccent),
+          );
+        } finally {
+          if (mounted) setState(() => _isLoading = false);
+        }
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SignupStudentPage(
+              department: selectedDepartment!,
+              stage: selectedStage!,
+            ),
           ),
-        ),
-      );
+        );
+      }
     } else {
       // Lecturer
       if (selectedDepartments.isEmpty || selectedStages.isEmpty) {
@@ -82,19 +154,60 @@ class _DepartmentStageSelectionPageState
         );
         return;
       }
-      
+
       final deptString = selectedDepartments.join(", ");
       final stageString = selectedStages.join(", ");
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SignupLecturerPage(
-            departments: deptString,
-            stages: stageString,
+      if (widget.isUpdateProfile) {
+        setState(() => _isLoading = true);
+        try {
+          final userProvider = context.read<UserProvider>();
+          await _authService.updateProfile(
+            fullName: userProvider.fullName ?? "Lecturer",
+            email: userProvider.email!,
+            role: widget.role,
+            department: deptString,
+            stage: stageString,
+          );
+
+          // Update local provider
+          userProvider.setUser(
+            userProvider.fullName ?? "Lecturer",
+            userProvider.email!,
+            widget.role,
+            department: deptString,
+            stage: stageString,
+          );
+
+          if (!mounted) return;
+          // Navigate to Dashboard
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const LecturerMainNavigation(),
+            ),
+            (route) => false,
+          );
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString()), backgroundColor: Colors.redAccent),
+          );
+        } finally {
+          if (mounted) setState(() => _isLoading = false);
+        }
+      } else {
+        // Standard Signup flow for Lecturer
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SignupLecturerPage(
+              departments: deptString,
+              stages: stageString,
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -130,7 +243,7 @@ class _DepartmentStageSelectionPageState
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    widget.role == 'student' 
+                    widget.role == 'student'
                       ? "Choose your department and current stage"
                       : "Select the departments and stages you teach",
                     style: TextDesign.body.copyWith(
@@ -163,7 +276,10 @@ class _DepartmentStageSelectionPageState
 
                   const SizedBox(height: 48),
                   CustomButton(
-                    text: "Continue",
+                    text: widget.isUpdateProfile
+                        ? "Save Profile"
+                        : AppLocalizations.of(context)?.translate('continue') ?? "Continue",
+                    isLoading: _isLoading,
                     onTap: _handleContinue,
                     color: primaryColor,
                   ),

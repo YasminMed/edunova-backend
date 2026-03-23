@@ -73,12 +73,16 @@ class AuthService {
     required String fullName,
     required String email,
     required String role,
+    String? department,
+    String? stage,
   }) async {
     try {
       final response = await _dio.put("/auth/update-profile", data: {
         "fullName": fullName,
         "email": email,
         "role": role,
+        "department": department,
+        "stage": stage,
       });
       return response.data;
     } on DioException catch (e) {

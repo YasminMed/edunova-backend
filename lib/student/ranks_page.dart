@@ -4,6 +4,8 @@ import '../services/auth_service.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
 
 class RanksPage extends StatefulWidget {
   const RanksPage({super.key});
@@ -44,7 +46,14 @@ class _RanksPageState extends State<RanksPage>
     });
 
     try {
-      final response = await _dio.get("${AuthService.baseUrl}/student/leaderboard");
+      final user = context.read<UserProvider>();
+      final response = await _dio.get(
+        "${AuthService.baseUrl}/student/leaderboard",
+        queryParameters: {
+          if (user.department != null) "department": user.department,
+          if (user.stage != null) "stage": user.stage,
+        },
+      );
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         if (!mounted) return;
