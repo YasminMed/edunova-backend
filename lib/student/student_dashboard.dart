@@ -33,38 +33,12 @@ class StudentDashboard extends StatefulWidget {
 }
 
 class _StudentDashboardState extends State<StudentDashboard> {
-  final ScrollController _scrollController = ScrollController();
   int _selectedIndex = 2; // Default to Dashboard
-  List<dynamic> _teachingStaff = [];
-  bool _isStaffLoading = true;
-  final MaterialService _materialService = MaterialService();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _loadTeachingStaff();
-  }
-
-  Future<void> _loadTeachingStaff() async {
-    try {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      if (userProvider.department != null && userProvider.stage != null) {
-        final staff = await _materialService.getTeachingStaff(
-          department: userProvider.department,
-          stage: userProvider.stage,
-        );
-        if (mounted) {
-          setState(() {
-            _teachingStaff = staff;
-            _isStaffLoading = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _isStaffLoading = false);
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isStaffLoading = false);
-    }
   }
 
   @override
@@ -369,8 +343,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                _buildTeachingStaffSection(),
-                const SizedBox(height: 32),
                 Text(
                   AppLocalizations.of(context)?.translate('events') ??
                       "Events & Updates",
@@ -660,168 +632,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  Widget _buildTeachingStaffSection() {
-    final l10n = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    if (_isStaffLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_teachingStaff.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n?.translate('teaching_staff') ?? "Teaching Staff",
-          style: TextDesign.h2.copyWith(
-            color: isDark ? Colors.white : Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 180,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: _teachingStaff.length,
-            padding: const EdgeInsets.only(right: 20),
-            itemBuilder: (context, index) {
-              final lecturer = _teachingStaff[index];
-              return _buildLecturerCard(lecturer);
-            },
-          ),
-        ),
-      ],
-    );
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
-
-  Widget _buildLecturerCard(Map<String, dynamic> lecturer) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = Colors.primaries[lecturer['id'] % Colors.primaries.length];
-
-    return Container(
-      width: 280,
-      margin: const EdgeInsets.only(right: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? Theme.of(context).cardColor : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: color.withOpacity(0.2),
-                backgroundImage: lecturer['image_url'] != null
-                    ? NetworkImage("${AuthService.baseUrl}${lecturer['image_url']}")
-                    : null,
-                child: lecturer['image_url'] == null
-                    ? Text(
-                        lecturer['fullName'][0].toUpperCase(),
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 24,
-                        ),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      lecturer['fullName'],
-                      style: TextDesign.h3.copyWith(
-                        fontSize: 16,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      lecturer['email'],
-                      style: TextDesign.body.copyWith(
-                        fontSize: 12,
-                        color: AppColors.mutedText,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "${lecturer['years_of_experience']} Years Exp",
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => _contactLecturer(lecturer),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-              ),
-              child: const Text("Contact"),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _contactLecturer(Map<String, dynamic> lecturer) async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final chatService = ChatService();
-    
-    if (userProvider.email != null) {
-      final session = await chatService.startChatSession(
-        userProvider.email!,
-        lecturer['id'],
-      );
-      
-      if (session != null && mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChatDetailPage(
-              sessionId: session.sessionId,
-              otherUserEmail: lecturer['email'],
-              name: lecturer['fullName'],
-              avatarColor: Colors.blueAccent,
-              isGroup: false,
-            ),
-          ),
-        );
-      }
-    }
   }
 }
 
