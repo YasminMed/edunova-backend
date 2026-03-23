@@ -92,138 +92,209 @@ class _LecturesPageState extends State<LecturesPage> {
 
   Widget _buildLectureCard(BuildContext context, Map<String, dynamic> lecture) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final progress = lecture['progress'] as double;
     final color = lecture['color'] as Color;
+    final double progress = lecture['progress'] as double;
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LectureDetailPage(lecture: lecture),
-          ),
-        );
-      },
+    return Hero(
+      tag: 'lecture_card_${lecture['id']}',
       child: Container(
         margin: const EdgeInsets.only(bottom: 24),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(24),
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(32),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+              color: color.withOpacity(isDark ? 0.12 : 0.08),
+              blurRadius: 30,
+              offset: const Offset(0, 12),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image Section
-            // Course Header with colorful background
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [color.withOpacity(0.15), color.withOpacity(0.05)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(32),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LectureDetailPage(lecture: lecture),
                 ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      lecture['code'],
-                      style: TextStyle(
-                        color: color.withOpacity(0.8),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    lecture['subject'],
-                    style: TextDesign.h2.copyWith(
-                      color: isDark ? Colors.white : AppColors.primaryText,
-                      fontSize: 22,
+              );
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Premium Visual Header
+                Container(
+                  height: 140,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        color.withOpacity(0.9),
+                        color.withOpacity(0.5),
+                        color.withOpacity(0.2),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            // Content Section
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                   Text(
-                    lecture['description'],
-                    style: TextDesign.body.copyWith(
-                      color: isDark ? Colors.white70 : Colors.grey[600],
-                      fontSize: 14,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
+                  child: Stack(
                     children: [
-                      Icon(
-                        Icons.person_outline_rounded,
-                        size: 16,
-                        color: AppColors.mutedText,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        lecture['professor'],
-                        style: TextDesign.body.copyWith(
-                          color: AppColors.mutedText,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                      // Decorative Icon
+                      Positioned(
+                        right: -20,
+                        top: -10,
+                        child: Icon(
+                          _getIconForCourse(lecture['subject']),
+                          size: 160,
+                          color: Colors.white.withOpacity(0.12),
                         ),
                       ),
-                      const Spacer(),
-                      Text(
-                        "${(progress * 100).toInt()}% Complete",
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                      // Floating Badge
+                      Positioned(
+                        top: 20,
+                        right: 20,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white.withOpacity(0.1)),
+                          ),
+                          child: Text(
+                            lecture['code'],
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Container(
+                               padding: const EdgeInsets.all(12),
+                               decoration: BoxDecoration(
+                                 color: Colors.white.withOpacity(0.25),
+                                 shape: BoxShape.circle,
+                               ),
+                               child: Icon(
+                                 _getIconForCourse(lecture['subject']),
+                                 color: Colors.white,
+                                 size: 28,
+                               ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: color.withOpacity(0.1),
-                      valueColor: AlwaysStoppedAnimation<Color>(color),
-                      minHeight: 6,
-                    ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        lecture['subject'],
+                        style: TextDesign.h2.copyWith(
+                          color: isDark ? Colors.white : AppColors.primaryText,
+                          fontSize: 24,
+                          letterSpacing: -0.8,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        lecture['description'],
+                        style: TextDesign.body.copyWith(
+                          color: isDark ? Colors.white54 : Colors.grey[600],
+                          fontSize: 14,
+                          height: 1.5,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 28),
+                      Row(
+                        children: [
+                          Icon(Icons.person_pin_rounded, size: 18, color: color.withOpacity(0.7)),
+                          const SizedBox(width: 8),
+                          Text(
+                            lecture['professor'],
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : AppColors.primaryText,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            "${(progress * 100).toInt()}%",
+                            style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Modern Progress Bar
+                      Container(
+                        height: 8,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: progress.clamp(0.01, 1.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [color, color.withOpacity(0.7)],
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: color.withOpacity(0.3),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  IconData _getIconForCourse(String name) {
+    name = name.toLowerCase();
+    if (name.contains('math') || name.contains('calc')) return Icons.functions_rounded;
+    if (name.contains('coding') || name.contains('program') || name.contains('se')) return Icons.code_rounded;
+    if (name.contains('design') || name.contains('art')) return Icons.palette_rounded;
+    if (name.contains('phys')) return Icons.science_rounded;
+    if (name.contains('it') || name.contains('soft')) return Icons.computer_rounded;
+    return Icons.menu_book_rounded;
   }
   Color _getPastelColor(int seed) {
     final List<Color> colors = [
