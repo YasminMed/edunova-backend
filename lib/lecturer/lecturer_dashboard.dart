@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import '../student/music_page.dart';
 import '../student/timetable_page.dart';
 import '../providers/user_provider.dart';
+import '../services/material_service.dart';
 import 'student_analysis_page.dart';
 import 'post_creation_page.dart';
 import 'lecturer_materials_page.dart';
@@ -21,6 +22,11 @@ class LecturerDashboard extends StatefulWidget {
 
 class _LecturerDashboardState extends State<LecturerDashboard> {
   final ScrollController _scrollController = ScrollController();
+  final MaterialService _materialService = MaterialService();
+  
+  int _materialsCount = 0;
+  int _yearsExp = 0;
+  bool _isLoading = true;
 
   final List<Map<String, String>> _activities = [
     {
@@ -46,6 +52,78 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _fetchStats();
+  }
+
+  Future<void> _fetchStats() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (userProvider.email == null) return;
+    
+    try {
+      final stats = await _materialService.fetchLecturerDashboardStats(userProvider.email!);
+      if (mounted) {
+        setState(() {
+          _materialsCount = stats['materials'] ?? 0;
+          _yearsExp = stats['years_exp'] ?? 0;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _editYearsExp() async {
+    final controller = TextEditingController(text: _yearsExp.toString());
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+    final result = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Edit Experience"),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: "Years of Experience",
+            hintText: "Enter number of years",
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final val = int.tryParse(controller.text);
+              if (val != null) {
+                Navigator.pop(context, val);
+              }
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result != _yearsExp) {
+      try {
+        await _materialService.updateLecturerExperience(userProvider.email!, result);
+        setState(() => _yearsExp = result);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to update experience")),
+        );
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
@@ -62,112 +140,116 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
     return Stack(
       children: [
         AnimatedBackground(scrollController: _scrollController),
-        SingleChildScrollView(
-          controller: _scrollController,
-          padding: const EdgeInsets.fromLTRB(20, 60, 20, 120),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "${l10n?.translate('lecturer_welcome_back') ?? 'Welcome back'}, dr. $lecturerName!",
-                style: TextDesign.h1.copyWith(color: titleColor),
-              ),
-              const SizedBox(height: 24),
+        RefreshIndicator(
+          onRefresh: _fetchStats,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 60, 20, 120),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "${l10n?.translate('lecturer_welcome_back') ?? 'Welcome back'}, dr. $lecturerName!",
+                  style: TextDesign.h1.copyWith(color: titleColor),
+                ),
+                const SizedBox(height: 24),
 
-              // Stats Banner
-              _buildStatsBanner(isDark),
-              const SizedBox(height: 32),
+                // Stats Banner
+                _buildStatsBanner(isDark),
+                const SizedBox(height: 32),
 
-              Text(
-                l10n?.translate('management_insights') ??
-                    "Management & Insights",
-                style: TextDesign.h2.copyWith(color: titleColor),
-              ),
-              const SizedBox(height: 16),
+                Text(
+                  l10n?.translate('management_insights') ??
+                      "Management & Insights",
+                  style: TextDesign.h2.copyWith(color: titleColor),
+                ),
+                const SizedBox(height: 16),
 
-              // Compact Grid
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 3, // Smaller cards
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.9,
-                children: [
-                  _buildDashboardCard(
-                    title: l10n?.translate('analysis') ?? "Analysis",
-                    icon: Icons.analytics_rounded,
-                    color: Colors.blueAccent,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const StudentAnalysisPage(),
+                // Compact Grid
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 3, // Smaller cards
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.9,
+                  children: [
+                    _buildDashboardCard(
+                      title: l10n?.translate('analysis') ?? "Analysis",
+                      icon: Icons.analytics_rounded,
+                      color: Colors.blueAccent,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const StudentAnalysisPage(),
+                        ),
+                      ).then((_) => _fetchStats()),
+                    ),
+                    _buildDashboardCard(
+                      title: l10n?.translate('post') ?? "Post",
+                      icon: Icons.add_comment_rounded,
+                      color: Colors.orange,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PostCreationPage(),
+                        ),
                       ),
                     ),
-                  ),
-                  _buildDashboardCard(
-                    title: l10n?.translate('post') ?? "Post",
-                    icon: Icons.add_comment_rounded,
-                    color: Colors.orange,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const PostCreationPage(),
+                    _buildDashboardCard(
+                      title: l10n?.translate('materials') ?? "Materials",
+                      icon: Icons.library_add_rounded,
+                      color: Colors.teal,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const LecturerMaterialsPage(),
+                        ),
+                      ).then((_) => _fetchStats()),
+                    ),
+                    _buildDashboardCard(
+                      title: l10n?.translate('timetable') ?? "Timetable",
+                      icon: Icons.calendar_month_rounded,
+                      color: Colors.purple,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const TimetablePage()),
                       ),
                     ),
-                  ),
-                  _buildDashboardCard(
-                    title: l10n?.translate('materials') ?? "Materials",
-                    icon: Icons.library_add_rounded,
-                    color: Colors.teal,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const LecturerMaterialsPage(),
+                    _buildDashboardCard(
+                      title: l10n?.translate('music') ?? "Music",
+                      icon: Icons.music_note_rounded,
+                      color: Colors.pinkAccent,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MusicPage()),
                       ),
                     ),
-                  ),
-                  _buildDashboardCard(
-                    title: l10n?.translate('timetable') ?? "Timetable",
-                    icon: Icons.calendar_month_rounded,
-                    color: Colors.purple,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const TimetablePage()),
-                    ),
-                  ),
-                  _buildDashboardCard(
-                    title: l10n?.translate('music') ?? "Music",
-                    icon: Icons.music_note_rounded,
-                    color: Colors.pinkAccent,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MusicPage()),
-                    ),
-                  ),
-                  _buildDashboardCard(
-                    title: l10n?.translate('reports') ?? "Reports",
-                    icon: Icons.description_rounded,
-                    color: Colors.indigo,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const LecturerReportsPage(),
+                    _buildDashboardCard(
+                      title: l10n?.translate('reports') ?? "Reports",
+                      icon: Icons.description_rounded,
+                      color: Colors.indigo,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const LecturerReportsPage(),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
 
-              const SizedBox(height: 32),
-              Text(
-                l10n?.translate('latest_student_activities') ??
-                    "Latest Student Activities",
-                style: TextDesign.h2.copyWith(color: titleColor),
-              ),
-              const SizedBox(height: 16),
-              _buildActivityList(isDark),
-            ],
+                const SizedBox(height: 32),
+                Text(
+                  l10n?.translate('latest_student_activities') ??
+                      "Latest Student Activities",
+                  style: TextDesign.h2.copyWith(color: titleColor),
+                ),
+                const SizedBox(height: 16),
+                _buildActivityList(isDark),
+              ],
+            ),
           ),
         ),
       ],
@@ -196,27 +278,44 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem("0", l10n?.translate('materials') ?? "Materials"),
-          _buildStatSeparator(),
           _buildStatItem(
-            "0",
-            l10n?.translate('years_exp_short') ?? "Years Exp",
+            _isLoading ? "..." : _materialsCount.toString(),
+            l10n?.translate('materials') ?? "Materials",
+          ),
+          _buildStatSeparator(),
+          GestureDetector(
+            onTap: _editYearsExp,
+            child: _buildStatItem(
+              _isLoading ? "..." : _yearsExp.toString(),
+              l10n?.translate('years_exp_short') ?? "Years Exp",
+              isEditable: true,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(String value, String label) {
+  Widget _buildStatItem(String value, String label, {bool isEditable = false}) {
     return Column(
       children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (isEditable)
+              const Padding(
+                padding: EdgeInsets.only(left: 4),
+                child: Icon(Icons.edit, color: Colors.white70, size: 14),
+              ),
+          ],
         ),
         Text(
           label,

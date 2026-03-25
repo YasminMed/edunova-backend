@@ -456,4 +456,52 @@ class MaterialService {
       throw _handleError(e);
     }
   }
+
+  Future<Map<String, dynamic>> fetchLecturerDashboardStats(String email) async {
+    try {
+      final response = await _dio.get(
+        "/lecturer/dashboard-stats",
+        queryParameters: {"email": email},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> updateLecturerExperience(String email, int years) async {
+    try {
+      await _dio.post(
+        "/lecturer/update-experience",
+        queryParameters: {"email": email, "years": years},
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchFacultyReports(String email) async {
+    try {
+      final response = await _dio.get(
+        "/lecturer/faculty-reports",
+        queryParameters: {"email": email},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<String?> downloadFacultyReport(String email, String savePath) async {
+    try {
+      await _dio.download(
+        "/lecturer/download-report",
+        savePath,
+        queryParameters: {"email": email},
+      );
+      return savePath;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
 }

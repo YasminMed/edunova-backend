@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
+import 'dart:io';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
+import '../services/material_service.dart';
+import '../providers/user_provider.dart';
 
 class LecturerReportsPage extends StatefulWidget {
   const LecturerReportsPage({super.key});
@@ -10,6 +16,75 @@ class LecturerReportsPage extends StatefulWidget {
 }
 
 class _LecturerReportsPageState extends State<LecturerReportsPage> {
+  final MaterialService _materialService = MaterialService();
+  Map<String, dynamic>? _reportData;
+  bool _isLoading = true;
+  bool _isDownloading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchReportData();
+  }
+
+  Future<void> _fetchReportData() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (userProvider.email == null) return;
+
+    try {
+      final data = await _materialService.fetchFacultyReports(userProvider.email!);
+      setState(() {
+        _reportData = data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to fetch report data")),
+        );
+      }
+    }
+  }
+
+  Future<void> _downloadReport() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (userProvider.email == null) return;
+
+    setState(() => _isDownloading = true);
+
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName = "Faculty_Report_${DateTime.now().millisecondsSinceEpoch}.pdf";
+      final filePath = "${directory.path}/$fileName";
+      
+      final savedPath = await _materialService.downloadFacultyReport(
+        userProvider.email!, 
+        filePath
+      );
+
+      if (savedPath != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("Report downloaded successfully"),
+            action: SnackBarAction(
+              label: "Open",
+              onPressed: () => OpenFilex.open(savedPath),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to download report")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isDownloading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -26,45 +101,53 @@ class _LecturerReportsPageState extends State<LecturerReportsPage> {
         elevation: 0,
         iconTheme: IconThemeData(color: textColor),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildReportSummary(isDark),
-            const SizedBox(height: 30),
-            Text(
-              "Monthly Insights",
-              style: TextDesign.h2.copyWith(color: textColor),
+      body: _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _fetchReportData,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildReportSummary(isDark),
+                    const SizedBox(height: 30),
+                    Text(
+                      "Monthly Insights",
+                      style: TextDesign.h2.copyWith(color: textColor),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInsightItem(
+                      "Student Progress",
+                      _reportData?['insights']['progress'] ?? "No data",
+                      Icons.trending_up,
+                      Colors.green,
+                    ),
+                    _buildInsightItem(
+                      "Material Engagement",
+                      _reportData?['insights']['engagement'] ?? "No data",
+                      Icons.assignment_turned_in,
+                      Colors.blue,
+                    ),
+                    _buildInsightItem(
+                      "Course Feedback",
+                      _reportData?['insights']['feedback'] ?? "No data",
+                      Icons.feedback_rounded,
+                      Colors.orange,
+                    ),
+                    const SizedBox(height: 30),
+                    _buildDownloadSection(),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 16),
-            _buildInsightItem(
-              "Student Progress",
-              "8% increase in average marks compared to last month",
-              Icons.trending_up,
-              Colors.green,
-            ),
-            _buildInsightItem(
-              "Material Engagement",
-              "Assignments have 94% submission rate",
-              Icons.assignment_turned_in,
-              Colors.blue,
-            ),
-            _buildInsightItem(
-              "Course Feedback",
-              "Students requested more video content in Quizzes",
-              Icons.feedback_rounded,
-              Colors.orange,
-            ),
-            const SizedBox(height: 30),
-            _buildDownloadSection(),
-          ],
-        ),
-      ),
     );
   }
 
   Widget _buildReportSummary(bool isDark) {
+    final successRate = _reportData?['success_rate']?.toString() ?? "0";
+    final grades = _reportData?['grades'] ?? {"A": 0, "B": 0, "C": 0};
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -90,9 +173,9 @@ class _LecturerReportsPageState extends State<LecturerReportsPage> {
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            "89.5%",
-            style: TextStyle(
+          Text(
+            "$successRate%",
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 40,
               fontWeight: FontWeight.bold,
@@ -102,9 +185,9 @@ class _LecturerReportsPageState extends State<LecturerReportsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildSimpleStat("A Grades", "42"),
-              _buildSimpleStat("B Grades", "68"),
-              _buildSimpleStat("C Grades", "30"),
+              _buildSimpleStat("A Grades", grades['A'].toString()),
+              _buildSimpleStat("B Grades", grades['B'].toString()),
+              _buildSimpleStat("C Grades", grades['C'].toString()),
             ],
           ),
         ],
@@ -201,16 +284,18 @@ class _LecturerReportsPageState extends State<LecturerReportsPage> {
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           const SizedBox(height: 16),
-          TextButton(
-            onPressed: () {},
-            child: const Text(
-              "Download Report",
-              style: TextStyle(
-                color: AppColors.secondary,
-                fontWeight: FontWeight.bold,
+          _isDownloading 
+            ? const CircularProgressIndicator()
+            : TextButton(
+                onPressed: _downloadReport,
+                child: const Text(
+                  "Download Report",
+                  style: TextStyle(
+                    color: AppColors.secondary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-            ),
-          ),
         ],
       ),
     );
