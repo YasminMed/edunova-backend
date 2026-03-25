@@ -444,4 +444,16 @@ class MaterialService {
       throw _handleError(e);
     }
   }
+
+  Future<Map<String, dynamic>> fetchStudentAnalysis(String lecturerEmail) async {
+    try {
+      final response = await _dio.get(
+        "/lecturer/student-analysis",
+        queryParameters: {"lecturer_email": lecturerEmail},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
 }

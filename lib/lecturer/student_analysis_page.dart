@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
+import '../services/material_service.dart';
+import '../providers/user_provider.dart';
 
 class StudentAnalysisPage extends StatefulWidget {
   const StudentAnalysisPage({super.key});
@@ -9,24 +13,42 @@ class StudentAnalysisPage extends StatefulWidget {
   State<StudentAnalysisPage> createState() => _StudentAnalysisPageState();
 }
 
-class _StudentAnalysisPageState extends State<StudentAnalysisPage>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  final List<double> _chartData = [0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 0.75];
+class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
+  final MaterialService _materialService = MaterialService();
+  bool _isLoading = true;
+  String? _errorMessage;
+  Map<String, dynamic>? _analysisData;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    )..forward();
+    _loadAnalysis();
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  Future<void> _loadAnalysis() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final email = userProvider.email;
+
+    if (email == null) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = "Lecturer email not found";
+      });
+      return;
+    }
+
+    try {
+      final data = await _materialService.fetchStudentAnalysis(email);
+      setState(() {
+        _analysisData = data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
+      });
+    }
   }
 
   @override
@@ -45,63 +67,184 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage>
         elevation: 0,
         iconTheme: IconThemeData(color: textColor),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildChartCard(isDark),
-            const SizedBox(height: 24),
-            Text(
-              "Attendance Analytics",
-              style: TextDesign.h2.copyWith(color: textColor),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+              ? Center(child: Text(_errorMessage!, style: TextStyle(color: Colors.red)))
+              : RefreshIndicator(
+                  onRefresh: _loadAnalysis,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildChartCard(isDark),
+                        const SizedBox(height: 32),
+                        Text(
+                          "Attendance Analytics",
+                          style: TextDesign.h2.copyWith(color: textColor),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildAttendanceAnalytics(isDark),
+                        const SizedBox(height: 32),
+                        Text(
+                          "Detailed Statistics",
+                          style: TextDesign.h2.copyWith(color: textColor),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildStatGrid(isDark),
+                        const SizedBox(height: 32),
+                        Text(
+                          "Top Performers",
+                          style: TextDesign.h2.copyWith(color: textColor),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTopPerformers(isDark),
+                        const SizedBox(height: 40),
+                      ],
+                    ),
+                  ),
+                ),
+    );
+  }
+
+  Widget _buildChartCard(bool isDark) {
+    final trend = (_analysisData?['performance_trend'] as List?)?.cast<num>() ?? [0, 0, 0, 0, 0, 0, 0];
+    final days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      height: 320,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Class Performance Trend",
+            style: TextDesign.h3.copyWith(
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 16),
-            _buildAttendanceAnalytics(isDark),
-            const SizedBox(height: 24),
-            Text(
-              "Detailed Statistics",
-              style: TextDesign.h2.copyWith(color: textColor),
+          ),
+          const SizedBox(height: 30),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(show: false),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      interval: 1,
+                      getTitlesWidget: (value, meta) {
+                        int index = value.toInt();
+                        if (index < 0 || index >= days.length) return const SizedBox();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            days[index],
+                            style: TextStyle(
+                              color: isDark ? Colors.white60 : Colors.grey[600],
+                              fontSize: 10,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: trend.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value.toDouble())).toList(),
+                    isCurved: true,
+                    gradient: const LinearGradient(
+                      colors: [AppColors.secondary, Color(0xFF38BDF8)],
+                    ),
+                    barWidth: 4,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                        radius: 5,
+                        color: AppColors.secondary,
+                        strokeWidth: 2,
+                        strokeColor: Colors.white,
+                      ),
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.secondary.withOpacity(0.2),
+                          AppColors.secondary.withOpacity(0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            _buildStatGrid(isDark),
-            const SizedBox(height: 24),
-            Text(
-              "Top Performers",
-              style: TextDesign.h2.copyWith(color: textColor),
-            ),
-            const SizedBox(height: 16),
-            _buildTopPerformers(isDark),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildAttendanceAnalytics(bool isDark) {
+    final stats = _analysisData?['attendance_analytics'] ?? {};
+    final attended = (stats['attended'] ?? 0.0) / 100.0;
+    final late = (stats['late'] ?? 0.0) / 100.0;
+    final absent = (stats['absent'] ?? 0.0) / 100.0;
+    final avgRate = stats['average_rate'] ?? 0.0;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          )
+        ],
       ),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildAttendanceCircle("Attended", 0.85, Colors.green),
-              _buildAttendanceCircle("Late", 0.10, Colors.orange),
-              _buildAttendanceCircle("Absent", 0.05, Colors.red),
+              _buildAttendanceCircle("Attended", attended, Colors.green),
+              _buildAttendanceCircle("Late", late, Colors.orange),
+              _buildAttendanceCircle("Absent", absent, Colors.red),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
-            "Average Attendance Rate: 92%",
+            "Average Attendance Rate: ${avgRate.toStringAsFixed(0)}%",
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppColors.primaryText,
+              fontSize: 16,
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
             ),
           ),
         ],
@@ -113,117 +256,85 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
-        SizedBox(
-          height: 60,
-          width: 60,
-          child: CircularProgressIndicator(
-            value: percentage,
-            strokeWidth: 8,
-            backgroundColor: color.withOpacity(0.1),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-          ),
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              height: 70,
+              width: 70,
+              child: CircularProgressIndicator(
+                value: 1.0,
+                strokeWidth: 8,
+                backgroundColor: Colors.transparent,
+                valueColor: AlwaysStoppedAnimation<Color>(color.withOpacity(0.1)),
+              ),
+            ),
+            SizedBox(
+              height: 70,
+              width: 70,
+              child: CircularProgressIndicator(
+                value: percentage,
+                strokeWidth: 8,
+                strokeCap: StrokeCap.round,
+                backgroundColor: Colors.transparent,
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Text(
           label,
           style: TextStyle(
             fontSize: 12,
-            color: isDark ? Colors.white70 : Colors.grey[700],
+            color: isDark ? Colors.white60 : Colors.grey[600],
           ),
         ),
         Text(
           "${(percentage * 100).toInt()}%",
-          style: TextStyle(fontWeight: FontWeight.bold, color: color),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: color,
+            fontSize: 16,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildChartCard(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      height: 300,
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Class Performance Trend",
-            style: TextDesign.h3.copyWith(
-              color: isDark ? Colors.white : AppColors.secondary,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Expanded(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                return CustomPaint(
-                  painter: LineChartPainter(_chartData, _controller.value),
-                  size: Size.infinite,
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text("Mon", style: TextStyle(fontSize: 10)),
-              Text("Tue", style: TextStyle(fontSize: 10)),
-              Text("Wed", style: TextStyle(fontSize: 10)),
-              Text("Thu", style: TextStyle(fontSize: 10)),
-              Text("Fri", style: TextStyle(fontSize: 10)),
-              Text("Sat", style: TextStyle(fontSize: 10)),
-              Text("Sun", style: TextStyle(fontSize: 10)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildStatGrid(bool isDark) {
+    final stats = _analysisData?['detailed_stats'] ?? {};
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
-      childAspectRatio: 1.5,
+      childAspectRatio: 1.3,
       children: [
-        _buildMiniStat("Average Mark", "84%", Icons.grade, Colors.green),
-        _buildMiniStat("Engagement", "92%", Icons.bolt, Colors.orange),
-        _buildMiniStat("Attendance", "95%", Icons.event_available, Colors.blue),
-        _buildMiniStat("Materials Used", "120", Icons.book, Colors.purple),
+        _buildMiniStat("Average Mark", "${stats['average_mark'] ?? 0}%", Icons.star_rounded, Colors.green),
+        _buildMiniStat("Engagement", "${stats['engagement'] ?? 0}%", Icons.bolt_rounded, Colors.amber),
+        _buildMiniStat("Attendance", "${stats['attendance'] ?? 0}%", Icons.calendar_today_rounded, Colors.blue),
+        _buildMiniStat("Materials Used", "${stats['materials_used'] ?? 0}", Icons.book_rounded, Colors.purple),
       ],
     );
   }
 
-  Widget _buildMiniStat(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildMiniStat(String label, String value, IconData icon, Color color) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.2)),
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withOpacity(0.1), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 18),
+              Icon(icon, color: color, size: 20),
               const SizedBox(width: 8),
               Text(
                 label,
@@ -238,9 +349,9 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage>
           Text(
             value,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppColors.primaryText,
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
             ),
           ),
         ],
@@ -249,28 +360,40 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage>
   }
 
   Widget _buildTopPerformers(bool isDark) {
-    final performers = [
-      {'name': 'Ali Hassan', 'grade': 'A+', 'color': Colors.amber},
-      {'name': 'Sarah Ahmed', 'grade': 'A', 'color': Colors.grey[400]},
-      {'name': 'Yousif Mohammed', 'grade': 'A-', 'color': Colors.brown[300]},
-    ];
+    final performers = (_analysisData?['top_performers'] as List?) ?? [];
+
+    if (performers.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Text("No performers yet", style: TextStyle(color: isDark ? Colors.white60 : Colors.grey)),
+        ),
+      );
+    }
 
     return Column(
       children: performers.map((p) {
+        final grade = p['grade'] as String;
+        Color gradeColor;
+        if (grade.startsWith('A')) gradeColor = Colors.green;
+        else if (grade.startsWith('B')) gradeColor = Colors.blue;
+        else if (grade.startsWith('C')) gradeColor = Colors.orange;
+        else gradeColor = Colors.red;
+
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(16),
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: (p['color'] as Color).withOpacity(0.2),
+                backgroundColor: gradeColor.withOpacity(0.1),
                 child: Text(
-                  (p['grade'] as String)[0],
-                  style: TextStyle(color: p['color'] as Color),
+                  grade[0],
+                  style: TextStyle(color: gradeColor, fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(width: 16),
@@ -278,15 +401,17 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage>
                 p['name'] as String,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppColors.primaryText,
+                  fontSize: 16,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
               ),
               const Spacer(),
               Text(
-                p['grade'] as String,
+                grade,
                 style: TextStyle(
-                  color: p['color'] as Color,
+                  color: gradeColor,
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
             ],
@@ -295,49 +420,4 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage>
       }).toList(),
     );
   }
-}
-
-class LineChartPainter extends CustomPainter {
-  final List<double> data;
-  final double progress;
-
-  LineChartPainter(this.data, this.progress);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.secondary
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path();
-    final dx = size.width / (data.length - 1);
-
-    for (var i = 0; i < data.length; i++) {
-      final x = i * dx;
-      final y = size.height - (data[i] * size.height * progress);
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-
-    canvas.drawPath(path, paint);
-
-    // Draw dots
-    final dotPaint = Paint()
-      ..color = AppColors.secondary
-      ..style = PaintingStyle.fill;
-    for (var i = 0; i < data.length; i++) {
-      final x = i * dx;
-      final y = size.height - (data[i] * size.height * progress);
-      canvas.drawCircle(Offset(x, y), 5, dotPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant LineChartPainter oldDelegate) =>
-      oldDelegate.progress != progress;
 }
