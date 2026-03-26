@@ -78,6 +78,7 @@ flutter:
     - assets/animations/student_learning.json
     - assets/animations/teacher_explained.json
     - assets/animations/ai_assistant.json
+    - assets/audio/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

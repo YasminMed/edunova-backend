@@ -26,22 +26,25 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
 
   final List<Map<String, dynamic>> _library = [
     {
-      'id': 'focus_nature',
+      'id': 'nature_focus',
+      'title': 'Nature Focus',
       'icon': Icons.forest_rounded,
       'color': const Color(0xFF10B981),
-      'url': 'https://assets.mixkit.co/music/preview/mixkit-forest-bird-chirps-2434.mp3',
+      'url': 'assets/audio/nature_focus.mp3',
     },
     {
-      'id': 'focus_piano',
+      'id': 'piano_focus',
+      'title': 'Piano Focus',
       'icon': Icons.piano_rounded,
       'color': Colors.blue,
-      'url': 'https://www.mboxdrive.com/Yiruma%20-%20River%20Flows%20In%20You.mp3',
+      'url': 'assets/audio/piano_focus.mp3',
     },
     {
-      'id': 'focus_rain',
+      'id': 'rainy_focus',
+      'title': 'Rainy Focus',
       'icon': Icons.umbrella_rounded,
       'color': Colors.indigo,
-      'url': 'https://assets.mixkit.co/music/preview/mixkit-rainy-night-2442.mp3',
+      'url': 'assets/audio/rainy_focus.mp3',
     },
   ];
 
@@ -114,7 +117,11 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
   Future<void> _playTrack(Map<String, dynamic> track) async {
     try {
       if (track['url'] != null) {
-        await _player.setUrl(track['url']);
+        if (track['url'].startsWith('assets/')) {
+          await _player.setAsset(track['url']);
+        } else {
+          await _player.setUrl(track['url']);
+        }
       } else if (track['filePath'] != null) {
         await _player.setFilePath(track['filePath']);
       }
@@ -331,16 +338,17 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    l10n?.translate(_currentTrack) ??
-                        _currentTrack.replaceAll('_', ' '),
-                    style: TextDesign.h2.copyWith(
-                      color: isDark ? Colors.white : Colors.black87,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+                    Text(
+                      l10n?.translate(_currentTrack) ??
+                          _library.firstWhere((t) => t['id'] == _currentTrack, orElse: () => {'id': _currentTrack})['title'] ??
+                          _currentTrack.replaceAll('_', ' '),
+                      style: TextDesign.h2.copyWith(
+                        color: isDark ? Colors.white : Colors.black87,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
                   const SizedBox(height: 32),
 
                   // Controls
@@ -475,7 +483,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          l10n?.translate(item['id']) ?? item['id'],
+                          l10n?.translate(item['id']) ?? item['title'] ?? item['id'],
                           style: TextDesign.h3.copyWith(
                             fontSize: 14,
                             color: isDark ? Colors.white : Colors.black87,
