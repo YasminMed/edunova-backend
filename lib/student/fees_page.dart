@@ -19,6 +19,25 @@ class _FeesPageState extends State<FeesPage> {
   final Dio _dio = Dio(BaseOptions(baseUrl: "https://edunova-backend-production.up.railway.app")); // Using Railway URL 
   final String studentEmail = "student@edunova.com"; // Mock email for now
 
+  int totalDebt = 3000000;
+
+  int get paidAmount {
+    int paid = 0;
+    for (var inst in installments) {
+      if (inst['status'] == 'paid') {
+        final amtStr = inst['amount'].toString().replaceAll(',', '');
+        paid += int.tryParse(amtStr) ?? 0;
+      }
+    }
+    return paid;
+  }
+
+  int get remainingAmount => totalDebt - paidAmount;
+
+  String _formatNumber(int number) {
+    return number.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -259,27 +278,18 @@ class _FeesPageState extends State<FeesPage> {
             
             if (method == 'FIB') ...[
               _buildInfoRow("FIB Number", "07518078669"),
-              _buildInfoRow("Account Name", "Mr. Simko Kamil"),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _handlePayment(installment['id']);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFDB913),
-                    foregroundColor: Colors.black87,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                  ),
-                  child: const Text("Pay Now (Simulated)", style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
+              _buildInfoRow("Account Name", "Mr. Samko Kamil Ali"),
+              _buildInfoRow("Institution", "Jihan University Erbil"),
+              const SizedBox(height: 24),
+              const Text(
+                "Please upload the transfer receipt image below to verify your payment.",
+                style: TextStyle(color: Colors.grey, fontSize: 13),
               ),
+              const SizedBox(height: 24),
+              _buildUploadButton(context, installment['id']),
             ] else if (method == 'Bank') ...[
               _buildInfoRow("Bank Name", "World Bank Erbil"),
-              _buildInfoRow("Account Number", "1964-0"),
+              _buildInfoRow("Account Number", "1964_0"),
               _buildInfoRow("Account Holder", "World University Erbil"),
               const SizedBox(height: 24),
               const Text(
@@ -481,6 +491,31 @@ class _FeesPageState extends State<FeesPage> {
                   color: Colors.white70,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Paid", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    Text("${_formatNumber(paidAmount)} $currency", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+              Container(width: 1, height: 30, color: Colors.white24),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Remaining", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    Text("${_formatNumber(remainingAmount)} $currency", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ],
                 ),
               ),
             ],
