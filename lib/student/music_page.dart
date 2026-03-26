@@ -30,21 +30,21 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
       'title': 'Nature Focus',
       'icon': Icons.forest_rounded,
       'color': const Color(0xFF10B981),
-      'url': 'assets/audio/nature_focus.mp3',
+      'url': 'https://assets.mixkit.co/music/preview/mixkit-forest-bird-chirps-2434.mp3',
     },
     {
       'id': 'piano_focus',
       'title': 'Piano Focus',
       'icon': Icons.piano_rounded,
       'color': Colors.blue,
-      'url': 'assets/audio/piano_focus.mp3',
+      'url': 'https://www.mboxdrive.com/Yiruma%20-%20River%20Flows%20In%20You.mp3',
     },
     {
       'id': 'rainy_focus',
       'title': 'Rainy Focus',
       'icon': Icons.umbrella_rounded,
       'color': Colors.indigo,
-      'url': 'assets/audio/rainy_focus.mp3',
+      'url': 'https://assets.mixkit.co/music/preview/mixkit-rainy-night-2442.mp3',
     },
   ];
 
