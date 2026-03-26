@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'dart:async';
+import 'package:just_audio/just_audio.dart';
+import 'package:audio_session/audio_session.dart';
+import 'package:file_picker/file_picker.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
@@ -14,26 +18,39 @@ class MusicPage extends StatefulWidget {
 class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late AnimationController _starController;
+  final AudioPlayer _player = AudioPlayer();
   bool _isPlaying = false;
   String _currentTrack = 'focus_nature';
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
 
   final List<Map<String, dynamic>> _library = [
     {
       'id': 'focus_nature',
       'icon': Icons.forest_rounded,
       'color': const Color(0xFF10B981),
+      'url': 'https://assets.mixkit.co/music/preview/mixkit-forest-bird-chirps-2434.mp3',
     },
-    {'id': 'focus_piano', 'icon': Icons.piano_rounded, 'color': Colors.blue},
+    {
+      'id': 'focus_piano',
+      'icon': Icons.piano_rounded,
+      'color': Colors.blue,
+      'url': 'https://www.mboxdrive.com/Yiruma%20-%20River%20Flows%20In%20You.mp3',
+    },
     {
       'id': 'focus_rain',
       'icon': Icons.umbrella_rounded,
       'color': Colors.indigo,
+      'url': 'https://assets.mixkit.co/music/preview/mixkit-rainy-night-2442.mp3',
     },
   ];
 
   @override
   void initState() {
     super.initState();
+    _initAudioSession();
+    _setupAudioListeners();
+
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
@@ -45,22 +62,127 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
     )..repeat();
   }
 
+  Future<void> _initAudioSession() async {
+    final session = await AudioSession.instance;
+    await session.configure(const AudioSessionConfiguration.music());
+  }
+
+  void _setupAudioListeners() {
+    _player.playerStateStream.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = state.playing;
+          if (_isPlaying) {
+            _pulseController.repeat();
+          } else {
+            _pulseController.stop();
+          }
+        });
+      }
+    });
+
+    _player.durationStream.listen((d) {
+      if (mounted) setState(() => _duration = d ?? Duration.zero);
+    });
+
+    _player.positionStream.listen((p) {
+      if (mounted) setState(() => _position = p);
+    });
+  }
+
   @override
   void dispose() {
     _pulseController.dispose();
     _starController.dispose();
+    _player.dispose();
     super.dispose();
   }
 
-  void _togglePlay() {
-    setState(() {
-      _isPlaying = !_isPlaying;
+  Future<void> _togglePlay() async {
+    if (_player.processingState == ProcessingState.idle) {
+      final track = _library.firstWhere((t) => t['id'] == _currentTrack);
+      await _playTrack(track);
+    } else {
       if (_isPlaying) {
-        _pulseController.repeat();
+        await _player.pause();
       } else {
-        _pulseController.stop();
+        await _player.play();
       }
-    });
+    }
+  }
+
+  Future<void> _playTrack(Map<String, dynamic> track) async {
+    try {
+      if (track['url'] != null) {
+        await _player.setUrl(track['url']);
+      } else if (track['filePath'] != null) {
+        await _player.setFilePath(track['filePath']);
+      }
+      _currentTrack = track['id'];
+      await _player.play();
+    } catch (e) {
+      debugPrint("Error playing track: $e");
+    }
+  }
+
+  void _skip(int seconds) {
+    var newPosition = _position + Duration(seconds: seconds);
+    if (newPosition < Duration.zero) newPosition = Duration.zero;
+    if (newPosition > _duration) newPosition = _duration;
+    _player.seek(newPosition);
+  }
+
+  Future<void> _pickAndAddMusic() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
+    if (result != null && result.files.single.path != null) {
+      final file = result.files.single;
+      
+      if (!mounted) return;
+      
+      final TextEditingController nameController = TextEditingController();
+      String? customName = await showDialog<String>(
+        context: context,
+        builder: (context) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return AlertDialog(
+            backgroundColor: Theme.of(context).cardColor,
+            title: Text(
+              AppLocalizations.of(context)?.translate('music_name') ?? 'Music Name',
+              style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+            ),
+            content: TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)?.translate('enter_music_name') ?? 'Enter music name',
+              ),
+              autofocus: true,
+              style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, null),
+                child: Text(AppLocalizations.of(context)?.translate('cancel') ?? 'Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, nameController.text.trim()),
+                child: Text(AppLocalizations.of(context)?.translate('add') ?? 'Add'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (customName == null || customName.isEmpty) return;
+
+      setState(() {
+        _library.add({
+          'id': customName,
+          'icon': Icons.audiotrack_rounded,
+          'color': Colors.purple,
+          'filePath': file.path,
+        });
+      });
+    }
   }
 
   @override
@@ -225,7 +347,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildControlButton(Icons.skip_previous_rounded, () {}),
+                      _buildControlButton(Icons.replay_10_rounded, () => _skip(-10)),
                       const SizedBox(width: 30),
                       GestureDetector(
                         onTap: _togglePlay,
@@ -254,7 +376,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                         ),
                       ),
                       const SizedBox(width: 30),
-                      _buildControlButton(Icons.skip_next_rounded, () {}),
+                      _buildControlButton(Icons.forward_10_rounded, () => _skip(10)),
                     ],
                   ),
                 ],
@@ -289,11 +411,11 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
         return Transform.scale(
           scale: scale,
           child: GestureDetector(
-            onTap: () {
+            onTap: () async {
               setState(() {
                 _currentTrack = item['id'];
-                if (!_isPlaying) _togglePlay();
               });
+              await _playTrack(item);
             },
             child: Container(
               decoration: BoxDecoration(
@@ -378,41 +500,44 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
   Widget _buildAddMusicCard(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.1),
-          style: BorderStyle.solid,
+    return GestureDetector(
+      onTap: _pickAndAddMusic,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withOpacity(0.1),
+            style: BorderStyle.solid,
+          ),
         ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.mutedText.withOpacity(0.1),
-              shape: BoxShape.circle,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.mutedText.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.add_rounded,
+                color: AppColors.mutedText,
+                size: 32,
+              ),
             ),
-            child: const Icon(
-              Icons.add_rounded,
-              color: AppColors.mutedText,
-              size: 32,
+            const SizedBox(height: 12),
+            Text(
+              l10n?.translate('add_music') ?? 'Add Music',
+              style: TextDesign.body.copyWith(
+                fontSize: 14,
+                color: AppColors.mutedText,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            l10n?.translate('add_music') ?? 'Add Music',
-            style: TextDesign.body.copyWith(
-              fontSize: 14,
-              color: AppColors.mutedText,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

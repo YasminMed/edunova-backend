@@ -24,7 +24,6 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
-  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
@@ -34,7 +33,6 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
 
   @override
   void dispose() {
-    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -258,16 +256,6 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
                       ),
                       child: Column(
                         children: [
-                          _buildTextField(
-                            label:
-                                AppLocalizations.of(
-                                  context,
-                                )?.translate('full_name') ??
-                                "Full Name",
-                            controller: _nameController,
-                            icon: Icons.person_outline_rounded,
-                          ),
-                          const SizedBox(height: 20),
                           _buildTextField(
                             label:
                                 AppLocalizations.of(
