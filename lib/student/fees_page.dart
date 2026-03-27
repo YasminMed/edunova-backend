@@ -85,7 +85,12 @@ class _FeesPageState extends State<FeesPage> {
       }
     } catch (e) {
       print("Error fetching fees: $e");
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error fetching fee details: $e")),
+        );
+      }
     }
   }
 
