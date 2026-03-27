@@ -21,7 +21,7 @@ if not SQLALCHEMY_DATABASE_URL:
 
 print(f"DEBUG: Initializing engine with URL: {SQLALCHEMY_DATABASE_URL.split('@')[-1]}") # Masking credentials
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

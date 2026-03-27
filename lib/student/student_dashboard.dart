@@ -288,10 +288,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         icon: Icons.payment_rounded,
                         color: Colors.green,
                         onTap: () {
+                          final userProvider = Provider.of<UserProvider>(context, listen: false);
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const FeesPage(),
+                              builder: (context) => FeesPage(studentEmail: userProvider.email ?? "student@edunova.com"),
                             ),
                           );
                         },

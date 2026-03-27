@@ -156,8 +156,14 @@ async def startup_event():
         add_col_safe("posts", "image_url", "VARCHAR")
 
         # Broad Auto-fix for existing users with NULL department/stage
-        all_users = db.query(models.User).all()
-        for u in all_users:
+        # Optimizing to only fetch users that need fixing
+        users_to_fix = db.query(models.User).filter(
+            (models.User.department == None) | 
+            (models.User.stage == None) |
+            (models.User.email.in_(["smsm@gmail.com", "smsm2@gmail.com", "yaso@gmail.com"]))
+        ).all()
+
+        for u in users_to_fix:
             updated = False
             if u.department is None:
                 u.department = "Software Engineering"
@@ -183,7 +189,7 @@ async def startup_event():
             if updated:
                 db.add(u)
         db.commit()
-        print("DEBUG: User profiles updated")
+        print(f"DEBUG: {len(users_to_fix)} User profiles checked/updated")
 
         # For Course table
 

@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../models/chat_session.dart';
 import '../models/group_chat.dart';
+import '../core/api_config.dart';
 
 class ChatService {
-  static const String baseUrl = "https://web-production-06d8c.up.railway.app";
+  static const String baseUrl = ApiConfig.baseUrl;
   final Dio _dio = Dio(BaseOptions(
     baseUrl: baseUrl,
     connectTimeout: const Duration(seconds: 15),

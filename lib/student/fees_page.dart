@@ -3,10 +3,12 @@ import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
+import '../core/api_config.dart';
 import 'dart:io';
 
 class FeesPage extends StatefulWidget {
-  const FeesPage({super.key});
+  final String studentEmail;
+  const FeesPage({super.key, this.studentEmail = "student@edunova.com"});
 
   @override
   State<FeesPage> createState() => _FeesPageState();
@@ -16,8 +18,19 @@ class _FeesPageState extends State<FeesPage> {
   List<Map<String, dynamic>> installments = [];
   String nextPaymentDate = '...';
   bool isLoading = true;
-  final Dio _dio = Dio(BaseOptions(baseUrl: "https://edunova-backend-production.up.railway.app")); // Using Railway URL 
-  final String studentEmail = "student@edunova.com"; // Mock email for now
+  final Dio _dio = Dio(BaseOptions(
+    baseUrl: ApiConfig.baseUrl,
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 20),
+  )); // Using Central API URL
+  late final String studentEmail;
+
+  @override
+  void initState() {
+    super.initState();
+    studentEmail = widget.studentEmail;
+    _fetchInstallments();
+  }
 
   int get totalDebt {
     if (installments.isEmpty) return 3000000;
@@ -44,12 +57,6 @@ class _FeesPageState extends State<FeesPage> {
 
   String _formatNumber(int number) {
     return number.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchInstallments();
   }
 
   Future<void> _fetchInstallments() async {
