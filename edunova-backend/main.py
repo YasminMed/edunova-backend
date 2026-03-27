@@ -58,16 +58,6 @@ if not os.path.exists("static"):
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static_assets")
 
-# Catch-all route to serve the SPA index.html for unknown routes
-@app.get("/{full_path:path}")
-async def serve_spa(full_path: str):
-    # This serves the index.html for any route not matched by the API
-    # to support the SPA routing in Flutter.
-    index_file = os.path.join("static", "index.html")
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
-    return HTMLResponse(content="<h1>Flutter build not found</h1>", status_code=404)
-
 # Create uploads directory if it doesn't exist
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR):
@@ -2273,6 +2263,17 @@ async def complete_challenge(challenge_id: int, student_email: str = Form(...), 
     db.add(completion)
     db.commit()
     return {"message": "Challenge completed"}
+
+# Catch-all route to serve the SPA index.html for unknown routes
+# This MUST stay at the bottom to avoid shadowing specific API routes
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    # This serves the index.html for any route not matched by the API
+    # to support the SPA routing in Flutter.
+    index_file = os.path.join("static", "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
+    return HTMLResponse(content="<h1>Flutter build not found</h1>", status_code=404)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
