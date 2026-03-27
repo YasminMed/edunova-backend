@@ -44,4 +44,4 @@ EXPOSE 8080
 
 # The root Procfile is removed, so we use CMD directly
 # Railway provides $PORT
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]

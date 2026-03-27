@@ -3,12 +3,12 @@ import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
-import '../core/api_config.dart';
 import 'dart:io';
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
 
 class FeesPage extends StatefulWidget {
-  final String studentEmail;
-  const FeesPage({super.key, this.studentEmail = "student@edunova.com"});
+  const FeesPage({super.key});
 
   @override
   State<FeesPage> createState() => _FeesPageState();
@@ -18,22 +18,11 @@ class _FeesPageState extends State<FeesPage> {
   List<Map<String, dynamic>> installments = [];
   String nextPaymentDate = '...';
   bool isLoading = true;
-  final Dio _dio = Dio(BaseOptions(
-    baseUrl: ApiConfig.baseUrl,
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 20),
-  )); // Using Central API URL
-  late final String studentEmail;
-
-  @override
-  void initState() {
-    super.initState();
-    studentEmail = widget.studentEmail;
-    _fetchInstallments();
-  }
+  final Dio _dio = Dio(BaseOptions(baseUrl: "https://edunova-backend-production.up.railway.app")); // Using Railway URL 
+  String get studentEmail => context.read<UserProvider>().email ?? "student@edunova.com";
 
   int get totalDebt {
-    if (installments.isEmpty) return 3000000;
+    if (installments.isEmpty) return 0;
     int total = 0;
     for (var inst in installments) {
       final amtStr = inst['amount'].toString().replaceAll(',', '');
@@ -57,6 +46,12 @@ class _FeesPageState extends State<FeesPage> {
 
   String _formatNumber(int number) {
     return number.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchInstallments();
   }
 
   Future<void> _fetchInstallments() async {
@@ -119,11 +114,13 @@ class _FeesPageState extends State<FeesPage> {
         const SnackBar(content: Text("Payment processed successfully!")),
       );
     } catch (e) {
-      print("Payment error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString()}")),
-      );
-      setState(() => isLoading = false);
+      print("Payment error: \$e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: \${e.toString()}")),
+        );
+        setState(() => isLoading = false);
+      }
     }
   }
 
@@ -293,15 +290,23 @@ class _FeesPageState extends State<FeesPage> {
             
             if (method == 'FIB' || method == 'Bank') ...[
               const Text(
-                "Please obtain the official account numbers of the university as listed below for students who wish to pay their tuition fees electronically:\n\n"
-                "1- The official bank account number of World University Erbil is (1964_0) in World Bank Erbil Branch.\n"
+                "Please obtain the official account numbers of the university as listed below for students who wish to pay their tuition fees electronically:",
+                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "1- The official bank account number of World University Erbil is (1964_0) in World Bank Erbil Branch.",
+                style: TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              const Text(
                 "2- FIB number of Jihan University Erbil is (07518078669) in the name of Mr. Samko Kamil Ali.",
-                style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.5),
+                style: TextStyle(color: Colors.grey, fontSize: 13),
               ),
               const SizedBox(height: 24),
               const Text(
                 "Please upload the transfer receipt image below to verify your payment.",
-                style: TextStyle(color: Colors.grey, fontSize: 13),
+                style: TextStyle(color: Colors.grey, fontSize: 12, fontStyle: FontStyle.italic),
               ),
               const SizedBox(height: 24),
               _buildUploadButton(context, installment['id']),
@@ -316,6 +321,31 @@ class _FeesPageState extends State<FeesPage> {
             const SizedBox(height: 20),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(value, style: TextDesign.h3.copyWith(fontSize: 16)),
+              IconButton(
+                icon: const Icon(Icons.copy_rounded, size: 18, color: AppColors.primary),
+                onPressed: () {
+                  // Simulate copy
+                },
+              ),
+            ],
+          ),
+          const Divider(),
+        ],
       ),
     );
   }
@@ -380,13 +410,20 @@ class _FeesPageState extends State<FeesPage> {
             // Payment Method Info (Clickable)
             InkWell(
               onTap: () {
+                if (isLoading) return;
+                
                 // Find the first due installment to pay
                 final dueInstallment = installments.firstWhere(
                   (i) => i['status'] == 'due',
                   orElse: () => {},
                 );
+                
                 if (dueInstallment.isNotEmpty) {
                   _showPaymentOptions(context, dueInstallment);
+                } else if (installments.isEmpty) {
+                   ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("No installment data found. Please contact support or try again later.")),
+                  );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("All installments are already paid!")),

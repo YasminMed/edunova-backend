@@ -1,12 +1,11 @@
 import 'package:dio/dio.dart';
-import '../core/api_config.dart';
 
 class AuthService {
-  static const String baseUrl = ApiConfig.baseUrl;
+  static const String baseUrl = "https://web-production-06d8c.up.railway.app";
   final Dio _dio = Dio(BaseOptions(
     baseUrl: baseUrl,
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 20),
+    connectTimeout: const Duration(seconds: 15),
+    receiveTimeout: const Duration(seconds: 10),
   ));
 
   Future<Map<String, dynamic>> login(String email, String password, String role) async {

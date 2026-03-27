@@ -156,14 +156,8 @@ async def startup_event():
         add_col_safe("posts", "image_url", "VARCHAR")
 
         # Broad Auto-fix for existing users with NULL department/stage
-        # Optimizing to only fetch users that need fixing
-        users_to_fix = db.query(models.User).filter(
-            (models.User.department == None) | 
-            (models.User.stage == None) |
-            (models.User.email.in_(["smsm@gmail.com", "smsm2@gmail.com", "yaso@gmail.com"]))
-        ).all()
-
-        for u in users_to_fix:
+        all_users = db.query(models.User).all()
+        for u in all_users:
             updated = False
             if u.department is None:
                 u.department = "Software Engineering"
@@ -189,7 +183,7 @@ async def startup_event():
             if updated:
                 db.add(u)
         db.commit()
-        print(f"DEBUG: {len(users_to_fix)} User profiles checked/updated")
+        print("DEBUG: User profiles updated")
 
         # For Course table
 
@@ -1171,10 +1165,11 @@ async def get_student_fees(student_email: str, db: Session = Depends(get_db)):
     # Generate installments if none exist
     if not installments:
         dept = student.department or "IT"
+        dept_norm = dept.strip().lower()
         # Determine total fee depending on department
-        if dept in ["Software Engineering", "Civil Engineering", "Architectural Engineering"]:
+        if dept_norm in ["software engineering", "civil engineering", "architectural engineering"]:
             total = 3000000
-        elif dept in ["Dentist", "Pharmacy"]:
+        elif dept_norm in ["dentist", "pharmacy"]:
             total = 4000000
         else:
             total = 2000000
@@ -1195,11 +1190,11 @@ async def get_student_fees(student_email: str, db: Session = Depends(get_db)):
                 due_date=dates[i]
             )
             db.add(inst)
+            installments.append(inst)
         db.commit()
         
-        # Re-fetch from DB so all IDs and fields are populated cleanly for serialization
-        installments = db.query(models.FeeInstallment).filter(models.FeeInstallment.student_id == student.id).all()
-
+        # We don't necessarily need to refresh them as they're now objects ready to serialize 
+        # But we do need to return the newly generated installments
     return installments
 
 @app.post("/fees/pay")
