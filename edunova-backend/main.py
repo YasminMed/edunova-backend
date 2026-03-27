@@ -1180,6 +1180,9 @@ async def get_student_fees(student_email: str, db: Session = Depends(get_db)):
             )
             db.add(inst)
             installments.append(inst)
+        
+        student.total_fee = f"{total:,}"
+        db.add(student)
         db.commit()
     
     # Manually serialize to avoid relationship recursion issues
