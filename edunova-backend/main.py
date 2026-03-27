@@ -2266,5 +2266,7 @@ async def complete_challenge(challenge_id: int, student_email: str = Form(...), 
     return {"message": "Challenge completed"}
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    import uvicorn
+    import os
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)

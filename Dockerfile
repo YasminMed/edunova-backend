@@ -42,5 +42,5 @@ COPY --from=build-env /app/build/web ./static
 
 EXPOSE 8080
 
-# Use shell form to allow environment variable expansion for PORT
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}
+# Execute server using Python to correctly handle dynamic Railway port mapping
+CMD ["python", "main.py"]
