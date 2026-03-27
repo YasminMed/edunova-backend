@@ -19,7 +19,15 @@ class _FeesPageState extends State<FeesPage> {
   final Dio _dio = Dio(BaseOptions(baseUrl: "https://edunova-backend-production.up.railway.app")); // Using Railway URL 
   final String studentEmail = "student@edunova.com"; // Mock email for now
 
-  int totalDebt = 3000000;
+  int get totalDebt {
+    if (installments.isEmpty) return 3000000;
+    int total = 0;
+    for (var inst in installments) {
+      final amtStr = inst['amount'].toString().replaceAll(',', '');
+      total += int.tryParse(amtStr) ?? 0;
+    }
+    return total;
+  }
 
   int get paidAmount {
     int paid = 0;
@@ -180,7 +188,7 @@ class _FeesPageState extends State<FeesPage> {
               context,
               icon: Icons.payments_rounded,
               title: "Cash Payment",
-              subtitle: "Pay at the University Finance Office",
+              subtitle: "Registration dept (9am-3pm) - Upload reciept",
               color: Colors.green,
               onTap: () => _showMethodDetails(context, 'Cash', installment),
             ),
@@ -300,7 +308,7 @@ class _FeesPageState extends State<FeesPage> {
               _buildUploadButton(context, installment['id']),
             ] else if (method == 'Cash') ...[
               const Text(
-                "Visit the University Finance Office to pay in cash. Once paid, please upload the receipt image provided by the office.",
+                "please go to registration department (9:00am - 3:00pm) and the student can upload an image for the reciept",
                 style: TextStyle(color: Colors.grey, fontSize: 14),
               ),
               const SizedBox(height: 32),
@@ -478,7 +486,7 @@ class _FeesPageState extends State<FeesPage> {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                "3,000,000",
+                _formatNumber(totalDebt),
                 style: TextDesign.h1.copyWith(
                   color: Colors.white,
                   fontSize: 32,
@@ -660,12 +668,12 @@ class _FeesPageState extends State<FeesPage> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
+                  color: isPaid ? Colors.green.withOpacity(isDark ? 0.2 : 0.1) : Colors.grey.withOpacity(isDark ? 0.2 : 0.1),
                   borderRadius: BorderRadius.circular(15),
                   border: Border.all(
                     color: isPaid
-                        ? Colors.green.withOpacity(0.1)
-                        : Theme.of(context).dividerColor.withOpacity(0.05),
+                        ? Colors.green.withOpacity(0.3)
+                        : Colors.grey.withOpacity(0.2),
                   ),
                 ),
                 child: Row(

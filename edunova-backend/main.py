@@ -1161,6 +1161,39 @@ async def get_student_fees(student_email: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Student not found")
     
     installments = db.query(models.FeeInstallment).filter(models.FeeInstallment.student_id == student.id).all()
+    
+    # Generate installments if none exist
+    if not installments:
+        dept = student.department or "IT"
+        # Determine total fee depending on department
+        if dept in ["Software Engineering", "Civil Engineering", "Architectural Engineering"]:
+            total = 3000000
+        elif dept in ["Dentist", "Pharmacy"]:
+            total = 4000000
+        else:
+            total = 2000000
+            
+        part = total // 4
+        part_str = f"{part:,}"
+        
+        # Generic dates for installments
+        dates = ["Oct 1, 2026", "Dec 1, 2026", "Feb 1, 2027", "Apr 1, 2027"]
+        titles = ["1st Installment", "2nd Installment", "3rd Installment", "4th Installment"]
+        
+        for i in range(4):
+            inst = models.FeeInstallment(
+                student_id=student.id,
+                title=titles[i],
+                amount=part_str,
+                status="due",
+                due_date=dates[i]
+            )
+            db.add(inst)
+            installments.append(inst)
+        db.commit()
+        
+        # We don't necessarily need to refresh them as they're now objects ready to serialize 
+        # But we do need to return the newly generated installments
     return installments
 
 @app.post("/fees/pay")
