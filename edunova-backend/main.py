@@ -1191,10 +1191,20 @@ async def get_student_fees(student_email: str, db: Session = Depends(get_db)):
             db.add(inst)
             installments.append(inst)
         db.commit()
-        
-        # We don't necessarily need to refresh them as they're now objects ready to serialize 
-        # But we do need to return the newly generated installments
-    return installments
+    
+    # Manually serialize to avoid relationship recursion issues
+    result = []
+    for inst in installments:
+        result.append({
+            "id": inst.id,
+            "title": inst.title,
+            "amount": inst.amount,
+            "status": inst.status,
+            "due_date": inst.due_date,
+            "paid_at": inst.paid_at.isoformat() if inst.paid_at else None,
+            "proof_url": inst.proof_url
+        })
+    return result
 
 @app.post("/fees/pay")
 async def pay_installment(
