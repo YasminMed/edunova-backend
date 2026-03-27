@@ -7,6 +7,8 @@ import 'dart:io';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 
+import '../services/auth_service.dart';
+
 class FeesPage extends StatefulWidget {
   const FeesPage({super.key});
 
@@ -18,7 +20,7 @@ class _FeesPageState extends State<FeesPage> {
   List<Map<String, dynamic>> installments = [];
   String nextPaymentDate = '...';
   bool isLoading = true;
-  final Dio _dio = Dio(BaseOptions(baseUrl: "https://edunova-backend-production.up.railway.app")); // Using Railway URL 
+  final Dio _dio = Dio(BaseOptions(baseUrl: AuthService.baseUrl)); // Using consistent Railway URL 
   String get studentEmail => context.read<UserProvider>().email ?? "student@edunova.com";
 
   int get totalDebt {

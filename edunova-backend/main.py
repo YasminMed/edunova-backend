@@ -58,15 +58,7 @@ if not os.path.exists("static"):
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static_assets")
 
-# Catch-all route to serve the SPA index.html for unknown routes
-@app.get("/{full_path:path}")
-async def serve_spa(full_path: str):
-    # This serves the index.html for any route not matched by the API
-    # to support the SPA routing in Flutter.
-    index_file = os.path.join("static", "index.html")
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
-    return HTMLResponse(content="<h1>Flutter build not found</h1>", status_code=404)
+
 
 # Create uploads directory if it doesn't exist
 UPLOAD_DIR = "uploads"
@@ -2270,3 +2262,14 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 8080))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+
+# Catch-all route to serve the SPA index.html for unknown routes
+# This MUST be at the end of the file so it doesn't hijack API routes
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    # This serves the index.html for any route not matched by the API
+    # to support the SPA routing in Flutter.
+    index_file = os.path.join("static", "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
+    return HTMLResponse(content="<h1>Flutter build not found</h1>", status_code=404)
