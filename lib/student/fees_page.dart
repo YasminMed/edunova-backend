@@ -4,6 +4,8 @@ import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
 import 'dart:io';
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
 
 class FeesPage extends StatefulWidget {
   const FeesPage({super.key});
@@ -17,7 +19,8 @@ class _FeesPageState extends State<FeesPage> {
   String nextPaymentDate = '...';
   bool isLoading = true;
   final Dio _dio = Dio(BaseOptions(baseUrl: "https://edunova-backend-production.up.railway.app")); // Using Railway URL 
-  final String studentEmail = "student@edunova.com"; // Mock email for now
+  late String studentEmail;
+  bool isInitialized = false;
 
   int get totalDebt {
     if (installments.isEmpty) return 3000000;
@@ -47,9 +50,19 @@ class _FeesPageState extends State<FeesPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!isInitialized) {
+      studentEmail = context.read<UserProvider>().email ?? "student@edunova.com";
+      _fetchInstallments();
+      isInitialized = true;
+    }
+  }
+
+  @override
   void initState() {
     super.initState();
-    _fetchInstallments();
+    // Fetching in didChangeDependencies to use context.read
   }
 
   Future<void> _fetchInstallments() async {
@@ -284,21 +297,21 @@ class _FeesPageState extends State<FeesPage> {
             ),
             const SizedBox(height: 20),
             
-            if (method == 'FIB') ...[
-              _buildInfoRow("FIB Number", "07518078669"),
-              _buildInfoRow("Account Name", "Mr. Samko Kamil Ali"),
-              _buildInfoRow("Institution", "Jihan University Erbil"),
-              const SizedBox(height: 24),
+            if (method == 'FIB' || method == 'Bank') ...[
               const Text(
-                "Please upload the transfer receipt image below to verify your payment.",
-                style: TextStyle(color: Colors.grey, fontSize: 13),
+                "Please obtain the official account numbers of the university as listed below for students who wish to pay their tuition fees electronically:",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               ),
-              const SizedBox(height: 24),
-              _buildUploadButton(context, installment['id']),
-            ] else if (method == 'Bank') ...[
-              _buildInfoRow("Bank Name", "World Bank Erbil"),
-              _buildInfoRow("Account Number", "1964_0"),
-              _buildInfoRow("Account Holder", "World University Erbil"),
+              const SizedBox(height: 16),
+              if (method == 'Bank') ...[
+                _buildInfoRow("Bank Name", "World Bank Erbil Branch"),
+                _buildInfoRow("Account Number", "1964_0"),
+                _buildInfoRow("Account Holder", "World University Erbil"),
+              ] else ...[
+                _buildInfoRow("FIB Number", "07518078669"),
+                _buildInfoRow("Account Name", "Mr. Samko Kamil Ali"),
+                _buildInfoRow("Institution", "Jihan University Erbil"),
+              ],
               const SizedBox(height: 24),
               const Text(
                 "Please upload the transfer receipt image below to verify your payment.",
@@ -406,16 +419,28 @@ class _FeesPageState extends State<FeesPage> {
             // Payment Method Info (Clickable)
             InkWell(
               onTap: () {
+                if (installments.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Fetching fee details, please wait...")),
+                  );
+                  return;
+                }
+                
                 // Find the first due installment to pay
                 final dueInstallment = installments.firstWhere(
                   (i) => i['status'] == 'due',
                   orElse: () => {},
                 );
+                
                 if (dueInstallment.isNotEmpty) {
                   _showPaymentOptions(context, dueInstallment);
-                } else {
+                } else if (installments.every((i) => i['status'] == 'paid')) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("All installments are already paid!")),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("No upcoming payments due.")),
                   );
                 }
               },
