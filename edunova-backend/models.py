@@ -23,7 +23,6 @@ class User(Base):
     stage = Column(String, nullable=True)      # Student: "1st", Lecturer: "1st, 2nd"
     years_of_experience = Column(Integer, default=0)
     image_url = Column(String, nullable=True)
-    total_fee = Column(String, nullable=True) # Total fee (e.g. "3,000,000")
 
     posts = relationship("Post", back_populates="author")
     fee_installments = relationship("FeeInstallment", back_populates="student")

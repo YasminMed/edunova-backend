@@ -58,6 +58,16 @@ if not os.path.exists("static"):
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static_assets")
 
+# Catch-all route to serve the SPA index.html for unknown routes
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    # This serves the index.html for any route not matched by the API
+    # to support the SPA routing in Flutter.
+    index_file = os.path.join("static", "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
+    return HTMLResponse(content="<h1>Flutter build not found</h1>", status_code=404)
+
 # Create uploads directory if it doesn't exist
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR):
@@ -1179,25 +1189,12 @@ async def get_student_fees(student_email: str, db: Session = Depends(get_db)):
                 due_date=dates[i]
             )
             db.add(inst)
-            installments.append(inst)
-        
-        student.total_fee = f"{total:,}"
-        db.add(student)
         db.commit()
-    
-    # Manually serialize to avoid relationship recursion issues
-    result = []
-    for inst in installments:
-        result.append({
-            "id": inst.id,
-            "title": inst.title,
-            "amount": inst.amount,
-            "status": inst.status,
-            "due_date": inst.due_date,
-            "paid_at": inst.paid_at.isoformat() if inst.paid_at else None,
-            "proof_url": inst.proof_url
-        })
-    return result
+        
+        # Re-fetch from DB so all IDs and fields are populated cleanly for serialization
+        installments = db.query(models.FeeInstallment).filter(models.FeeInstallment.student_id == student.id).all()
+
+    return installments
 
 @app.post("/fees/pay")
 async def pay_installment(
@@ -2267,17 +2264,6 @@ async def complete_challenge(challenge_id: int, student_email: str = Form(...), 
     db.commit()
     return {"message": "Challenge completed"}
 
-# Catch-all route to serve the SPA index.html for unknown routes
-# This MUST stay at the bottom to avoid shadowing specific API routes
-@app.get("/{full_path:path}")
-async def serve_spa(full_path: str):
-    # This serves the index.html for any route not matched by the API
-    # to support the SPA routing in Flutter.
-    index_file = os.path.join("static", "index.html")
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
-    return HTMLResponse(content="<h1>Flutter build not found</h1>", status_code=404)
-
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
