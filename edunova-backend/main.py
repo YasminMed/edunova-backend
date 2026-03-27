@@ -1190,11 +1190,11 @@ async def get_student_fees(student_email: str, db: Session = Depends(get_db)):
                 due_date=dates[i]
             )
             db.add(inst)
-            installments.append(inst)
         db.commit()
         
-        # We don't necessarily need to refresh them as they're now objects ready to serialize 
-        # But we do need to return the newly generated installments
+        # Fetch fresh instances from DB to avoid DetachedInstanceError
+        installments = db.query(models.FeeInstallment).filter(models.FeeInstallment.student_id == student.id).all()
+        
     return installments
 
 @app.post("/fees/pay")
