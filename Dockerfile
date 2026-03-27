@@ -43,5 +43,5 @@ COPY --from=build-env /app/build/web ./static
 EXPOSE 8080
 
 # The root Procfile is removed, so we use CMD directly
-# Railway provides $PORT
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+# Railway provides $PORT, handled internally in main.py
+CMD ["python", "main.py"]
