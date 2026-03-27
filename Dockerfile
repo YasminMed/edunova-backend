@@ -42,6 +42,5 @@ COPY --from=build-env /app/build/web ./static
 
 EXPOSE 8080
 
-# The root Procfile is removed, so we use CMD directly
-# Railway provides $PORT
-CMD ["bash", "-c", "uvicorn main:app --host 0.0.0.0 --port $PORT"]
+# Use shell form to allow environment variable expansion for PORT
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}
