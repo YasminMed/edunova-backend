@@ -1579,9 +1579,12 @@ async def get_lecturer_student_analysis(lecturer_email: str, db: Session = Depen
     engagement = (actual_subs / expected_subs * 100) if expected_subs > 0 else 0.0
     
     # Materials Used: count of resources + assignments + quizzes by lecturer
-    materials_count = db.query(models.CourseResource).join(models.Course).filter(models.Course.lecturer_id == lecturer.id).count()
-    materials_count += db.query(models.Assignment).join(models.Course).filter(models.Course.lecturer_id == lecturer.id).count()
-    materials_count += db.query(models.Quiz).join(models.Course).filter(models.Course.lecturer_id == lecturer.id).count()
+    if course_ids:
+        materials_count = db.query(models.CourseResource).filter(models.CourseResource.course_id.in_(course_ids)).count()
+        materials_count += db.query(models.Assignment).filter(models.Assignment.course_id.in_(course_ids)).count()
+        materials_count += db.query(models.Quiz).filter(models.Quiz.course_id.in_(course_ids)).count()
+    else:
+        materials_count = 0
     
     detailed_stats = {
         "average_mark": round(avg_mark, 1),
@@ -1622,10 +1625,16 @@ async def get_lecturer_dashboard_stats(email: str, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Lecturer not found")
         
     # Total materials include resources, assignments, and quizzes
-    res_count = db.query(models.CourseResource).join(models.Course).filter(models.Course.lecturer_id == lecturer.id).count()
-    ass_count = db.query(models.Assignment).join(models.Course).filter(models.Course.lecturer_id == lecturer.id).count()
-    qz_count = db.query(models.Quiz).join(models.Course).filter(models.Course.lecturer_id == lecturer.id).count()
+    courses = db.query(models.Course).filter(models.Course.lecturer_id == lecturer.id).all()
+    c_ids = [c.id for c in courses]
     
+    if c_ids:
+        res_count = db.query(models.CourseResource).filter(models.CourseResource.course_id.in_(c_ids)).count()
+        ass_count = db.query(models.Assignment).filter(models.Assignment.course_id.in_(c_ids)).count()
+        qz_count = db.query(models.Quiz).filter(models.Quiz.course_id.in_(c_ids)).count()
+    else:
+        res_count = ass_count = qz_count = 0
+        
     materials_count = res_count + ass_count + qz_count
     return {
         "materials": materials_count,
