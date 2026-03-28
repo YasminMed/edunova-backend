@@ -70,6 +70,12 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # --- Global Helpers ---
 
+def get_current_week_start():
+    today = datetime.datetime.utcnow()
+    # Monday is 0
+    start = today - datetime.timedelta(days=today.weekday())
+    return start.replace(hour=0, minute=0, second=0, microsecond=0)
+
 def to_float(val):
     if val is None or val == "": return 0.0
     try:
@@ -101,6 +107,7 @@ class UserAuth(BaseModel):
     stage: Optional[str] = None
     years_of_experience: Optional[int] = 0
     image_url: Optional[str] = None
+    total_academic_marks: Optional[int] = 0
 
 class OTPRequest(BaseModel):
     email: EmailStr
@@ -142,6 +149,7 @@ async def startup_event():
         add_col_safe("users", "stage", "VARCHAR")
         add_col_safe("users", "years_of_experience", "INTEGER", "0")
         add_col_safe("users", "image_url", "VARCHAR")
+        add_col_safe("users", "total_academic_marks", "INTEGER", "0")
         add_col_safe("courses", "image_url", "VARCHAR")
         add_col_safe("courses", "department", "VARCHAR", "'Software Engineering'")
         add_col_safe("courses", "stage", "VARCHAR", "'First Stage'")
@@ -380,7 +388,8 @@ async def login(user: UserAuth, db: Session = Depends(get_db)):
         "department": db_user.department,
         "stage": db_user.stage,
         "years_of_experience": db_user.years_of_experience,
-        "image_url": db_user.image_url
+        "image_url": db_user.image_url,
+        "total_academic_marks": db_user.total_academic_marks or 0
     }
 
 class ProfileUpdate(BaseModel):
@@ -2190,15 +2199,70 @@ async def get_student_progress(email: str, db: Session = Depends(get_db)):
     if att_total > 0 and (att_present / att_total) > 0.8:
         progress += 2.0
 
-    # 4. Weekly Challenges: +1% each, +3% if all current week done
-    challenges = db.query(models.WeeklyChallenge).all()
-    completions = db.query(models.ChallengeCompletion).filter(models.ChallengeCompletion.student_id == student.id).all()
-    completed_ids = [c.challenge_id for c in completions]
+    # 4. Weekly Challenges: +1% per completed sub-task (3 quizes, 5 assignments, 1 attendance)
+    # Target counts
+    TARGET_QUIZZES = 3
+    TARGET_ASSIGNMENTS = 5
+    TARGET_ATTENDANCE_RATE = 0.8
     
-    progress += len(completions) * 1.0
+    week_start = get_current_week_start()
     
-    if len(challenges) > 0 and len(completed_ids) == len(challenges):
-        progress += 3.0
+    # Real counts for this week
+    q_count = db.query(models.QuizSubmission).filter(
+        models.QuizSubmission.student_id == student.id,
+        models.QuizSubmission.submitted_at >= week_start
+    ).count()
+    
+    a_count = db.query(models.AssignmentSubmission).filter(
+        models.AssignmentSubmission.student_id == student.id,
+        models.AssignmentSubmission.submitted_at >= week_start
+    ).count()
+    
+    att_this_week = db.query(models.Attendance).filter(
+        models.Attendance.student_id == student.id,
+        models.Attendance.date >= week_start
+    ).all()
+    
+    att_present = len([att for att in att_this_week if att.status == "attended"])
+    att_rate = att_present / len(att_this_week) if att_this_week else 0.0
+    
+    # Progress: 1% for each quiz (up to 3), 1% for each assignment (up to 5), 1% for attendance >= 80%
+    challenge_progress = 0
+    challenge_progress += min(q_count, TARGET_QUIZZES)
+    challenge_progress += min(a_count, TARGET_ASSIGNMENTS)
+    if att_rate >= TARGET_ATTENDANCE_RATE and len(att_this_week) > 0:
+        challenge_progress += 1
+        
+    progress += challenge_progress
+    
+    # Check if fully completed to award marks (ensure only once)
+    fully_completed = (q_count >= TARGET_QUIZZES and a_count >= TARGET_ASSIGNMENTS and att_rate >= TARGET_ATTENDANCE_RATE)
+    if fully_completed:
+        # Check if already awarded this week
+        # We use a naming convention for WeeklyChallenge to track this week's completion
+        week_str = week_start.strftime("%Y-W%U")
+        challenge_title = f"Weekly Challenge {week_str}"
+        
+        challenge = db.query(models.WeeklyChallenge).filter(models.WeeklyChallenge.title == challenge_title).first()
+        if not challenge:
+            challenge = models.WeeklyChallenge(title=challenge_title, description=f"Challenge for week {week_str}", points=10)
+            db.add(challenge)
+            db.commit()
+            db.refresh(challenge)
+            
+        completion = db.query(models.ChallengeCompletion).filter(
+            models.ChallengeCompletion.challenge_id == challenge.id,
+            models.ChallengeCompletion.student_id == student.id
+        ).first()
+        
+        if not completion:
+            # Award 2 marks!
+            student.total_academic_marks = (student.total_academic_marks or 0) + 2
+            
+            completion = models.ChallengeCompletion(challenge_id=challenge.id, student_id=student.id)
+            db.add(completion)
+            db.commit()
+            print(f"DEBUG: Awarded 2 marks to {student.email} for completing {challenge_title}")
 
     # Cap at 100%
     progress = min(progress, 100.0)
@@ -2223,7 +2287,42 @@ async def get_student_progress(email: str, db: Session = Depends(get_db)):
         "progress": progress,
         "rank_text": rank_text,
         "rank": rank if student_stats else 0,
-        "total_students": len(all_stats) if all_stats else 0
+        "total_students": len(all_stats) if all_stats else 0,
+        "total_academic_marks": student.total_academic_marks or 0
+    }
+
+@app.get("/student/weekly-challenge-status/{email}")
+async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db)):
+    student = db.query(models.User).filter(models.User.email == email).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    week_start = get_current_week_start()
+    
+    q_count = db.query(models.QuizSubmission).filter(
+        models.QuizSubmission.student_id == student.id,
+        models.QuizSubmission.submitted_at >= week_start
+    ).count()
+    
+    a_count = db.query(models.AssignmentSubmission).filter(
+        models.AssignmentSubmission.student_id == student.id,
+        models.AssignmentSubmission.submitted_at >= week_start
+    ).count()
+    
+    att_this_week = db.query(models.Attendance).filter(
+        models.Attendance.student_id == student.id,
+        models.Attendance.date >= week_start
+    ).all()
+    
+    att_present = len([att for att in att_this_week if att.status == "attended"])
+    att_total = len(att_this_week)
+    att_rate = att_present / att_total if att_total > 0 else 0.0
+    
+    return {
+        "quizzes": {"current": q_count, "target": 3},
+        "assignments": {"current": a_count, "target": 5},
+        "attendance": {"current_rate": round(att_rate, 2), "target_rate": 0.8, "total_sessions": att_total, "present_sessions": att_present},
+        "total_marks": student.total_academic_marks or 0
     }
 
 @app.get("/challenges")

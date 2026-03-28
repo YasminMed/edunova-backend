@@ -427,9 +427,9 @@ class MaterialService {
     }
   }
 
-  Future<List<dynamic>> getWeeklyChallenges() async {
+  Future<Map<String, dynamic>> getWeeklyChallengeStatus(String email) async {
     try {
-      final response = await _dio.get("/challenges");
+      final response = await _dio.get("/student/weekly-challenge-status/$email");
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);

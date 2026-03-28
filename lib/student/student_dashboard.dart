@@ -36,6 +36,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   double _progressValue = 0.0;
   String _rankText = "Loading...";
+  int _totalMarks = 0;
 
   @override
   void initState() {
@@ -53,6 +54,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         setState(() {
           _progressValue = (data['progress'] as num).toDouble() / 100.0;
           _rankText = data['rank_text'] ?? "Rank Pending";
+          _totalMarks = data['total_academic_marks'] ?? 0;
         });
       }
     } catch (e) {
@@ -580,6 +582,33 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
                     ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.stars_rounded, color: Colors.amber, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        "Marks: $_totalMarks",
+                        style: TextDesign.body.copyWith(
+                          color: Colors.amber[800],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
