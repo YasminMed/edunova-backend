@@ -14,6 +14,14 @@ class ManagedSubjectViewModel extends BaseViewModel {
     "Exams",
     "Attendance",
   ];
+  
+  DateTime _selectedAttendanceDate = DateTime.now();
+  DateTime get selectedAttendanceDate => _selectedAttendanceDate;
+
+  void setSelectedAttendanceDate(DateTime date) {
+    _selectedAttendanceDate = date;
+    notifyListeners();
+  }
 
   List<dynamic> _resources = [];
   List<dynamic> get resources => _resources;
@@ -94,6 +102,7 @@ class ManagedSubjectViewModel extends BaseViewModel {
     required int courseId,
     required String title,
     required String content,
+    DateTime? deadline,
     File? file,
     Uint8List? fileBytes,
     String? fileName,
@@ -104,6 +113,7 @@ class ManagedSubjectViewModel extends BaseViewModel {
         courseId: courseId,
         title: title,
         content: content,
+        deadline: deadline,
         file: file,
         fileBytes: fileBytes,
         fileName: fileName,
@@ -131,6 +141,7 @@ class ManagedSubjectViewModel extends BaseViewModel {
     required int courseId,
     required String title,
     required String content,
+    DateTime? deadline,
     File? file,
     Uint8List? fileBytes,
     String? fileName,
@@ -141,6 +152,7 @@ class ManagedSubjectViewModel extends BaseViewModel {
         courseId: courseId,
         title: title,
         content: content,
+        deadline: deadline,
         file: file,
         fileBytes: fileBytes,
         fileName: fileName,
@@ -274,7 +286,7 @@ class ManagedSubjectViewModel extends BaseViewModel {
         "status": e.value,
       }).toList();
       
-      await _materialService.submitBatchAttendance(courseId, records);
+      await _materialService.submitBatchAttendance(courseId, records, date: _selectedAttendanceDate);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Attendance Submitted Successfully"),

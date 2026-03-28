@@ -173,7 +173,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          AppColors.primary,
+                          AppColors.primaryText,
                           AppColors.secondary,
                         ],
                         begin: Alignment.topLeft,
@@ -482,15 +482,25 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                               color: Colors.black,
                             ),
                           ),
-                          Text(
-                            resource['resource_date'] ?? (resource['created_at'] != null
-                              ? "Shared on ${resource['created_at'].toString().split('T')[0]}"
-                              : "Shared recently"),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.black54,
+                          if (resource['deadline'] != null)
+                            Text(
+                              "Deadline: ${resource['deadline'].toString().split('T')[0]}",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          else
+                            Text(
+                              resource['resource_date'] ?? (resource['created_at'] != null
+                                ? "Shared on ${resource['created_at'].toString().split('T')[0]}"
+                                : "Shared recently"),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
                             ),
-                          ),
                       ],
                     ),
                   ),
@@ -589,12 +599,16 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: submission != null ? Colors.orange : color,
+                      backgroundColor: submission != null ? Colors.orange : AppColors.primaryText,
                       foregroundColor: Colors.white,
-                      elevation: 0,
+                      elevation: 2,
+                      shadowColor: Colors.black.withOpacity(0.3),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: Text(submission != null ? "Edit Submission" : "Submit Answer"),
+                    child: Text(
+                      submission != null ? "Edit Submission" : "Submit Answer",
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
                 if (submission != null && (submission['is_graded'] == true || submission['is_graded'] == 1)) ...[

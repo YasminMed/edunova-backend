@@ -91,10 +91,21 @@ class _AssignmentReviewPageState extends State<AssignmentReviewPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                sub['student_name'],
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    sub['student_name'],
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  if (sub['submitted_at'] != null)
+                    Text(
+                      "Submitted: ${sub['submitted_at'].split('T')[0]} ${sub['submitted_at'].split('T')[1].substring(0, 5)}",
+                      style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : Colors.grey),
+                    ),
+                ],
               ),
+              const Spacer(),
               if (sub['is_graded'])
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),

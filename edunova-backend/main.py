@@ -154,6 +154,8 @@ async def startup_event():
         add_col_safe("courses", "department", "VARCHAR", "'Software Engineering'")
         add_col_safe("courses", "stage", "VARCHAR", "'First Stage'")
         add_col_safe("posts", "image_url", "VARCHAR")
+        add_col_safe("assignments", "deadline", "TIMESTAMP")
+        add_col_safe("quizzes", "deadline", "TIMESTAMP")
 
         # Broad Auto-fix for existing users with NULL department/stage
         all_users = db.query(models.User).all()
@@ -788,6 +790,7 @@ async def create_assignment(
     title: str = Form(...),
     content: str = Form(...),
     category: str = Form("assignment"),
+    deadline: Optional[str] = Form(None),
     file: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
@@ -797,13 +800,21 @@ async def create_assignment(
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         file_url = f"/uploads/{os.path.basename(file_path)}"
+        
+    deadline_date = None
+    if deadline:
+        try:
+            deadline_date = datetime.datetime.fromisoformat(deadline.replace("Z", "+00:00"))
+        except:
+            pass
     
     new_assignment = models.Assignment(
         course_id=course_id,
         category=category,
         title=title,
         content=content,
-        file_url=file_url
+        file_url=file_url,
+        deadline=deadline_date
     )
     db.add(new_assignment)
     db.commit()
@@ -931,7 +942,8 @@ async def create_quiz(
     course_id: int,
     title: str = Form(...),
     content: str = Form(...),
-    file: UploadFile = File(None),
+    deadline: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
     file_url = None
@@ -940,12 +952,20 @@ async def create_quiz(
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         file_url = f"/uploads/{os.path.basename(file_path)}"
+        
+    deadline_date = None
+    if deadline:
+        try:
+            deadline_date = datetime.datetime.fromisoformat(deadline.replace("Z", "+00:00"))
+        except:
+            pass
     
     new_quiz = models.Quiz(
         course_id=course_id,
         title=title,
         content=content,
-        file_url=file_url
+        file_url=file_url,
+        deadline=deadline_date
     )
     db.add(new_quiz)
     db.commit()
@@ -1671,9 +1691,16 @@ async def download_faculty_report(email: str, db: Session = Depends(get_db)):
 async def save_batch_attendance(
     course_id: int,
     attendance_data: list = Body(...), # [{"student_id": 1, "student_name": "Bob", "status": "attended"}]
+    date_str: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    today = datetime.datetime.utcnow().date()
+    if date_str:
+        try:
+            today = datetime.datetime.fromisoformat(date_str.replace("Z", "+00:00")).date()
+        except:
+            today = datetime.datetime.utcnow().date()
+    else:
+        today = datetime.datetime.utcnow().date()
     
     for item in attendance_data:
         student_id = item.get("student_id")

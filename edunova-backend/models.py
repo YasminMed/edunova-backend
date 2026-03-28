@@ -89,6 +89,7 @@ class Assignment(Base):
     title = Column(String, nullable=False)
     content = Column(String, nullable=False)
     file_url = Column(String, nullable=True) # Reference file (PDF etc)
+    deadline = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     course = relationship("Course")
@@ -131,6 +132,7 @@ class Quiz(Base):
     title = Column(String, nullable=False)
     content = Column(String, nullable=False)
     file_url = Column(String, nullable=True)
+    deadline = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     course = relationship("Course")

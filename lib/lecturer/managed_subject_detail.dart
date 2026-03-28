@@ -445,6 +445,28 @@ class ManagedSubjectDetailPage extends StatelessWidget {
               decoration: const InputDecoration(labelText: "Quiz Content/Questions"),
               maxLines: 4,
             ),
+            const SizedBox(height: 12),
+            StatefulBuilder(
+              builder: (context, setState) {
+                return ListTile(
+                  title: Text(
+                    "Deadline: ${viewModel.selectedAttendanceDate.toString().split(' ')[0]}",
+                  ),
+                  trailing: const Icon(Icons.calendar_today_rounded),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now().add(const Duration(days: 7)),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (picked != null) {
+                      setState(() => viewModel.setSelectedAttendanceDate(picked));
+                    }
+                  },
+                );
+              },
+            ),
           ],
         ),
         actions: [
@@ -459,6 +481,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                   courseId: courseId,
                   title: titleController.text,
                   content: contentController.text,
+                  deadline: viewModel.selectedAttendanceDate,
                 );
                 if (context.mounted) Navigator.pop(context);
               }
@@ -495,6 +518,28 @@ class ManagedSubjectDetailPage extends StatelessWidget {
               decoration: const InputDecoration(labelText: "Assignment Content"),
               maxLines: 4,
             ),
+            const SizedBox(height: 12),
+            StatefulBuilder(
+              builder: (context, setState) {
+                return ListTile(
+                  title: Text(
+                     "Deadline: ${viewModel.selectedAttendanceDate.toString().split(' ')[0]}",
+                  ),
+                  trailing: const Icon(Icons.calendar_today_rounded),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now().add(const Duration(days: 7)),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (picked != null) {
+                      setState(() => viewModel.setSelectedAttendanceDate(picked));
+                    }
+                  },
+                );
+              },
+            ),
           ],
         ),
         actions: [
@@ -509,6 +554,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                   courseId: courseId,
                   title: titleController.text,
                   content: contentController.text,
+                  deadline: viewModel.selectedAttendanceDate,
                 );
                 if (context.mounted) Navigator.pop(context);
               }
@@ -530,7 +576,38 @@ class ManagedSubjectDetailPage extends StatelessWidget {
   ) {
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
-        if (index == viewModel.allStudents.length) {
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Select Date:", style: TextDesign.h3),
+                TextButton.icon(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: viewModel.selectedAttendanceDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2030),
+                    );
+                    if (picked != null) {
+                      viewModel.setSelectedAttendanceDate(picked);
+                    }
+                  },
+                  icon: const Icon(Icons.calendar_today_rounded),
+                  label: Text(
+                    "${viewModel.selectedAttendanceDate.toString().split(' ')[0]}",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final studentIndex = index - 1;
+        if (studentIndex == viewModel.allStudents.length) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Row(
@@ -573,7 +650,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
           );
         }
 
-        final student = viewModel.allStudents[index];
+        final student = viewModel.allStudents[studentIndex];
         final String studentName = student['full_name'] ?? "Unknown";
         final int studentId = student['id'];
 
@@ -611,7 +688,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
             ],
           ),
         );
-      }, childCount: viewModel.allStudents.length + 1),
+      }, childCount: viewModel.allStudents.length + 2),
     );
   }
 

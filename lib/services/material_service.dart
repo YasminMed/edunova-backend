@@ -132,6 +132,7 @@ class MaterialService {
     required int courseId,
     required String title,
     required String content,
+    DateTime? deadline,
     File? file,
     Uint8List? fileBytes,
     String? fileName,
@@ -141,6 +142,7 @@ class MaterialService {
         "title": title,
         "content": content,
         "category": "assignment",
+        if (deadline != null) "deadline": deadline.toIso8601String(),
       };
       
       if (fileBytes != null && fileName != null) {
@@ -243,6 +245,7 @@ class MaterialService {
     required int courseId,
     required String title,
     required String content,
+    DateTime? deadline,
     File? file,
     Uint8List? fileBytes,
     String? fileName,
@@ -251,6 +254,7 @@ class MaterialService {
       final Map<String, dynamic> dataMap = {
         "title": title,
         "content": content,
+        if (deadline != null) "deadline": deadline.toIso8601String(),
       };
       
       if (fileBytes != null && fileName != null) {
@@ -398,9 +402,13 @@ class MaterialService {
     }
   }
 
-  Future<void> submitBatchAttendance(int courseId, List<Map<String, dynamic>> records) async {
+  Future<void> submitBatchAttendance(int courseId, List<Map<String, dynamic>> records, {DateTime? date}) async {
     try {
-      await _dio.post("/courses/$courseId/attendance/batch", data: records);
+      await _dio.post(
+        "/courses/$courseId/attendance/batch",
+        data: records,
+        queryParameters: date != null ? {"date_str": date.toIso8601String()} : null,
+      );
     } on DioException catch (e) {
       throw _handleError(e);
     }
