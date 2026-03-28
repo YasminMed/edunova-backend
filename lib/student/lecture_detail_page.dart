@@ -173,8 +173,8 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          AppColors.primaryText,
-                          AppColors.secondary,
+                          color,
+                          color.withOpacity(0.8),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -599,7 +599,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: submission != null ? Colors.orange : AppColors.primaryText,
+                      backgroundColor: submission != null ? Colors.orange : AppColors.primary,
                       foregroundColor: Colors.white,
                       elevation: 2,
                       shadowColor: Colors.black.withOpacity(0.3),

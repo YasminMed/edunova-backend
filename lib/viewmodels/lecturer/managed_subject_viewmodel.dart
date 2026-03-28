@@ -23,6 +23,14 @@ class ManagedSubjectViewModel extends BaseViewModel {
     notifyListeners();
   }
 
+  DateTime _assignmentDeadline = DateTime.now().add(const Duration(days: 7));
+  DateTime get assignmentDeadline => _assignmentDeadline;
+
+  void setAssignmentDeadline(DateTime date) {
+    _assignmentDeadline = date;
+    notifyListeners();
+  }
+
   List<dynamic> _resources = [];
   List<dynamic> get resources => _resources;
 

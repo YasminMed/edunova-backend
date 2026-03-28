@@ -450,18 +450,18 @@ class ManagedSubjectDetailPage extends StatelessWidget {
               builder: (context, setState) {
                 return ListTile(
                   title: Text(
-                    "Deadline: ${viewModel.selectedAttendanceDate.toString().split(' ')[0]}",
+                    "Deadline: ${viewModel.assignmentDeadline.toString().split(' ')[0]}",
                   ),
                   trailing: const Icon(Icons.calendar_today_rounded),
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: context,
-                      initialDate: DateTime.now().add(const Duration(days: 7)),
+                      initialDate: viewModel.assignmentDeadline,
                       firstDate: DateTime.now(),
                       lastDate: DateTime.now().add(const Duration(days: 365)),
                     );
                     if (picked != null) {
-                      setState(() => viewModel.setSelectedAttendanceDate(picked));
+                      setState(() => viewModel.setAssignmentDeadline(picked));
                     }
                   },
                 );
@@ -481,7 +481,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                   courseId: courseId,
                   title: titleController.text,
                   content: contentController.text,
-                  deadline: viewModel.selectedAttendanceDate,
+                  deadline: viewModel.assignmentDeadline,
                 );
                 if (context.mounted) Navigator.pop(context);
               }
@@ -523,18 +523,18 @@ class ManagedSubjectDetailPage extends StatelessWidget {
               builder: (context, setState) {
                 return ListTile(
                   title: Text(
-                     "Deadline: ${viewModel.selectedAttendanceDate.toString().split(' ')[0]}",
+                     "Deadline: ${viewModel.assignmentDeadline.toString().split(' ')[0]}",
                   ),
                   trailing: const Icon(Icons.calendar_today_rounded),
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: context,
-                      initialDate: DateTime.now().add(const Duration(days: 7)),
+                      initialDate: viewModel.assignmentDeadline,
                       firstDate: DateTime.now(),
                       lastDate: DateTime.now().add(const Duration(days: 365)),
                     );
                     if (picked != null) {
-                      setState(() => viewModel.setSelectedAttendanceDate(picked));
+                      setState(() => viewModel.setAssignmentDeadline(picked));
                     }
                   },
                 );
@@ -554,7 +554,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                   courseId: courseId,
                   title: titleController.text,
                   content: contentController.text,
-                  deadline: viewModel.selectedAttendanceDate,
+                  deadline: viewModel.assignmentDeadline,
                 );
                 if (context.mounted) Navigator.pop(context);
               }

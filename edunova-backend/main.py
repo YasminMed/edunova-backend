@@ -1694,14 +1694,18 @@ async def save_batch_attendance(
     date_str: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
+    target_date = datetime.datetime.utcnow()
     if date_str:
         try:
-            today = datetime.datetime.fromisoformat(date_str.replace("Z", "+00:00")).date()
+            # Parse iso format e.g., 2026-03-28T00:00:00.000
+            if "T" in date_str:
+                target_date = datetime.datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+            else:
+                target_date = datetime.datetime.fromisoformat(date_str)
         except:
-            today = datetime.datetime.utcnow().date()
-    else:
-        today = datetime.datetime.utcnow().date()
-    
+            pass
+            
+    today = target_date.date()
     for item in attendance_data:
         student_id = item.get("student_id")
         student_name = item.get("student_name")
@@ -1730,7 +1734,7 @@ async def save_batch_attendance(
                 student_id=student_id,
                 student_name=student_name or "Unknown",
                 status=status,
-                date=datetime.datetime.utcnow()
+                date=target_date
             )
             db.add(new_att)
             
