@@ -2393,8 +2393,12 @@ if __name__ == "__main__":
 # This MUST be at the end of the file so it doesn't hijack API routes
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
-    # This serves the index.html for any route not matched by the API
-    # to support the SPA routing in Flutter.
+    # Check if a file exists at static/{full_path}
+    potential_file = os.path.join("static", full_path)
+    if os.path.isfile(potential_file):
+        return FileResponse(potential_file)
+    
+    # Otherwise fallback to index.html for SPA routing
     index_file = os.path.join("static", "index.html")
     if os.path.exists(index_file):
         return FileResponse(index_file)
