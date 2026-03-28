@@ -100,7 +100,8 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   Future<void> _loadAttendance() async {
     setState(() => _isLoading = true);
     try {
-      final response = await _materialService.getAttendance(widget.lecture['id']);
+      final email = Provider.of<UserProvider>(context, listen: false).email;
+      final response = await _materialService.getAttendance(widget.lecture['id'], studentEmail: email);
       setState(() {
         _attendance = response;
         _isLoading = false;

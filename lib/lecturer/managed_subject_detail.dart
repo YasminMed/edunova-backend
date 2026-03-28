@@ -331,6 +331,49 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
+                    if (resource['total_submissions'] != null) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "${resource['total_submissions']} Submissions",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isDark ? Colors.white70 : Colors.grey[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: resource['total_submissions'] == 0
+                                  ? Colors.grey.withOpacity(0.2)
+                                  : (resource['ungraded_submissions'] ?? 0) > 0
+                                      ? Colors.orange.withOpacity(0.2)
+                                      : Colors.green.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              resource['total_submissions'] == 0
+                                  ? "No Submissions"
+                                  : (resource['ungraded_submissions'] ?? 0) > 0
+                                      ? "${resource['ungraded_submissions']} Pending Grades"
+                                      : "All Graded",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: resource['total_submissions'] == 0
+                                    ? (isDark ? Colors.grey[400] : Colors.grey[600])
+                                    : (resource['ungraded_submissions'] ?? 0) > 0
+                                        ? Colors.orange[800]
+                                        : Colors.green[700],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,

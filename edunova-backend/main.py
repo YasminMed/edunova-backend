@@ -762,8 +762,18 @@ async def upload_resource(
     return new_resource
 
 @app.get("/courses/{course_id}/attendance")
-async def get_attendance(course_id: int, db: Session = Depends(get_db)):
-    return db.query(models.Attendance).filter(models.Attendance.course_id == course_id).all()
+async def get_attendance(course_id: int, student_email: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    if not student_email:
+        return []
+        
+    student = db.query(models.User).filter(models.User.email == student_email).first()
+    if not student:
+        return []
+        
+    return db.query(models.Attendance).filter(
+        models.Attendance.course_id == course_id,
+        models.Attendance.student_id == student.id
+    ).all()
 
 @app.post("/courses/{course_id}/attendance")
 async def submit_attendance(
@@ -823,10 +833,33 @@ async def create_assignment(
 
 @app.get("/courses/{course_id}/assignments")
 async def get_assignments(course_id: int, category: str = "assignment", db: Session = Depends(get_db)):
-    return db.query(models.Assignment).filter(
+    assignments = db.query(models.Assignment).filter(
         models.Assignment.course_id == course_id,
         models.Assignment.category == category
     ).all()
+    
+    result = []
+    for ass in assignments:
+        total_sub = db.query(models.AssignmentSubmission).filter(
+            models.AssignmentSubmission.assignment_id == ass.id
+        ).count()
+        ungraded = db.query(models.AssignmentSubmission).filter(
+            models.AssignmentSubmission.assignment_id == ass.id,
+            models.AssignmentSubmission.is_graded == 0
+        ).count()
+        
+        result.append({
+            "id": ass.id,
+            "title": ass.title,
+            "content": ass.content,
+            "category": ass.category,
+            "created_at": ass.created_at.isoformat() if ass.created_at else None,
+            "deadline": ass.deadline.isoformat() if ass.deadline else None,
+            "file_url": ass.file_url,
+            "total_submissions": total_sub,
+            "ungraded_submissions": ungraded
+        })
+    return result
 
 @app.post("/assignments/{assignment_id}/submissions")
 async def submit_assignment(
@@ -974,7 +1007,29 @@ async def create_quiz(
 
 @app.get("/courses/{course_id}/quizzes")
 async def get_quizzes(course_id: int, db: Session = Depends(get_db)):
-    return db.query(models.Quiz).filter(models.Quiz.course_id == course_id).all()
+    quizzes = db.query(models.Quiz).filter(models.Quiz.course_id == course_id).all()
+    
+    result = []
+    for quiz in quizzes:
+        total_sub = db.query(models.QuizSubmission).filter(
+            models.QuizSubmission.quiz_id == quiz.id
+        ).count()
+        ungraded = db.query(models.QuizSubmission).filter(
+            models.QuizSubmission.quiz_id == quiz.id,
+            models.QuizSubmission.is_graded == 0
+        ).count()
+        
+        result.append({
+            "id": quiz.id,
+            "title": quiz.title,
+            "content": quiz.content,
+            "created_at": quiz.created_at.isoformat() if quiz.created_at else None,
+            "deadline": quiz.deadline.isoformat() if quiz.deadline else None,
+            "file_url": quiz.file_url,
+            "total_submissions": total_sub,
+            "ungraded_submissions": ungraded
+        })
+    return result
 
 @app.post("/quizzes/{quiz_id}/submissions")
 async def submit_quiz(

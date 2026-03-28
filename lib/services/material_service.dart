@@ -109,9 +109,12 @@ class MaterialService {
     }
   }
 
-  Future<List<dynamic>> getAttendance(int courseId) async {
+  Future<List<dynamic>> getAttendance(int courseId, {String? studentEmail}) async {
     try {
-      final response = await _dio.get("/courses/$courseId/attendance");
+      final response = await _dio.get(
+        "/courses/$courseId/attendance",
+        queryParameters: studentEmail != null ? {"student_email": studentEmail} : null,
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
