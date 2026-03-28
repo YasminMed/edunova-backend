@@ -1542,9 +1542,9 @@ async def get_lecturer_student_analysis(lecturer_email: str, db: Session = Depen
     # 2. Attendance Analytics
     att_records = db.query(models.Attendance).filter(models.Attendance.student_id.in_(student_ids)).all()
     total_att = len(att_records)
-    attended = len([r for r in att_records if r.status == "attended"])
-    late = len([r for r in att_records if r.status == "late"])
-    absent = len([r for r in att_records if r.status == "absent"])
+    attended = len([r for r in att_records if r.status.lower() == "attended"])
+    late = len([r for r in att_records if r.status.lower() == "late"])
+    absent = len([r for r in att_records if r.status.lower() == "absent"])
     
     att_analytics = {
         "attended": round(attended / total_att * 100, 1) if total_att > 0 else 0.0,
@@ -1578,8 +1578,10 @@ async def get_lecturer_student_analysis(lecturer_email: str, db: Session = Depen
     
     engagement = (actual_subs / expected_subs * 100) if expected_subs > 0 else 0.0
     
-    # Materials Used: count of resources by lecturer
+    # Materials Used: count of resources + assignments + quizzes by lecturer
     materials_count = db.query(models.CourseResource).join(models.Course).filter(models.Course.lecturer_id == lecturer.id).count()
+    materials_count += db.query(models.Assignment).join(models.Course).filter(models.Course.lecturer_id == lecturer.id).count()
+    materials_count += db.query(models.Quiz).join(models.Course).filter(models.Course.lecturer_id == lecturer.id).count()
     
     detailed_stats = {
         "average_mark": round(avg_mark, 1),
@@ -1619,7 +1621,12 @@ async def get_lecturer_dashboard_stats(email: str, db: Session = Depends(get_db)
     if not lecturer:
         raise HTTPException(status_code=404, detail="Lecturer not found")
         
-    materials_count = db.query(models.CourseResource).join(models.Course).filter(models.Course.lecturer_id == lecturer.id).count()
+    # Total materials include resources, assignments, and quizzes
+    res_count = db.query(models.CourseResource).join(models.Course).filter(models.Course.lecturer_id == lecturer.id).count()
+    ass_count = db.query(models.Assignment).join(models.Course).filter(models.Course.lecturer_id == lecturer.id).count()
+    qz_count = db.query(models.Quiz).join(models.Course).filter(models.Course.lecturer_id == lecturer.id).count()
+    
+    materials_count = res_count + ass_count + qz_count
     return {
         "materials": materials_count,
         "years_exp": lecturer.years_of_experience
@@ -2309,7 +2316,7 @@ async def get_student_progress(email: str, db: Session = Depends(get_db)):
         models.Attendance.date >= week_start
     ).all()
     
-    att_present = len([att for att in att_this_week if att.status == "attended"])
+    att_present = len([att for att in att_this_week if att.status.lower() == "attended"])
     att_rate = att_present / len(att_this_week) if att_this_week else 0.0
     
     # Progress: 1% for each quiz (up to 3), 1% for each assignment (up to 5), 1% for attendance >= 80%
@@ -2400,7 +2407,7 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
         models.Attendance.date >= week_start
     ).all()
     
-    att_present = len([att for att in att_this_week if att.status == "attended"])
+    att_present = len([att for att in att_this_week if att.status.lower() == "attended"])
     att_total = len(att_this_week)
     att_rate = att_present / att_total if att_total > 0 else 0.0
     
