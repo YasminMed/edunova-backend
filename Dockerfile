@@ -1,4 +1,4 @@
-# Force Rebuild - Optimized Caching
+# Force Rebuild - SPA Routing Fix - 2026-03-28
 # Stage 1: Build Flutter Web
 FROM debian:latest AS build-env
 

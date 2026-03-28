@@ -329,12 +329,12 @@ async def startup_event():
     finally:
         db.close()
 
-@app.get("/")
-async def root():
-    return {
-        "message": "Welcome to EduNova API",
-        "database": "Online" if os.getenv("DATABASE_URL") else "Offline (SQLite Fallback)"
-    }
+# @app.get("/")
+# async def root():
+#     return {
+#         "message": "Welcome to EduNova API",
+#         "database": "Online" if os.getenv("DATABASE_URL") else "Offline (SQLite Fallback)"
+#     }
 
 @app.post("/auth/signup")
 async def signup(user: UserAuth, db: Session = Depends(get_db)):
