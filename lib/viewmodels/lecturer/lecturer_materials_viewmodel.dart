@@ -25,8 +25,8 @@ class LecturerMaterialsViewModel extends BaseViewModel {
         'code': s['code'] as String,
         'department': s['department'] as String?,
         'stage': s['stage'] as String?,
-        'students': 0, // Mock for now
-        'materials': 0, // Mock for now
+        'students': s['students'] ?? 0,
+        'materials': s['materials'] ?? 0,
         'image': s['image_url'] != null ? "${AuthService.baseUrl}${s['image_url']}" : null,
         'color': Colors.blue, // Default color
       }).toList().cast<Map<String, dynamic>>();

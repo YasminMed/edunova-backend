@@ -592,16 +592,34 @@ async def get_courses(email: Optional[str] = None, role: Optional[str] = None, d
     courses = query.order_by(models.Course.id.desc()).all()
     result = []
     for c in courses:
+        # Calculate materials and students for each course
+        mat_count = db.query(models.CourseResource).filter(models.CourseResource.course_id == c.id).count()
+        mat_count += db.query(models.Assignment).filter(models.Assignment.course_id == c.id).count()
+        mat_count += db.query(models.Quiz).filter(models.Quiz.course_id == c.id).count()
+        
+        # Approximate student count (department/stage match)
+        # Assuming student department and stage are CSVs
+        c_depts = [d.strip() for d in c.department.split(',')]
+        c_stages = [s.strip() for s in c.stage.split(',')]
+        
+        stud_count = db.query(models.User).filter(
+            models.User.role == "student",
+            models.User.department.in_(c_depts),
+            models.User.stage.in_(c_stages)
+        ).count()
+
         result.append({
             "id": c.id,
             "name": c.name,
             "code": c.code,
-            "description": getattr(c, 'description', "No description available."), # Handled if missing
+            "description": getattr(c, 'description', "No description available."),
             "image_url": c.image_url,
             "lecturer_id": c.lecturer_id,
             "lecturer_name": c.lecturer.full_name if c.lecturer else "Lecturer",
             "department": c.department,
-            "stage": c.stage
+            "stage": c.stage,
+            "materials": mat_count,
+            "students": stud_count
         })
     return result
 
