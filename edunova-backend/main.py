@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Form, Body
+from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Form, Body, Query
 from typing import Optional, List
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
