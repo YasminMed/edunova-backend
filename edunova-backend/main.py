@@ -2578,11 +2578,12 @@ async def chat_with_ai(request: ChatRequest):
     import os
     
     system_prompt = (
-        "You are the official EduNova AI Academic Assistant. \n"
-        "Your role is to help users with studying, academic fields, or using the EduNova application.\n"
-        "You can explain how to use the EduNova app (e.g. submitting assignments, viewing grades, editing profile, changing passwords, grading, or uploading materials).\n"
-        f"You are currently talking to a {request.user_role.upper()}.\n"
-        "If a user asks a completely unrelated question (like sports, weather, or random trivia), politely decline and remind them you are an academic assistant. However, DO NOT reject questions about the EduNova application. Be helpful, detailed, and professional."
+        f"You are the official EduNova Support Expert & Academic Tutor. You are talking to a {request.user_role.upper()}.\n"
+        "Your goal is to be extremely helpful, friendly, and conversational. \n"
+        "1. Help users with any academic questions or study topics they have.\n"
+        "2. Help users navigate the EduNova application. For example: how to upload materials, how to grade assignments, how to view ranks, change profile name/email, change password, or switch language.\n"
+        "3. If a user asks something completely non-academic (like sports or jokes), gently steer them back to studies or the application, but stay friendly.\n"
+        "4. NEVER say 'I am just an assistant' or reject valid questions about the EduNova app Features."
     )
 
     model = request.model_type.lower()
@@ -2591,19 +2592,18 @@ async def chat_with_ai(request: ChatRequest):
     if model == "gemini":
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
-            raise HTTPException(status_code=500, detail="Gemini API Key missing in server configuration")
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+            return {"response": "Gemini API Key is missing from the server environment variables. Please add GEMINI_API_KEY to Railway."}
+            
+        # Using v1 and gemini-1.5-flash for maximum production stability
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
         
-        # gemini-pro does not natively support system_instruction, so we prepend it
         gemini_history = []
-        gemini_history.append({"role": "user", "parts": [{"text": "SYSTEM INSTRUCTION: " + system_prompt}]})
-        gemini_history.append({"role": "model", "parts": [{"text": "Understood. I will act strictly as the EduNova Academic Assistant."}]})
-        
         for m in request.messages:
             role = "user" if m.get("isUser", True) else "model"
             gemini_history.append({"role": role, "parts": [{"text": m.get("text", "")}]})
             
         payload = {
+            "system_instruction": {"parts": [{"text": system_prompt}]},
             "contents": gemini_history
         }
         
@@ -2614,10 +2614,10 @@ async def chat_with_ai(request: ChatRequest):
                 try:
                     text = data["candidates"][0]["content"]["parts"][0]["text"]
                     return {"response": text}
-                except KeyError:
-                    return {"response": "Failed to parse API response."}
+                except (KeyError, IndexError):
+                    return {"response": "Gemini responded but I couldn't understand the answer. Please try again."}
             else:
-                raise HTTPException(status_code=500, detail=resp.text)
+                return {"response": f"Gemini Error: {resp.text[:200]}"}
                 
     # 2. DeepSeek or Groq (OpenAI Compatible)
     elif model in ["deepseek", "groq"]:
@@ -2646,10 +2646,15 @@ async def chat_with_ai(request: ChatRequest):
                 try:
                     text = data["choices"][0]["message"]["content"]
                     return {"response": text}
-                except KeyError:
-                    return {"response": "Failed to parse API response."}
+                except (KeyError, IndexError):
+                    return {"response": "AI responded but the format was incorrect. Try again."}
             else:
-                raise HTTPException(status_code=500, detail=resp.text)
+                error_text = resp.text
+                if "Insufficient Balance" in error_text:
+                    return {"response": "The selected AI model (DeepSeek) is out of credits. Please switch to 'Groq' or 'Gemini' in the dropdown above!"}
+                if "rate_limit" in error_text or resp.status_code == 429:
+                    return {"response": "AI rate limit reached. Please wait a few seconds and try again."}
+                return {"response": f"AI Error ({model}): {error_text[:200]}"}
                 
     else:
         raise HTTPException(status_code=400, detail="Unsupported model type")
