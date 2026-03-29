@@ -63,9 +63,33 @@ class CourseResource(Base):
     category = Column(String, nullable=False) # pdf, assignment, quiz, exam
     title = Column(String, nullable=False)
     file_url = Column(String, nullable=False)
+    views = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     course = relationship("Course", back_populates="resources")
+
+class Comment(Base):
+    __tablename__ = "comments"
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("posts.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    content = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    post = relationship("Post")
+    user = relationship("User")
+
+class Activity(Base):
+    __tablename__ = "activities"
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(String, nullable=False) # quiz_sub, chat_sent, comment_added
+    user_id = Column(Integer, ForeignKey("users.id"))
+    lecturer_id = Column(Integer, ForeignKey("users.id"))
+    description = Column(String)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    user = relationship("User", foreign_keys=[user_id])
+    lecturer = relationship("User", foreign_keys=[lecturer_id])
 
 class Attendance(Base):
     __tablename__ = "attendance_records"

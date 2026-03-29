@@ -97,6 +97,16 @@ def get_grade_letter(perc):
     if perc >= 50: return "D"
     return "F"
 
+def log_activity(db: Session, type: str, user_id: int, lecturer_id: int, description: str):
+    new_act = models.Activity(
+        type=type,
+        user_id=user_id,
+        lecturer_id=lecturer_id,
+        description=description
+    )
+    db.add(new_act)
+    db.commit()
+
 class UserAuth(BaseModel):
     email: EmailStr
     password: str
@@ -253,6 +263,19 @@ async def startup_event():
         run_sql(
             "CREATE TABLE IF NOT EXISTS challenge_completions (id SERIAL PRIMARY KEY, challenge_id INTEGER REFERENCES weekly_challenges(id), student_id INTEGER REFERENCES users(id), completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
             "CREATE TABLE IF NOT EXISTS challenge_completions (id INTEGER PRIMARY KEY AUTOINCREMENT, challenge_id INTEGER REFERENCES weekly_challenges(id), student_id INTEGER REFERENCES users(id), completed_at DATETIME)"
+        )
+
+        # Add view column to course_resources
+        add_col_safe("course_resources", "views", "INTEGER", "0")
+
+        run_sql(
+            "CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, post_id INTEGER REFERENCES posts(id), user_id INTEGER REFERENCES users(id), content TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+            "CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER REFERENCES posts(id), user_id INTEGER REFERENCES users(id), content VARCHAR NOT NULL, created_at DATETIME)"
+        )
+
+        run_sql(
+            "CREATE TABLE IF NOT EXISTS activities (id SERIAL PRIMARY KEY, type VARCHAR NOT NULL, user_id INTEGER REFERENCES users(id), lecturer_id INTEGER REFERENCES users(id), description TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+            "CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY AUTOINCREMENT, type VARCHAR NOT NULL, user_id INTEGER REFERENCES users(id), lecturer_id INTEGER REFERENCES users(id), description VARCHAR, created_at DATETIME)"
         )
 
         # Create default user if none exists
@@ -542,6 +565,42 @@ async def delete_post(post_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Post deleted successfully"}
 
+@app.post("/posts/{post_id}/comments")
+async def add_comment(post_id: int, user_email: str = Body(...), content: str = Body(...), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == user_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    new_comment = models.Comment(
+        post_id=post_id,
+        user_id=user.id,
+        content=content
+    )
+    db.add(new_comment)
+    db.commit()
+
+    # Log activity
+    log_activity(db, "comment_added", user.id, post.user_id, f"Commented on your post: \"{post.title}\"")
+    
+    return {"message": "Comment added successfully"}
+
+@app.get("/posts/{post_id}/comments")
+async def get_comments(post_id: int, db: Session = Depends(get_db)):
+    comments = db.query(models.Comment).filter(models.Comment.post_id == post_id).order_by(models.Comment.created_at.desc()).all()
+    result = []
+    for c in comments:
+        result.append({
+            "id": c.id,
+            "user_name": c.user.full_name,
+            "content": c.content,
+            "created_at": c.created_at.isoformat()
+        })
+    return result
+
 @app.get("/posts")
 async def get_posts(db: Session = Depends(get_db)):
     posts = db.query(models.Post).order_by(models.Post.created_at.desc()).all()
@@ -778,6 +837,15 @@ async def upload_resource(
     db.commit()
     db.refresh(new_resource)
     return new_resource
+
+@app.post("/resources/{resource_id}/view")
+async def increment_resource_view(resource_id: int, db: Session = Depends(get_db)):
+    resource = db.query(models.CourseResource).filter(models.CourseResource.id == resource_id).first()
+    if not resource:
+        raise HTTPException(status_code=404, detail="Resource not found")
+    resource.views += 1
+    db.commit()
+    return {"message": "View count incremented", "views": resource.views}
 
 @app.get("/courses/{course_id}/attendance")
 async def get_attendance(course_id: int, student_email: Optional[str] = Query(None), db: Session = Depends(get_db)):
@@ -1654,9 +1722,32 @@ async def get_lecturer_dashboard_stats(email: str, db: Session = Depends(get_db)
         res_count = ass_count = qz_count = 0
         
     materials_count = res_count + ass_count + qz_count
+
+    # Fetch real activities
+    activities = db.query(models.Activity).filter(models.Activity.lecturer_id == lecturer.id).order_by(models.Activity.created_at.desc()).limit(10).all()
+    act_list = []
+    for act in activities:
+        # Time ago logic simplified
+        diff = datetime.datetime.utcnow() - act.created_at
+        if diff.days > 0:
+            time_str = f"{diff.days}d ago"
+        elif diff.seconds > 3600:
+            time_str = f"{diff.seconds // 3600}h ago"
+        elif diff.seconds > 60:
+            time_str = f"{diff.seconds // 60}m ago"
+        else:
+            time_str = "just now"
+
+        act_list.append({
+            "title": act.user.full_name,
+            "desc": act.description,
+            "time": time_str
+        })
+
     return {
         "materials": materials_count,
-        "years_exp": lecturer.years_of_experience
+        "years_exp": lecturer.years_of_experience,
+        "activities": act_list
     }
 
 @app.post("/lecturer/update-experience")
