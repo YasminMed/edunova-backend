@@ -2594,44 +2594,56 @@ async def chat_with_ai(request: ChatRequest):
     if model == "gemini":
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
-            return {"response": "Gemini API Key is missing from the server environment variables. Please add GEMINI_API_KEY to Railway."}
-            
-        # Using v1beta and gemini-1.5-flash for maximum feature support
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-        
-        # Prepend system context to history for 100% compatibility across all API versions
+            return {"response": "Gemini API Key is missing. Please add GEMINI_API_KEY to your Railway environment variables."}
+
+        # Build conversation history - compatible with all API versions
         gemini_history = []
-        gemini_history.append({"role": "user", "parts": [{"text": f"SYSTEM START: {system_prompt}"}]})
-        gemini_history.append({"role": "model", "parts": [{"text": "Understood! I am now the EduNova AI Mentor. How can I help you today?"}]})
+        gemini_history.append({"role": "user", "parts": [{"text": f"SYSTEM: {system_prompt}"}]})
+        gemini_history.append({"role": "model", "parts": [{"text": "Got it! I am the EduNova AI Mentor. How can I help you?"}]})
 
         for m in request.messages:
-            # Support both 'isUser' (old) and 'role' (new) formats
             is_user = m.get("isUser")
             if is_user is None:
                 is_user = (m.get("role") == "user")
-            
-            # Support both 'text' (old) and 'content' (new) fields
             msg_text = m.get("text") or m.get("content") or ""
-            if not msg_text.strip(): continue
-            
+            if not msg_text.strip():
+                continue
             role = "user" if is_user else "model"
             gemini_history.append({"role": role, "parts": [{"text": msg_text}]})
-            
-        payload = {
-            "contents": gemini_history
-        }
+
+        payload = {"contents": gemini_history}
+
+        # Try multiple models in order - first one that works wins
+        model_candidates = [
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-latest",
+            "gemini-1.0-pro",
+            "gemini-pro",
+        ]
         
         async with httpx.AsyncClient() as client:
-            resp = await client.post(url, json=payload, headers={'Content-Type': 'application/json'}, timeout=30.0)
-            if resp.status_code == 200:
-                data = resp.json()
-                try:
-                    text = data["candidates"][0]["content"]["parts"][0]["text"]
-                    return {"response": text}
-                except (KeyError, IndexError):
-                    return {"response": "Gemini responded but I couldn't understand the answer. Please try again."}
-            else:
-                return {"response": f"Gemini Error: {resp.text[:200]}"}
+            last_error = ""
+            for candidate in model_candidates:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{candidate}:generateContent?key={api_key}"
+                resp = await client.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=30.0)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    try:
+                        text = data["candidates"][0]["content"]["parts"][0]["text"]
+                        return {"response": text}
+                    except (KeyError, IndexError):
+                        return {"response": "Gemini replied but the format was unexpected. Please try again."}
+                elif resp.status_code == 404:
+                    # This model not found, try next one
+                    last_error = resp.text
+                    continue
+                else:
+                    # Other error (400, 401, etc.) - no point trying other models
+                    return {"response": f"Gemini Error ({resp.status_code}): {resp.text[:200]}"}
+            
+            # All models failed with 404
+            return {"response": f"None of the available Gemini models are accessible with your API key. Please verify your GEMINI_API_KEY in Railway. Last error: {last_error[:150]}"}
+
                 
     # 2. DeepSeek or Groq (OpenAI Compatible)
     elif model in ["deepseek", "groq"]:
