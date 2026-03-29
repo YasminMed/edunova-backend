@@ -2624,7 +2624,7 @@ async def chat_with_ai(request: ChatRequest):
             raise HTTPException(status_code=500, detail=f"{model.capitalize()} API Key missing in server configuration")
         
         url = "https://api.deepseek.com/chat/completions" if model == "deepseek" else "https://api.groq.com/openai/v1/chat/completions"
-        model_name = "deepseek-chat" if model == "deepseek" else "llama3-8b-8192"
+        model_name = "deepseek-chat" if model == "deepseek" else "llama-3.3-70b-versatile"
         
         oai_messages = [{"role": "system", "content": system_prompt}]
         for m in request.messages:
