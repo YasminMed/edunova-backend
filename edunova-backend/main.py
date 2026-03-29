@@ -2594,8 +2594,7 @@ async def chat_with_ai(request: ChatRequest):
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise HTTPException(status_code=500, detail="Gemini API Key missing in server configuration")
-        
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
         gemini_history = []
         for m in request.messages:
             role = "user" if m.get("isUser", True) else "model"
