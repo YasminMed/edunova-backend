@@ -2578,12 +2578,13 @@ async def chat_with_ai(request: ChatRequest):
     import os
     
     system_prompt = (
-        f"You are the official EduNova Support Expert & Academic Tutor. You are talking to a {request.user_role.upper()}.\n"
-        "Your goal is to be extremely helpful, friendly, and conversational. \n"
-        "1. Help users with any academic questions or study topics they have.\n"
-        "2. Help users navigate the EduNova application. For example: how to upload materials, how to grade assignments, how to view ranks, change profile name/email, change password, or switch language.\n"
-        "3. If a user asks something completely non-academic (like sports or jokes), gently steer them back to studies or the application, but stay friendly.\n"
-        "4. NEVER say 'I am just an assistant' or reject valid questions about the EduNova app Features."
+        f"You are the official EduNova AI Mentor & App Support. You are talking to a {request.user_role.upper()}.\n"
+        "Your personality is: Brilliant, witty, helpful, and very human-like. \n"
+        "RULES:\n"
+        "1. Provide detailed, expert guidance on any academic topic or study field.\n"
+        "2. You are an expert on the EduNova app. Explain features clearly (uploading materials, grading, viewing ranks, changing profile data/passwords, language settings).\n"
+        "3. Be conversational. Don't say 'It seems you haven't asked a question'. If you get an empty input, just say 'Hey! I'm here to help. What's on your mind regarding your studies or the app?'\n"
+        "4. Keep the user engaged. If they ask about the app, give them a step-by-step guide with a friendly tone."
     )
 
     model = request.model_type.lower()
@@ -2597,13 +2598,25 @@ async def chat_with_ai(request: ChatRequest):
         # Using v1 and gemini-1.5-flash for maximum production stability
         url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
         
+        # Prepend system context to history for 100% compatibility across all API versions
         gemini_history = []
+        gemini_history.append({"role": "user", "parts": [{"text": f"SYSTEM START: {system_prompt}"}]})
+        gemini_history.append({"role": "model", "parts": [{"text": "Understood! I am now the EduNova AI Mentor. How can I help you today?"}]})
+
         for m in request.messages:
-            role = "user" if m.get("isUser", True) else "model"
-            gemini_history.append({"role": role, "parts": [{"text": m.get("text", "")}]})
+            # Support both 'isUser' (old) and 'role' (new) formats
+            is_user = m.get("isUser")
+            if is_user is None:
+                is_user = (m.get("role") == "user")
+            
+            # Support both 'text' (old) and 'content' (new) fields
+            msg_text = m.get("text") or m.get("content") or ""
+            if not msg_text.strip(): continue
+            
+            role = "user" if is_user else "model"
+            gemini_history.append({"role": role, "parts": [{"text": msg_text}]})
             
         payload = {
-            "system_instruction": {"parts": [{"text": system_prompt}]},
             "contents": gemini_history
         }
         
@@ -2630,8 +2643,15 @@ async def chat_with_ai(request: ChatRequest):
         
         oai_messages = [{"role": "system", "content": system_prompt}]
         for m in request.messages:
-            role = "user" if m.get("isUser", True) else "assistant"
-            oai_messages.append({"role": role, "content": m.get("text", "")})
+            is_user = m.get("isUser")
+            if is_user is None:
+                is_user = (m.get("role") == "user")
+            
+            msg_text = m.get("text") or m.get("content") or ""
+            if not msg_text.strip(): continue
+            
+            role = "user" if is_user else "assistant"
+            oai_messages.append({"role": role, "content": msg_text})
             
         payload = {
             "model": model_name,
