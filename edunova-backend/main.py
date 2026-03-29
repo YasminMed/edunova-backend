@@ -2567,6 +2567,92 @@ async def complete_challenge(challenge_id: int, student_email: str = Form(...), 
     db.commit()
     return {"message": "Challenge completed"}
 
+class ChatRequest(BaseModel):
+    messages: List[dict]
+    model_type: str
+    user_role: str
+
+@app.post("/chat")
+async def chat_with_ai(request: ChatRequest):
+    import httpx
+    import os
+    
+    system_prompt = (
+        "You are the official EduNova AI Academic Assistant. \n"
+        "Your MUST adhere to the following strict rules:\n"
+        "1. You only answer questions related to studying, academic fields, or using the EduNova application.\n"
+        "2. For EduNova application questions, help users with submitting assignments, viewing grades, editing their profile (name, email), changing passwords, changing application language, or (for lecturers) uploading materials and grading.\n"
+        f"3. You are currently talking to a {request.user_role.upper()}.\n"
+        "4. If the user asks anything outside of academics or the application (e.g. casual chatter, sports, weather, unrelated code generation), politely state: "
+        "'I am the EduNova Academic Assistant. I can only assist with your studies or navigating the application.'"
+    )
+
+    model = request.model_type.lower()
+    
+    # 1. Gemini
+    if model == "gemini":
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="Gemini API Key missing in server configuration")
+        
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        gemini_history = []
+        for m in request.messages:
+            role = "user" if m.get("isUser", True) else "model"
+            gemini_history.append({"role": role, "parts": [{"text": m.get("text", "")}]})
+            
+        payload = {
+            "system_instruction": {"parts": [{"text": system_prompt}]},
+            "contents": gemini_history
+        }
+        
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(url, json=payload, headers={'Content-Type': 'application/json'}, timeout=30.0)
+            if resp.status_code == 200:
+                data = resp.json()
+                try:
+                    text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    return {"response": text}
+                except KeyError:
+                    return {"response": "Failed to parse API response."}
+            else:
+                raise HTTPException(status_code=500, detail=resp.text)
+                
+    # 2. DeepSeek or Groq (OpenAI Compatible)
+    elif model in ["deepseek", "groq"]:
+        api_key = os.getenv(f"{model.upper()}_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail=f"{model.capitalize()} API Key missing in server configuration")
+        
+        url = "https://api.deepseek.com/chat/completions" if model == "deepseek" else "https://api.groq.com/openai/v1/chat/completions"
+        model_name = "deepseek-chat" if model == "deepseek" else "llama3-8b-8192"
+        
+        oai_messages = [{"role": "system", "content": system_prompt}]
+        for m in request.messages:
+            role = "user" if m.get("isUser", True) else "assistant"
+            oai_messages.append({"role": role, "content": m.get("text", "")})
+            
+        payload = {
+            "model": model_name,
+            "messages": oai_messages,
+            "temperature": 0.7
+        }
+        
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(url, json=payload, headers={"Authorization": f"Bearer {api_key}"}, timeout=30.0)
+            if resp.status_code == 200:
+                data = resp.json()
+                try:
+                    text = data["choices"][0]["message"]["content"]
+                    return {"response": text}
+                except KeyError:
+                    return {"response": "Failed to parse API response."}
+            else:
+                raise HTTPException(status_code=500, detail=resp.text)
+                
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported model type")
+
 if __name__ == "__main__":
     import uvicorn
     import os

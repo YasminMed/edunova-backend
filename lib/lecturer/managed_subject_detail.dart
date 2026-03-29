@@ -252,6 +252,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
             }
 
             final resource = resources[index];
+            final isPDF = viewModel.selectedFilterIndex == 0;
             final isAssignment = viewModel.selectedFilterIndex == 1;
             final isQuiz = viewModel.selectedFilterIndex == 2;
 
@@ -266,6 +267,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                 ],
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
@@ -278,38 +280,38 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                         child: Icon(icon, color: color),
                       ),
                       const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      resource['title'],
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: isDark ? Colors.white : AppColors.primaryText,
-                                      ),
-                                    ),
-                                    if (resource['file_url'] != null)
-                                      Text(
-                                        "File: ${resource['file_url'].split('/').last}",
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: color.withOpacity(0.8),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    Text(
-                                      resource['created_at'] != null 
-                                        ? "Uploaded on ${resource['created_at'].toString().split('T')[0]}"
-                                        : "Shared recently",
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: isDark ? Colors.white54 : Colors.grey,
-                                      ),
-                                    ),
-                                  ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              resource['title'],
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : AppColors.primaryText,
+                              ),
+                            ),
+                            if (resource['file_url'] != null)
+                              Text(
+                                "File: ${resource['file_url'].split('/').last}",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: color.withOpacity(0.8),
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
+                            Text(
+                              resource['created_at'] != null 
+                                ? "Uploaded on ${resource['created_at'].toString().split('T')[0]}"
+                                : "Shared recently",
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isDark ? Colors.white54 : Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       IconButton(
                         icon: const Icon(
                           Icons.delete_outline_rounded,
@@ -319,61 +321,98 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                    if (isAssignment && resource['content'] != null) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        resource['content'],
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: isDark ? Colors.white70 : Colors.grey[700],
+                  if ((isAssignment || isQuiz) && resource['content'] != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      resource['content'],
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isDark ? Colors.white70 : Colors.grey[700],
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (!isPDF && resource['total_submissions'] != null) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "${resource['total_submissions']} Submissions",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? Colors.white70 : Colors.grey[700],
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    if (resource['total_submissions'] != null) ...[
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "${resource['total_submissions']} Submissions",
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: resource['total_submissions'] == 0
+                                ? Colors.grey.withOpacity(0.2)
+                                : (resource['ungraded_submissions'] ?? 0) > 0
+                                    ? Colors.orange.withOpacity(0.2)
+                                    : Colors.green.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            resource['total_submissions'] == 0
+                                ? "No Submissions"
+                                : (resource['ungraded_submissions'] ?? 0) > 0
+                                    ? "${resource['ungraded_submissions']} Pending Grades"
+                                    : "All Graded",
                             style: TextStyle(
-                              fontSize: 13,
-                              color: isDark ? Colors.white70 : Colors.grey[700],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
                               color: resource['total_submissions'] == 0
-                                  ? Colors.grey.withOpacity(0.2)
+                                  ? (isDark ? Colors.grey[400] : Colors.grey[600])
                                   : (resource['ungraded_submissions'] ?? 0) > 0
-                                      ? Colors.orange.withOpacity(0.2)
-                                      : Colors.green.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              resource['total_submissions'] == 0
-                                  ? "No Submissions"
-                                  : (resource['ungraded_submissions'] ?? 0) > 0
-                                      ? "${resource['ungraded_submissions']} Pending Grades"
-                                      : "All Graded",
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: resource['total_submissions'] == 0
-                                    ? (isDark ? Colors.grey[400] : Colors.grey[600])
-                                    : (resource['ungraded_submissions'] ?? 0) > 0
-                                        ? Colors.orange[800]
-                                        : Colors.green[700],
-                              ),
+                                      ? Colors.orange[800]
+                                      : Colors.green[700],
                             ),
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
+                  ] else if (isPDF) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Material Engagement",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? Colors.white70 : Colors.grey[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.visibility_rounded, size: 14, color: color),
+                              const SizedBox(width: 6),
+                              Text(
+                                "${resource['views'] ?? 0} Views",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: color,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (!isPDF) ...[
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
@@ -404,6 +443,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                         label: const Text("View Submissions"),
                       ),
                     ),
+                  ],
                 ],
               ),
             );

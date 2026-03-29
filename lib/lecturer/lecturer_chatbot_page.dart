@@ -2,8 +2,8 @@ import 'package:edunova_application/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
-
 import '../widgets/animated_background.dart';
+import '../services/chatbot_service.dart';
 
 class LecturerChatbotPage extends StatefulWidget {
   const LecturerChatbotPage({super.key});
@@ -16,6 +16,8 @@ class _LecturerChatbotPageState extends State<LecturerChatbotPage> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
+  bool _isTyping = false;
+  String _selectedModel = 'groq';
 
   @override
   void initState() {
@@ -35,28 +37,53 @@ class _LecturerChatbotPageState extends State<LecturerChatbotPage> {
     });
   }
 
-  void _handleSubmitted(String text) {
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _handleSubmitted(String text) async {
     if (text.trim().isEmpty) return;
+    
     _textController.clear();
     setState(() {
       _messages.add({'isUser': true, 'text': text, 'time': DateTime.now()});
+      _isTyping = true;
     });
+    _scrollToBottom();
 
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          _messages.add({
-            'isUser': false,
-            'text':
-                AppLocalizations.of(
-                  context,
-                )?.translate('lecturer_ai_response') ??
-                "That sounds interesting! I can help you organize that material or schedule the next quiz.",
-            'time': DateTime.now(),
-          });
+    // Convert to API format
+    List<Map<String, String>> history = _messages.map((m) {
+      return {
+        'role': m['isUser'] ? 'user' : 'assistant',
+        'content': m['text'].toString(),
+      };
+    }).toList();
+
+    String responseText = await ChatbotService.sendMessage(
+      messages: history,
+      modelType: _selectedModel,
+      userRole: 'lecturer',
+    );
+
+    if (mounted) {
+      setState(() {
+        _isTyping = false;
+        _messages.add({
+          'isUser': false,
+          'text': responseText,
+          'time': DateTime.now(),
         });
-      }
-    });
+      });
+      _scrollToBottom();
+    }
   }
 
   @override
@@ -79,10 +106,39 @@ class _LecturerChatbotPageState extends State<LecturerChatbotPage> {
                       size: 32,
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      AppLocalizations.of(context)?.translate('lecturer_ai') ??
-                          "Lecturer AI",
-                      style: TextDesign.h2.copyWith(color: AppColors.secondary),
+                    Expanded(
+                      child: Text(
+                        AppLocalizations.of(context)?.translate('lecturer_ai') ??
+                            "Lecturer AI",
+                        style: TextDesign.h2.copyWith(color: AppColors.secondary),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedModel,
+                          icon: const Icon(Icons.arrow_drop_down, color: AppColors.secondary),
+                          style: TextDesign.body.copyWith(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 12),
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                _selectedModel = newValue;
+                              });
+                            }
+                          },
+                          items: const [
+                            DropdownMenuItem(value: 'groq', child: Text("Groq (DeepSeek API)")),
+                            DropdownMenuItem(value: 'gemini', child: Text("Google Gemini")),
+                            DropdownMenuItem(value: 'deepseek', child: Text("DeepSeek Official")),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -91,8 +147,17 @@ class _LecturerChatbotPageState extends State<LecturerChatbotPage> {
                 child: ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(20),
-                  itemCount: _messages.length,
+                  itemCount: _messages.length + (_isTyping ? 1 : 0),
                   itemBuilder: (context, index) {
+                    if (index == _messages.length && _isTyping) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    }
                     final msg = _messages[index];
                     return _buildBubble(msg['text'], msg['isUser']);
                   },

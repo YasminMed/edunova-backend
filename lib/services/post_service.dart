@@ -50,6 +50,26 @@ class PostService {
     }
   }
 
+  Future<List<dynamic>> getComments(int postId) async {
+    try {
+      final response = await _dio.get("/posts/$postId/comments");
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> addComment(int postId, String email, String content) async {
+    try {
+      await _dio.post("/posts/$postId/comments", data: {
+        "user_email": email,
+        "content": content,
+      });
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   String _handleError(DioException error) {
     if (error.response != null) {
       return error.response?.data['detail'] ?? "Server error occurred";

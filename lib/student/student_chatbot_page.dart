@@ -3,6 +3,7 @@ import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/animated_background.dart';
+import '../services/chatbot_service.dart';
 
 class StudentChatbotPage extends StatefulWidget {
   const StudentChatbotPage({super.key});
@@ -17,6 +18,7 @@ class _StudentChatbotPageState extends State<StudentChatbotPage> {
   final List<Map<String, dynamic>> _messages = [];
   bool _isTyping = false;
   bool _isListening = false;
+  String _selectedModel = 'groq';
   final ScrollController _bgScrollController = ScrollController();
 
   @override
@@ -39,7 +41,7 @@ class _StudentChatbotPageState extends State<StudentChatbotPage> {
     super.dispose();
   }
 
-  void _handleSubmitted(String text) {
+  void _handleSubmitted(String text) async {
     if (text.trim().isEmpty) return;
 
     _textController.clear();
@@ -49,76 +51,31 @@ class _StudentChatbotPageState extends State<StudentChatbotPage> {
     });
     _scrollToBottom();
 
-    // Mock AI Logic
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        _processResponse(text);
-      }
-    });
-  }
+    // Convert messages to format expected by ChatbotService
+    List<Map<String, String>> history = _messages.map((m) {
+      return {
+        'role': m['isUser'] ? 'user' : 'assistant',
+        'content': m['text'].toString(),
+      };
+    }).toList();
 
-  void _processResponse(String input) {
-    String response;
-    final lowercaseInput = input.toLowerCase();
-
-    // Study related keywords
-    final studyKeywords = [
-      'study',
-      'lecture',
-      'exam',
-      'grade',
-      'assignment',
-      'book',
-      'course',
-      'class',
-      'homework',
-      'test',
-      'schedule',
-      'professor',
-      'material',
-      'learn',
-      'revise',
-      'notes',
-    ];
-
-    bool isRelated = studyKeywords.any(
-      (keyword) => lowercaseInput.contains(keyword),
+    String responseText = await ChatbotService.sendMessage(
+      messages: history,
+      modelType: _selectedModel,
+      userRole: 'student',
     );
 
-    if (isRelated) {
-      // Mock responses for valid queries
-      if (lowercaseInput.contains('exam')) {
-        response =
-            AppLocalizations.of(context)?.translate('exam_info') ??
-            "Your next exam is Mathematics on Monday at 10:00 AM. Make sure to review Chapter 4.";
-      } else if (lowercaseInput.contains('grade')) {
-        response =
-            AppLocalizations.of(context)?.translate('grade_info') ??
-            "You are currently in the top 5% of your class! Keep up the good work.";
-      } else if (lowercaseInput.contains('lecture')) {
-        response =
-            AppLocalizations.of(context)?.translate('physics_lecture') ??
-            "You have a Physics lecture tomorrow at 2:00 PM in Hall B.";
-      } else {
-        response =
-            AppLocalizations.of(context)?.translate('study_only_error') ??
-            "That's a great question about your studies! Here is some information...";
-      }
-    } else {
-      response =
-          AppLocalizations.of(context)?.translate('study_only_error') ??
-          "I can only help with topics related to your studies, lectures, or academic life.";
-    }
-
-    setState(() {
-      _isTyping = false;
-      _messages.add({
-        'isUser': false,
-        'text': response,
-        'time': DateTime.now(),
+    if (mounted) {
+      setState(() {
+        _isTyping = false;
+        _messages.add({
+          'isUser': false,
+          'text': responseText,
+          'time': DateTime.now(),
+        });
       });
-    });
-    _scrollToBottom();
+      _scrollToBottom();
+    }
   }
 
   void _addBotMessage(String text) {
@@ -197,25 +154,54 @@ class _StudentChatbotPageState extends State<StudentChatbotPage> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "EduNova AI",
-                          style: TextDesign.h2.copyWith(
-                            color: AppColors.primary,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "EduNova AI",
+                            style: TextDesign.h2.copyWith(
+                              color: AppColors.primary,
+                            ),
                           ),
-                        ),
-                        Text(
-                          AppLocalizations.of(context)?.translate('online') ??
-                              'Online',
-                          style: TextDesign.body.copyWith(
-                            color: Colors.green,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                          Text(
+                            AppLocalizations.of(context)?.translate('online') ??
+                                'Online',
+                            style: TextDesign.body.copyWith(
+                              color: Colors.green,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedModel,
+                          icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                          style: TextDesign.body.copyWith(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 12),
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                _selectedModel = newValue;
+                              });
+                            }
+                          },
+                          items: const [
+                            DropdownMenuItem(value: 'groq', child: Text("Groq (DeepSeek API)")),
+                            DropdownMenuItem(value: 'gemini', child: Text("Google Gemini")),
+                            DropdownMenuItem(value: 'deepseek', child: Text("DeepSeek Official")),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),

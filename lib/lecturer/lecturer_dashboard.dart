@@ -27,29 +27,7 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
   int _materialsCount = 0;
   int _yearsExp = 0;
   bool _isLoading = true;
-
-  final List<Map<String, String>> _activities = [
-    {
-      'title': 'Ali Hassan',
-      'desc': 'Submitted Mathematics Assignment',
-      'time': '10m ago',
-    },
-    {
-      'title': 'Sarah Ahmed',
-      'desc': 'Commented on your post',
-      'time': '30m ago',
-    },
-    {
-      'title': 'Exam System',
-      'desc': 'Quzz 1 results generated',
-      'time': '1h ago',
-    },
-    {
-      'title': 'Yousif Mohammed',
-      'desc': 'Asked a question in Chat',
-      'time': '2h ago',
-    },
-  ];
+  List<dynamic> _activities = [];
 
   @override
   void initState() {
@@ -67,6 +45,7 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
         setState(() {
           _materialsCount = stats['materials'] ?? 0;
           _yearsExp = stats['years_exp'] ?? 0;
+          _activities = stats['activities'] ?? [];
           _isLoading = false;
         });
       }
@@ -247,7 +226,25 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
                   style: TextDesign.h2.copyWith(color: titleColor),
                 ),
                 const SizedBox(height: 16),
-                _buildActivityList(isDark),
+                _isLoading 
+                  ? const Center(child: CircularProgressIndicator())
+                  : _activities.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(40),
+                          child: Column(
+                            children: [
+                              Icon(Icons.history_rounded, size: 48, color: titleColor.withOpacity(0.2)),
+                              const SizedBox(height: 12),
+                              Text(
+                                "No recent activities found",
+                                style: TextStyle(color: titleColor.withOpacity(0.5)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : _buildActivityList(isDark),
               ],
             ),
           ),
@@ -259,19 +256,22 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
   Widget _buildStatsBanner(bool isDark) {
     final l10n = AppLocalizations.of(context);
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.secondary.withOpacity(0.8), AppColors.secondary],
+          colors: [
+            const Color(0xFF1A237E).withOpacity(0.85),
+            const Color(0xFF0D47A1),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: AppColors.secondary.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF0D47A1).withOpacity(0.35),
+            blurRadius: 25,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -338,41 +338,48 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(24),
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(20),
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isDark ? Colors.white10 : Colors.white.withOpacity(0.5),
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 20,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 26),
               ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextDesign.body.copyWith(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : AppColors.primaryText,
+              const SizedBox(height: 10),
+              Text(
+                title,
+                style: TextDesign.body.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white.withOpacity(0.9) : AppColors.primaryText,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -382,23 +389,35 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
     return Column(
       children: _activities.map((activity) {
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(16),
+            color: isDark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(22),
             border: Border.all(
-              color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+              color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.04),
+              width: 1.5,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
           child: Row(
             children: [
-              CircleAvatar(
-                backgroundColor: AppColors.secondary.withOpacity(0.1),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
                 child: const Icon(
-                  Icons.person,
+                  Icons.person_rounded,
                   color: AppColors.secondary,
-                  size: 20,
+                  size: 22,
                 ),
               ),
               const SizedBox(width: 16),
@@ -409,22 +428,33 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
                     Text(
                       activity['title']!,
                       style: TextDesign.h3.copyWith(
-                        fontSize: 14,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
                         color: isDark ? Colors.white : AppColors.primaryText,
                       ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
                       activity['desc']!,
                       style: TextDesign.small.copyWith(
-                        color: isDark ? Colors.white70 : AppColors.bodyText,
+                        fontSize: 13,
+                        color: isDark ? Colors.white70 : AppColors.bodyText.withOpacity(0.8),
                       ),
                     ),
                   ],
                 ),
               ),
-              Text(
-                activity['time']!,
-                style: TextDesign.small.copyWith(color: AppColors.mutedText),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    activity['time']!,
+                    style: TextDesign.small.copyWith(
+                      color: isDark ? Colors.white38 : AppColors.mutedText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

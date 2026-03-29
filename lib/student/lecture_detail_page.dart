@@ -448,203 +448,219 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
             controller = _controllers.putIfAbsent(resource['id'], () => TextEditingController());
         }
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(icon, color: color),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                          Text(
-                            resource['title'],
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          if (resource['deadline'] != null)
-                            Text(
-                              "Deadline: ${resource['deadline'].toString().split('T')[0]}",
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.redAccent,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            )
-                          else
-                            Text(
-                              resource['resource_date'] ?? (resource['created_at'] != null
-                                ? "Shared on ${resource['created_at'].toString().split('T')[0]}"
-                                : "Shared recently"),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                              ),
-                            ),
-                      ],
-                    ),
-                  ),
-                  if (submission != null && (submission['is_graded'] == true || submission['is_graded'] == 1))
+        return GestureDetector(
+          onTap: isAssignmentOrQuiz ? null : () async {
+            if (_selectedFilterIndex == 0) { // PDF
+               try {
+                 await _materialService.incrementResourceView(resource['id']);
+                 if (mounted) {
+                   ScaffoldMessenger.of(context).showSnackBar(
+                     const SnackBar(content: Text("Opening Material...")),
+                   );
+                 }
+               } catch(e) {
+                 debugPrint("Error incrementing view: $e");
+               }
+            }
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(icon, color: color),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                            Text(
+                              resource['title'],
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            if (resource['deadline'] != null)
+                              Text(
+                                "Deadline: ${resource['deadline'].toString().split('T')[0]}",
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.redAccent,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            else
+                              Text(
+                                resource['resource_date'] ?? (resource['created_at'] != null
+                                  ? "Shared on ${resource['created_at'].toString().split('T')[0]}"
+                                  : "Shared recently"),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                        ],
+                      ),
+                    ),
+                    if (submission != null && (submission['is_graded'] == true || submission['is_graded'] == 1))
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          "Grade: ${submission['grade']}",
+                          style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      )
+                    else if (submission != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          "Uploaded",
+                          style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ),
+                  ],
+                ),
+                if (isAssignmentOrQuiz) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    resource['content'] ?? "",
+                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  if (resource['file_url'] != null) ...[
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () {},
+                      child: Row(
+                        children: [
+                          Icon(Icons.attach_file_rounded, size: 14, color: color),
+                          const SizedBox(width: 4),
+                          const Text("Reference Material", style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: controller,
+                    maxLines: 5,
+                    decoration: InputDecoration(
+                      hintText: "Your answer here...",
+                      filled: true,
+                      fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.grey[200],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final email = Provider.of<UserProvider>(context, listen: false).email;
+                        if (email != null && controller != null && controller.text.isNotEmpty) {
+                          try {
+                            if (isQuiz) {
+                              await _materialService.submitQuizSolution(
+                                quizId: resource['id'],
+                                studentEmail: email,
+                                solutionText: controller.text,
+                              );
+                            } else {
+                              await _materialService.submitAssignmentSolution(
+                                assignmentId: resource['id'],
+                                studentEmail: email,
+                                solutionText: controller.text,
+                              );
+                            }
+                            _loadContent(); // Refresh
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text(isQuiz ? 'Quiz Submitted Successfully' : 'Assignment Submitted Successfully'),
+                                backgroundColor: Colors.green,
+                              ));
+                            }
+                          } catch(e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to submit. Check backend connection.')));
+                            }
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: submission != null ? Colors.orange : AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shadowColor: Colors.black.withOpacity(0.3),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text(
+                        submission != null ? "Edit Submission" : "Submit Answer",
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  if (submission != null && (submission['is_graded'] == true || submission['is_graded'] == 1)) ...[
+                    const Divider(height: 32),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.green.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.green.withOpacity(0.3)),
                       ),
-                      child: Text(
-                        "Grade: ${submission['grade']}",
-                        style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                    )
-                  else if (submission != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        "Uploaded",
-                        style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                    ),
-                ],
-              ),
-              if (isAssignmentOrQuiz) ...[
-                const SizedBox(height: 12),
-                Text(
-                  resource['content'] ?? "",
-                  style: const TextStyle(fontSize: 14, color: Colors.black87),
-                ),
-                if (resource['file_url'] != null) ...[
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () {},
-                    child: Row(
-                      children: [
-                        Icon(Icons.attach_file_rounded, size: 14, color: color),
-                        const SizedBox(width: 4),
-                        const Text("Reference Material", style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                TextField(
-                  controller: controller,
-                  maxLines: 5,
-                  decoration: InputDecoration(
-                    hintText: "Your answer here...",
-                    filled: true,
-                    fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.grey[200],
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final email = Provider.of<UserProvider>(context, listen: false).email;
-                      if (email != null && controller != null && controller.text.isNotEmpty) {
-                        try {
-                          if (isQuiz) {
-                            await _materialService.submitQuizSolution(
-                              quizId: resource['id'],
-                              studentEmail: email,
-                              solutionText: controller.text,
-                            );
-                          } else {
-                            await _materialService.submitAssignmentSolution(
-                              assignmentId: resource['id'],
-                              studentEmail: email,
-                              solutionText: controller.text,
-                            );
-                          }
-                          _loadContent(); // Refresh
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(isQuiz ? 'Quiz Submitted Successfully' : 'Assignment Submitted Successfully'),
-                              backgroundColor: Colors.green,
-                            ));
-                          }
-                        } catch(e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to submit. Check backend connection.')));
-                          }
-                        }
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: submission != null ? Colors.orange : AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 2,
-                      shadowColor: Colors.black.withOpacity(0.3),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Text(
-                      submission != null ? "Edit Submission" : "Submit Answer",
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                if (submission != null && (submission['is_graded'] == true || submission['is_graded'] == 1)) ...[
-                  const Divider(height: 32),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.green.withOpacity(0.3)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20),
-                            const SizedBox(width: 8),
-                            Text("Lecturer Feedback", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16)),
-                          ],
-                        ),
-                        if (submission['lecturer_note'] != null && submission['lecturer_note'].toString().isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            "Grade: ${submission['grade']} - Note: ${submission['lecturer_note']}",
-                            style: const TextStyle(color: Colors.black),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20),
+                              const SizedBox(width: 8),
+                              Text("Lecturer Feedback", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16)),
+                            ],
                           ),
-                        ]
-                      ],
+                          if (submission['lecturer_note'] != null && submission['lecturer_note'].toString().isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              "Grade: ${submission['grade']} - Note: ${submission['lecturer_note']}",
+                              style: const TextStyle(color: Colors.black),
+                            ),
+                          ]
+                        ],
+                      ),
                     ),
-                  ),
-                ]
+                  ]
+                ],
               ],
-            ],
+            ),
           ),
         );
       }, childCount: _resources.length),
