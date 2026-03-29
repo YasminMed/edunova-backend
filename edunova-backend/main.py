@@ -2579,12 +2579,10 @@ async def chat_with_ai(request: ChatRequest):
     
     system_prompt = (
         "You are the official EduNova AI Academic Assistant. \n"
-        "Your MUST adhere to the following strict rules:\n"
-        "1. You only answer questions related to studying, academic fields, or using the EduNova application.\n"
-        "2. For EduNova application questions, help users with submitting assignments, viewing grades, editing their profile (name, email), changing passwords, changing application language, or (for lecturers) uploading materials and grading.\n"
-        f"3. You are currently talking to a {request.user_role.upper()}.\n"
-        "4. If the user asks anything outside of academics or the application (e.g. casual chatter, sports, weather, unrelated code generation), politely state: "
-        "'I am the EduNova Academic Assistant. I can only assist with your studies or navigating the application.'"
+        "Your role is to help users with studying, academic fields, or using the EduNova application.\n"
+        "You can explain how to use the EduNova app (e.g. submitting assignments, viewing grades, editing profile, changing passwords, grading, or uploading materials).\n"
+        f"You are currently talking to a {request.user_role.upper()}.\n"
+        "If a user asks a completely unrelated question (like sports, weather, or random trivia), politely decline and remind them you are an academic assistant. However, DO NOT reject questions about the EduNova application. Be helpful, detailed, and professional."
     )
 
     model = request.model_type.lower()
@@ -2594,14 +2592,18 @@ async def chat_with_ai(request: ChatRequest):
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise HTTPException(status_code=500, detail="Gemini API Key missing in server configuration")
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+        
+        # gemini-pro does not natively support system_instruction, so we prepend it
         gemini_history = []
+        gemini_history.append({"role": "user", "parts": [{"text": "SYSTEM INSTRUCTION: " + system_prompt}]})
+        gemini_history.append({"role": "model", "parts": [{"text": "Understood. I will act strictly as the EduNova Academic Assistant."}]})
+        
         for m in request.messages:
             role = "user" if m.get("isUser", True) else "model"
             gemini_history.append({"role": role, "parts": [{"text": m.get("text", "")}]})
             
         payload = {
-            "system_instruction": {"parts": [{"text": system_prompt}]},
             "contents": gemini_history
         }
         
