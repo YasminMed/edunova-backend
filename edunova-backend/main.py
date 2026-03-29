@@ -2584,7 +2584,8 @@ async def chat_with_ai(request: ChatRequest):
         "1. Provide detailed, expert guidance on any academic topic or study field.\n"
         "2. You are an expert on the EduNova app. Explain features clearly (uploading materials, grading, viewing ranks, changing profile data/passwords, language settings).\n"
         "3. Be conversational. Don't say 'It seems you haven't asked a question'. If you get an empty input, just say 'Hey! I'm here to help. What's on your mind regarding your studies or the app?'\n"
-        "4. Keep the user engaged. If they ask about the app, give them a step-by-step guide with a friendly tone."
+        "4. Keep the user engaged. If they ask about the app, give them a step-by-step guide with a friendly tone.\n"
+        "5. IMPORTANT: DO NOT USE MARKDOWN (no stars like **, no # headers). Use plain text only for everything. Do not bold anything."
     )
 
     model = request.model_type.lower()
@@ -2595,8 +2596,8 @@ async def chat_with_ai(request: ChatRequest):
         if not api_key:
             return {"response": "Gemini API Key is missing from the server environment variables. Please add GEMINI_API_KEY to Railway."}
             
-        # Using v1 and gemini-1.5-flash for maximum production stability
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+        # Using v1beta and gemini-1.5-flash for maximum feature support
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         
         # Prepend system context to history for 100% compatibility across all API versions
         gemini_history = []
