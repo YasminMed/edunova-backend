@@ -12,7 +12,9 @@ class StudentChatbotPage extends StatefulWidget {
   State<StudentChatbotPage> createState() => _StudentChatbotPageState();
 }
 
-class _StudentChatbotPageState extends State<StudentChatbotPage> {
+class _StudentChatbotPageState extends State<StudentChatbotPage> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
@@ -117,6 +119,7 @@ class _StudentChatbotPageState extends State<StudentChatbotPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Scaffold(
       extendBody: true,
       body: Stack(
