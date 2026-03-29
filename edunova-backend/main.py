@@ -2583,12 +2583,13 @@ async def chat_with_ai(request: ChatRequest):
         "RULES:\n"
         "1. Provide expert guidance on any academic topic or study field.\n"
         "2. You know EduNova app features ONLY based on what is listed below. DO NOT invent or assume features that are not mentioned.\n"
-        "3. EduNova app features for ALL users: View dashboard, View grades, View attendance, AI chat assistant, Profile settings (change name/email/password/profile picture), Change app language (Arabic, English, Kurdish).\n"
+        "3. EduNova app features for ALL users: View dashboard, View grades, View attendance, AI chat assistant, Dark Mode toggle (in Settings), Profile settings (change name/email/password/profile picture), Change app language (Arabic, English, Kurdish).\n"
         "4. EduNova app features for STUDENTS: View materials uploaded by lecturers, View quizzes and assignments, Submit assignments, View ranks and medals, View timetable, View fees and payment info, Listen to study music, View weekly challenges.\n"
         "5. EduNova app features for LECTURERS: Upload materials (PDF/video), Create quizzes, Grade assignments, View student analysis and attendance, Generate faculty reports.\n"
-        "6. If a user asks about a feature NOT in the list above (like turning off notifications), say: 'That feature is not currently available in EduNova, but here is what you can do instead:' and suggest a relevant alternative.\n"
-        "7. Be conversational. Never be robotic. Talk like a smart friend who knows the app well.\n"
-        "8. IMPORTANT: Use plain text only. NO markdown, NO stars (**), NO # headers."
+        "6. If a user asks about a feature NOT in the list above, say: 'That feature is not currently available in EduNova.' and suggest a relevant alternative if possible.\n"
+        "7. For Dark Mode: Tell the user to go to the Settings tab (bottom navigation) and toggle the Dark Mode switch.\n"
+        "8. Be conversational. Never be robotic. Talk like a smart friend who knows the app well.\n"
+        "9. IMPORTANT: Use plain text only. NO markdown, NO stars (**), NO # headers."
     )
 
     model = request.model_type.lower()
@@ -2626,9 +2627,11 @@ async def chat_with_ai(request: ChatRequest):
         
         async with httpx.AsyncClient() as client:
             last_error = ""
+            last_status = 0
             for candidate in model_candidates:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{candidate}:generateContent?key={api_key}"
                 resp = await client.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=30.0)
+                last_status = resp.status_code
                 if resp.status_code == 200:
                     data = resp.json()
                     try:
@@ -2637,15 +2640,19 @@ async def chat_with_ai(request: ChatRequest):
                     except (KeyError, IndexError):
                         return {"response": "Gemini replied but the format was unexpected. Please try again."}
                 elif resp.status_code == 404:
-                    # This model not found, try next one
-                    last_error = resp.text
+                    # Model not found, try next
+                    last_error = "model_not_found"
                     continue
+                elif resp.status_code == 429:
+                    # Quota exceeded - show friendly message, no point trying other models
+                    return {"response": "Your Google Gemini API quota has been exceeded for today. This is a free-tier limit. Please try again tomorrow, or switch to 'Groq' in the dropdown above which is also free and has no daily limit!"}
+                elif resp.status_code == 400:
+                    return {"response": "Gemini returned an invalid request error. Please try a shorter message or switch to Groq."}
                 else:
-                    # Other error (400, 401, etc.) - no point trying other models
-                    return {"response": f"Gemini Error ({resp.status_code}): {resp.text[:200]}"}
+                    return {"response": f"Gemini encountered an error ({resp.status_code}). Please switch to Groq in the dropdown above."}
             
             # All models failed with 404
-            return {"response": f"None of the available Gemini models are accessible with your API key. Please verify your GEMINI_API_KEY in Railway. Last error: {last_error[:150]}"}
+            return {"response": "None of the Gemini models are accessible with your API key. Please try 'Groq (DeepSeek API)' instead - it's free and works great!"}
 
                 
     # 2. DeepSeek or Groq (OpenAI Compatible)
