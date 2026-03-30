@@ -380,22 +380,13 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
     bool isDark,
   ) {
     final color = subject['color'] as Color;
-    final String? imageUrl = subject['image'];
+    final String name = subject['name'];
+    final String code = subject['code'];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(isDark ? 0.08 : 0.12),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
+    return Hero(
+      tag: 'subject_card_${subject['id']}',
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
           onTap: () {
             Navigator.push(
@@ -408,165 +399,188 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
               ),
             );
           },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Stack(
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            color.withOpacity(0.8),
-                            color,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      child: imageUrl != null && imageUrl.isNotEmpty
-                          ? Image.network(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Icon(Icons.book_rounded, color: Colors.white.withOpacity(0.5), size: 40),
-                            )
-                          : Icon(Icons.book_rounded, color: Colors.white.withOpacity(0.5), size: 40),
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  color.withOpacity(isDark ? 0.2 : 0.4),
+                  color.withOpacity(isDark ? 0.05 : 0.15),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: color.withOpacity(0.4),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(isDark ? 0.05 : 0.1),
+                  blurRadius: 15,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                // Abstract background icon circle
+                Positioned(
+                  top: -20,
+                  right: -20,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color.withOpacity(0.08),
                     ),
-                    // Glassy overlay at the bottom of image
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        height: 30,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.1),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Delete Button
-                    Positioned(
-                      top: 10,
-                      right: 10,
-                      child: GestureDetector(
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text("Delete Course"),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                              content: Text("Are you sure you want to delete \"${subject['name']}\"? This action cannot be undone."),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text("Cancel"),
-                                ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
-                                  onPressed: () {
-                                    final viewModel = context.read<LecturerMaterialsViewModel>();
-                                    viewModel.deleteCourse(subject['id']);
-                                    Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text("Course deleted successfully")),
-                                    );
-                                  },
-                                  child: const Text("Delete"),
-                                ),
-                              ],
+                  ),
+                ),
+                // Main Content
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white.withOpacity(0.3)),
+                            child: Icon(
+                              _getSubjectIcon(name),
+                              color: isDark ? color : color.withOpacity(0.9),
+                              size: 24,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.delete_outline_rounded,
-                            color: Colors.white,
-                            size: 18,
+                          // Floating Delete
+                          GestureDetector(
+                            onTap: () => _showDeleteDialog(context, subject),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.delete_outline_rounded,
+                                color: Colors.redAccent,
+                                size: 18,
+                              ),
+                            ),
                           ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Text(
+                        name,
+                        style: TextDesign.h3.copyWith(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : AppColors.primaryText,
+                          height: 1.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        code,
+                        style: TextStyle(
+                          color: isDark ? color : color.withOpacity(0.8),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                          letterSpacing: 0.5,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildStatChip(
+                            Icons.people_alt_rounded,
+                            "${subject['students']}",
+                            isDark,
+                            color,
+                          ),
+                          _buildStatChip(
+                            Icons.library_books_rounded,
+                            "${subject['materials']}",
+                            isDark,
+                            color,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      subject['name'],
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextDesign.h3.copyWith(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: isDark ? Colors.white : AppColors.primaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subject['code'],
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 11,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildStatChip(
-                          Icons.people_alt_rounded,
-                          "${subject['students']}",
-                          isDark,
-                          color,
-                        ),
-                        _buildStatChip(
-                          Icons.library_books_rounded,
-                          "${subject['materials']}",
-                          isDark,
-                          color,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  void _showDeleteDialog(BuildContext context, Map<String, dynamic> subject) {
+    showDialog(
+      context: context,
+      builder: (diagContext) => AlertDialog(
+        title: const Text("Delete Course"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        content: Text("Are you sure you want to delete \"${subject['name']}\"? This action cannot be undone."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(diagContext),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              final viewModel = context.read<LecturerMaterialsViewModel>();
+              viewModel.deleteCourse(subject['id']);
+              Navigator.pop(diagContext);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Course deleted successfully")),
+              );
+            },
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getSubjectIcon(String name) {
+    final lowerName = name.toLowerCase();
+    if (lowerName.contains('math') || lowerName.contains('calc')) return Icons.functions_rounded;
+    if (lowerName.contains('coding') || lowerName.contains('program') || lowerName.contains('se')) return Icons.code_rounded;
+    if (lowerName.contains('design') || lowerName.contains('art')) return Icons.palette_rounded;
+    if (lowerName.contains('phys')) return Icons.science_rounded;
+    if (lowerName.contains('chem')) return Icons.biotech_rounded;
+    if (lowerName.contains('english') || lowerName.contains('arabic')) return Icons.language_rounded;
+    return Icons.menu_book_rounded;
+  }
+
   Widget _buildStatChip(IconData icon, String label, bool isDark, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withOpacity(isDark ? 0.1 : 0.08),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 6),
