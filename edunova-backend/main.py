@@ -976,6 +976,7 @@ async def submit_assignment(
         submission.solution_text = solution_text or submission.solution_text
         submission.file_url = file_url
         submission.submitted_at = datetime.datetime.utcnow()
+        db.commit()
     else:
         submission = models.AssignmentSubmission(
             assignment_id=assignment_id,
@@ -984,9 +985,20 @@ async def submit_assignment(
             file_url=file_url
         )
         db.add(submission)
-    
-    db.commit()
-    db.refresh(submission)
+        db.commit()
+        db.refresh(submission)
+        
+        # Log activity for new submission
+        assignment = db.query(models.Assignment).filter(models.Assignment.id == assignment_id).first()
+        if assignment and assignment.course:
+            log_activity(
+                db=db,
+                type="assignment_submitted",
+                user_id=student.id,
+                lecturer_id=assignment.course.lecturer_id,
+                description=f"Submitted assignment '{assignment.title}'"
+            )
+            
     return submission
 
 @app.get("/assignments/{assignment_id}/submissions")
@@ -1145,6 +1157,7 @@ async def submit_quiz(
         submission.solution_text = solution_text or submission.solution_text
         submission.file_url = file_url
         submission.submitted_at = datetime.datetime.utcnow()
+        db.commit()
     else:
         submission = models.QuizSubmission(
             quiz_id=quiz_id,
@@ -1153,9 +1166,20 @@ async def submit_quiz(
             file_url=file_url
         )
         db.add(submission)
-    
-    db.commit()
-    db.refresh(submission)
+        db.commit()
+        db.refresh(submission)
+        
+        # Log activity for new submission
+        quiz = db.query(models.Quiz).filter(models.Quiz.id == quiz_id).first()
+        if quiz and quiz.course:
+            log_activity(
+                db=db,
+                type="quiz_submitted",
+                user_id=student.id,
+                lecturer_id=quiz.course.lecturer_id,
+                description=f"Submitted quiz '{quiz.title}'"
+            )
+            
     return submission
 
 @app.get("/quizzes/{quiz_id}/submissions")
@@ -1558,6 +1582,67 @@ async def get_student_academic_marks(student_email: str, db: Session = Depends(g
     return response_data
 
 # --- Lecturer Student Analysis Endpoint ---
+
+@app.get("/lecturer/dashboard-stats")
+async def get_lecturer_dashboard_stats(email: str, db: Session = Depends(get_db)):
+    lecturer = db.query(models.User).filter(models.User.email == email).first()
+    if not lecturer:
+        raise HTTPException(status_code=404, detail="Lecturer not found")
+
+    # Count materials (resources + assignments + quizzes) for all lecturer's courses
+    courses = db.query(models.Course).filter(models.Course.lecturer_id == lecturer.id).all()
+    course_ids = [c.id for c in courses]
+    
+    materials_count = 0
+    if course_ids:
+        materials_count += db.query(models.CourseResource).filter(models.CourseResource.course_id.in_(course_ids)).count()
+        materials_count += db.query(models.Assignment).filter(models.Assignment.course_id.in_(course_ids)).count()
+        materials_count += db.query(models.Quiz).filter(models.Quiz.course_id.in_(course_ids)).count()
+
+    # Get recent activities for this lecturer
+    activities = db.query(models.Activity).filter(
+        models.Activity.lecturer_id == lecturer.id
+    ).order_by(models.Activity.created_at.desc()).limit(10).all()
+
+    activity_list = []
+    for act in activities:
+        student_name = act.user.full_name if act.user else "A student"
+        
+        # Format time to be user friendly (e.g. "2 hours ago")
+        now = datetime.datetime.utcnow()
+        diff = now - act.created_at
+        
+        if diff.days > 0:
+            time_str = f"{diff.days}d ago"
+        elif diff.seconds >= 3600:
+            time_str = f"{diff.seconds // 3600}h ago"
+        elif diff.seconds >= 60:
+            time_str = f"{diff.seconds // 60}m ago"
+        else:
+            time_str = "Just now"
+            
+        activity_list.append({
+            "title": student_name,
+            "desc": act.description,
+            "time": time_str,
+            "type": act.type  # e.g., 'comment_added', 'quiz_submitted', 'assignment_submitted'
+        })
+
+    return {
+        "materials": materials_count,
+        "years_exp": lecturer.years_of_experience or 0,
+        "activities": activity_list
+    }
+
+@app.post("/lecturer/update-experience")
+async def update_lecturer_experience(email: str, years: int, db: Session = Depends(get_db)):
+    lecturer = db.query(models.User).filter(models.User.email == email).first()
+    if not lecturer:
+        raise HTTPException(status_code=404, detail="Lecturer not found")
+        
+    lecturer.years_of_experience = years
+    db.commit()
+    return {"message": "Experience updated successfully"}
 
 @app.get("/lecturer/student-analysis")
 async def get_lecturer_student_analysis(lecturer_email: str, db: Session = Depends(get_db)):

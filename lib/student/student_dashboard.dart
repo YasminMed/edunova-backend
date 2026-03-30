@@ -49,7 +49,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
     if (userProvider.email == null) return;
 
     try {
-      final data = await _materialService.getStudentProgress(userProvider.email!);
+      final data = await _materialService.getStudentProgress(
+        userProvider.email!,
+      );
       if (mounted) {
         setState(() {
           _progressValue = (data['progress'] as num).toDouble() / 100.0;
@@ -100,24 +102,24 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     child: Container(
                       height: 70,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor.withOpacity(0.9),
+                        color: Theme.of(context).cardColor.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(30),
                         border: Theme.of(context).brightness == Brightness.dark
                             ? null
                             : Border.all(
                                 color: Theme.of(
                                   context,
-                                ).dividerColor.withOpacity(0.6),
+                                ).dividerColor.withValues(alpha: 0.6),
                               ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.2),
+                            color: AppColors.primary.withValues(alpha: 0.2),
                             blurRadius: 25,
                             spreadRadius: -5,
                             offset: const Offset(0, 10),
                           ),
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 10,
                             spreadRadius: 2,
                             offset: const Offset(0, 5),
@@ -149,20 +151,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildBody() {
-    switch (_selectedIndex) {
-      case 0:
-        return const StudentProfilePage();
-      case 1:
-        return const ChatPage();
-      case 2:
-        return _buildDashboardContent();
-      case 3:
-        return const StudentChatbotPage();
-      case 4:
-        return const SettingsPage();
-      default:
-        return _buildDashboardContent();
-    }
+    return IndexedStack(
+      index: _selectedIndex,
+      children: [
+        const StudentProfilePage(),
+        const ChatPage(),
+        _buildDashboardContent(),
+        const StudentChatbotPage(),
+        const SettingsPage(),
+      ],
+    );
   }
 
   Widget _buildDashboardContent() {
@@ -180,7 +178,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               colors: [
                 Theme.of(context).scaffoldBackgroundColor,
                 Theme.of(context).scaffoldBackgroundColor,
-                Theme.of(context).scaffoldBackgroundColor.withOpacity(0.3),
+                Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.3),
               ],
               stops: const [0.0, 0.7, 1.0],
             ).createShader(bounds);
@@ -447,21 +445,21 @@ class _StudentDashboardState extends State<StudentDashboard> {
             colors: [
               isDark
                   ? Theme.of(context).cardColor
-                  : Theme.of(context).cardColor.withOpacity(0.9),
+                  : Theme.of(context).cardColor.withValues(alpha: 0.9),
               isDark
-                  ? Theme.of(context).cardColor.withOpacity(0.7)
-                  : Theme.of(context).cardColor.withOpacity(0.6),
+                  ? Theme.of(context).cardColor.withValues(alpha: 0.7)
+                  : Theme.of(context).cardColor.withValues(alpha: 0.6),
             ],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
           borderRadius: BorderRadius.circular(24),
           border: isDark
-              ? Border.all(color: Colors.white.withOpacity(0.05))
+              ? Border.all(color: Colors.white.withValues(alpha: 0.05))
               : null,
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -472,7 +470,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(icon, color: color, size: 30),
@@ -502,7 +500,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
             Icon(
               Icons.arrow_forward_ios_rounded,
-              color: AppColors.mutedText.withOpacity(0.5),
+              color: AppColors.mutedText.withValues(alpha: 0.5),
               size: 20,
             ),
           ],
@@ -520,10 +518,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
           colors: [
             Theme.of(context).brightness == Brightness.dark
                 ? Theme.of(context).cardColor
-                : Theme.of(context).cardColor.withOpacity(0.8),
+                : Theme.of(context).cardColor.withValues(alpha: 0.8),
             Theme.of(context).brightness == Brightness.dark
-                ? Theme.of(context).cardColor.withOpacity(0.8)
-                : Theme.of(context).cardColor.withOpacity(0.5),
+                ? Theme.of(context).cardColor.withValues(alpha: 0.8)
+                : Theme.of(context).cardColor.withValues(alpha: 0.5),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -531,7 +529,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.15),
+            color: AppColors.primary.withValues(alpha: 0.15),
             blurRadius: 25,
             offset: const Offset(0, 10),
           ),
@@ -572,7 +570,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -591,14 +589,18 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.1),
+                    color: Colors.amber.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                    border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.stars_rounded, color: Colors.amber, size: 14),
+                      const Icon(
+                        Icons.stars_rounded,
+                        color: Colors.amber,
+                        size: 14,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         "Marks: $_totalMarks",
@@ -624,17 +626,17 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 height: 90,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Theme.of(context).cardColor.withOpacity(0.5),
+                  color: Theme.of(context).cardColor.withValues(alpha: 0.5),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: AppColors.primary.withValues(alpha: 0.2),
                       blurRadius: 15,
                     ),
                   ],
                 ),
                 child: CircularProgressIndicator(
                   value: _progressValue,
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   color: AppColors.primary,
                   strokeWidth: 8,
                   strokeCap: StrokeCap.round,
@@ -670,7 +672,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.1)
+              ? AppColors.primary.withValues(alpha: 0.1)
               : Colors.transparent,
           shape: BoxShape.circle,
         ),
@@ -683,7 +685,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 }
-
 
 class _DashboardGridItem extends StatefulWidget {
   final String title;
@@ -753,14 +754,14 @@ class _DashboardGridItemState extends State<_DashboardGridItem>
           decoration: BoxDecoration(
             color: isDark
                 ? Theme.of(context).cardColor
-                : Theme.of(context).cardColor.withOpacity(0.6),
+                : Theme.of(context).cardColor.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(20),
             border: isDark
-                ? Border.all(color: Colors.white.withOpacity(0.05))
+                ? Border.all(color: Colors.white.withValues(alpha: 0.05))
                 : null,
             boxShadow: [
               BoxShadow(
-                color: widget.color.withOpacity(0.15),
+                color: widget.color.withValues(alpha: 0.15),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -772,7 +773,7 @@ class _DashboardGridItemState extends State<_DashboardGridItem>
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: widget.color.withOpacity(0.15),
+                  color: widget.color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(widget.icon, color: widget.color, size: 28),

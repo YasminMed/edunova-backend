@@ -385,17 +385,17 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: color.withOpacity(isDark ? 0.08 : 0.12),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         child: InkWell(
           onTap: () {
             Navigator.push(
@@ -417,7 +417,14 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        gradient: LinearGradient(
+                          colors: [
+                            color.withOpacity(0.8),
+                            color,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                       ),
                       child: imageUrl != null && imageUrl.isNotEmpty
                           ? Image.network(
@@ -425,27 +432,48 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                               fit: BoxFit.cover,
                               width: double.infinity,
                               errorBuilder: (context, error, stackTrace) =>
-                                  Icon(Icons.book_rounded, color: color, size: 40),
+                                  Icon(Icons.book_rounded, color: Colors.white.withOpacity(0.5), size: 40),
                             )
-                          : Icon(Icons.book_rounded, color: color, size: 40),
+                          : Icon(Icons.book_rounded, color: Colors.white.withOpacity(0.5), size: 40),
+                    ),
+                    // Glassy overlay at the bottom of image
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 30,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.1),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                     // Delete Button
                     Positioned(
-                      top: 8,
-                      right: 8,
+                      top: 10,
+                      right: 10,
                       child: GestureDetector(
                         onTap: () {
                           showDialog(
                             context: context,
                             builder: (context) => AlertDialog(
                               title: const Text("Delete Course"),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                               content: Text("Are you sure you want to delete \"${subject['name']}\"? This action cannot be undone."),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
                                   child: const Text("Cancel"),
                                 ),
-                                TextButton(
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
                                   onPressed: () {
                                     final viewModel = context.read<LecturerMaterialsViewModel>();
                                     viewModel.deleteCourse(subject['id']);
@@ -454,17 +482,18 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                                       const SnackBar(content: Text("Course deleted successfully")),
                                     );
                                   },
-                                  child: const Text("Delete", style: TextStyle(color: Colors.red)),
+                                  child: const Text("Delete"),
                                 ),
                               ],
                             ),
                           );
                         },
                         child: Container(
-                          padding: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.35),
+                            color: Colors.white.withOpacity(0.2),
                             shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white.withOpacity(0.3)),
                           ),
                           child: const Icon(
                             Icons.delete_outline_rounded,
@@ -478,7 +507,7 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -487,21 +516,22 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextDesign.h3.copyWith(
-                        fontSize: 15,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
                         color: isDark ? Colors.white : AppColors.primaryText,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       subject['code'],
                       style: TextStyle(
                         color: color,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                        letterSpacing: 0.5,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
+                        letterSpacing: 1.0,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -509,11 +539,13 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                           Icons.people_alt_rounded,
                           "${subject['students']}",
                           isDark,
+                          color,
                         ),
                         _buildStatChip(
                           Icons.library_books_rounded,
                           "${subject['materials']}",
                           isDark,
+                          color,
                         ),
                       ],
                     ),
@@ -527,23 +559,23 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
     );
   }
 
-  Widget _buildStatChip(IconData icon, String label, bool isDark) {
+  Widget _buildStatChip(IconData icon, String label, bool isDark, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 12, color: Colors.grey[600]),
-          const SizedBox(width: 4),
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w600,
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],

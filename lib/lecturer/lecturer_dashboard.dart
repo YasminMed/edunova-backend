@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
@@ -336,89 +337,199 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
     required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.7),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isDark ? Colors.white10 : Colors.white.withOpacity(0.5),
-            width: 1.5,
+    
+    // Define a gradient based on the card color
+    final gradient = LinearGradient(
+      colors: [
+        color,
+        color.withBlue(min(255, color.blue + 50)).withGreen(max(0, color.green - 20)),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(isDark ? 0.2 : 0.15),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 26),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              gradient: gradient,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1.5,
               ),
-              const SizedBox(height: 10),
-              Text(
-                title,
-                style: TextDesign.body.copyWith(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white.withOpacity(0.9) : AppColors.primaryText,
-                ),
-                textAlign: TextAlign.center,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Stack(
+                children: [
+                  // Abstract decorative circle
+                  Positioned(
+                    top: -20,
+                    right: -20,
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.1),
+                      ),
+                    ),
+                  ),
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            icon, 
+                            color: Colors.white, 
+                            size: 32,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            title,
+                            style: TextDesign.body.copyWith(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  IconData _getActivityIcon(String type) {
+    switch (type) {
+      case 'quiz_submitted':
+        return Icons.quiz_rounded;
+      case 'assignment_submitted':
+        return Icons.assignment_turned_in_rounded;
+      case 'comment_added':
+        return Icons.comment_rounded;
+      case 'material_viewed':
+        return Icons.visibility_rounded;
+      default:
+        return Icons.notifications_active_rounded;
+    }
+  }
+
+  Color _getActivityColor(String type) {
+    switch (type) {
+      case 'quiz_submitted':
+        return Colors.orange;
+      case 'assignment_submitted':
+        return Colors.blue;
+      case 'comment_added':
+        return Colors.teal;
+      case 'material_viewed':
+        return Colors.purple;
+      default:
+        return AppColors.primary;
+    }
+  }
+
   Widget _buildActivityList(bool isDark) {
+    if (_activities.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.history_rounded, size: 48, color: Colors.grey.withOpacity(0.5)),
+            const SizedBox(height: 16),
+            Text(
+              "No recent activity",
+              style: TextStyle(
+                color: Colors.grey.withOpacity(0.8),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: _activities.map((activity) {
+        final type = activity['type'] ?? 'default';
+        final icon = _getActivityIcon(type);
+        final color = _getActivityColor(type);
+
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.8),
-            borderRadius: BorderRadius.circular(22),
+            color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.04),
+              color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.03),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.02),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withOpacity(0.1),
-                  shape: BoxShape.circle,
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(
-                  Icons.person_rounded,
-                  color: AppColors.secondary,
-                  size: 22,
-                ),
+                child: Icon(icon, color: color, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -426,35 +537,32 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      activity['title']!,
-                      style: TextDesign.h3.copyWith(
-                        fontSize: 15,
+                      activity['title'] ?? 'Notification',
+                      style: TextDesign.body.copyWith(
                         fontWeight: FontWeight.w800,
+                        fontSize: 15,
                         color: isDark ? Colors.white : AppColors.primaryText,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      activity['desc']!,
-                      style: TextDesign.small.copyWith(
+                      activity['desc'] ?? '',
+                      style: TextDesign.body.copyWith(
                         fontSize: 13,
-                        color: isDark ? Colors.white70 : AppColors.bodyText.withOpacity(0.8),
+                        color: isDark ? Colors.white60 : Colors.grey[600],
                       ),
                     ),
                   ],
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    activity['time']!,
-                    style: TextDesign.small.copyWith(
-                      color: isDark ? Colors.white38 : AppColors.mutedText,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 12),
+              Text(
+                activity['time'] ?? '',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: color.withOpacity(0.8),
+                ),
               ),
             ],
           ),

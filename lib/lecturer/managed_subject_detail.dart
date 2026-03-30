@@ -257,14 +257,22 @@ class ManagedSubjectDetailPage extends StatelessWidget {
             final isQuiz = viewModel.selectedFilterIndex == 2;
 
             return Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(20),
+              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(28),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
+                  BoxShadow(
+                    color: color.withOpacity(isDark ? 0.05 : 0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
                 ],
+                border: Border.all(
+                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.01),
+                  width: 1,
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,14 +280,21 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          gradient: LinearGradient(
+                            colors: [
+                              color.withOpacity(0.15),
+                              color.withOpacity(0.05),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(18),
                         ),
-                        child: Icon(icon, color: color),
+                        child: Icon(icon, color: color, size: 28),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 18),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,26 +302,30 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                             Text(
                               resource['title'],
                               style: TextStyle(
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 17,
                                 color: isDark ? Colors.white : AppColors.primaryText,
                               ),
                             ),
+                            const SizedBox(height: 4),
                             if (resource['file_url'] != null)
                               Text(
                                 "File: ${resource['file_url'].split('/').last}",
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: color.withOpacity(0.8),
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
+                            const SizedBox(height: 2),
                             Text(
                               resource['created_at'] != null 
                                 ? "Uploaded on ${resource['created_at'].toString().split('T')[0]}"
                                 : "Shared recently",
                               style: TextStyle(
                                 fontSize: 11,
-                                color: isDark ? Colors.white54 : Colors.grey,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white54 : Colors.grey[500],
                               ),
                             ),
                           ],
@@ -314,95 +333,125 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                       ),
                       IconButton(
                         icon: const Icon(
-                          Icons.delete_outline_rounded,
+                          Icons.delete_sweep_rounded,
                           color: Colors.redAccent,
+                          size: 26,
                         ),
                         onPressed: () {},
                       ),
                     ],
                   ),
                   if ((isAssignment || isQuiz) && resource['content'] != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      resource['content'],
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isDark ? Colors.white70 : Colors.grey[700],
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.black.withOpacity(0.2) : Colors.grey[50],
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: color.withOpacity(0.1)),
                       ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
+                      child: Text(
+                        resource['content'],
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.5,
+                          color: isDark ? Colors.white70 : AppColors.bodyText,
+                        ),
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                   if (!isPDF && resource['total_submissions'] != null) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          "${resource['total_submissions']} Submissions",
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isDark ? Colors.white70 : Colors.grey[700],
-                            fontWeight: FontWeight.w500,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "${resource['total_submissions']} Submissions",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDark ? Colors.white70 : AppColors.primaryText,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              "Tracking active students",
+                              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                            ),
+                          ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                         Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
                             color: resource['total_submissions'] == 0
-                                ? Colors.grey.withOpacity(0.2)
+                                ? Colors.grey.withOpacity(0.1)
                                 : (resource['ungraded_submissions'] ?? 0) > 0
-                                    ? Colors.orange.withOpacity(0.2)
-                                    : Colors.green.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
+                                    ? Colors.orange.withOpacity(0.15)
+                                    : Colors.green.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                               color: resource['total_submissions'] == 0
+                                  ? Colors.grey.withOpacity(0.2)
+                                  : (resource['ungraded_submissions'] ?? 0) > 0
+                                      ? Colors.orange.withOpacity(0.3)
+                                      : Colors.green.withOpacity(0.3),
+                            ),
                           ),
                           child: Text(
                             resource['total_submissions'] == 0
                                 ? "No Submissions"
                                 : (resource['ungraded_submissions'] ?? 0) > 0
-                                    ? "${resource['ungraded_submissions']} Pending Grades"
-                                    : "All Graded",
+                                    ? "${resource['ungraded_submissions']} PENDING"
+                                    : "GRADED",
                             style: TextStyle(
                               fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
                               color: resource['total_submissions'] == 0
                                   ? (isDark ? Colors.grey[400] : Colors.grey[600])
                                   : (resource['ungraded_submissions'] ?? 0) > 0
-                                      ? Colors.orange[800]
-                                      : Colors.green[700],
+                                      ? Colors.orange[900]
+                                      : Colors.green[800],
                             ),
                           ),
                         ),
                       ],
                     ),
                   ] else if (isPDF) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           "Material Engagement",
                           style: TextStyle(
-                            fontSize: 13,
-                            color: isDark ? Colors.white70 : Colors.grey[700],
-                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            color: isDark ? Colors.white70 : AppColors.primaryText,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            gradient: LinearGradient(
+                              colors: [color.withOpacity(0.15), color.withOpacity(0.05)],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.visibility_rounded, size: 14, color: color),
-                              const SizedBox(width: 6),
+                              Icon(Icons.insights_rounded, size: 16, color: color),
+                              const SizedBox(width: 8),
                               Text(
                                 "${resource['views'] ?? 0} Views",
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
                                   color: color,
                                 ),
                               ),
@@ -413,16 +462,17 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                     ),
                   ],
                   if (!isPDF) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
+                      height: 50,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: color.withOpacity(0.1),
-                          foregroundColor: color,
+                          backgroundColor: color,
+                          foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                         onPressed: () {
@@ -439,8 +489,11 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                             ),
                           );
                         },
-                        icon: const Icon(Icons.people_outline_rounded, size: 18),
-                        label: const Text("View Submissions"),
+                        icon: const Icon(Icons.analytics_rounded, size: 20),
+                        label: const Text(
+                          "View Submissions",
+                          style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                        ),
                       ),
                     ),
                   ],
