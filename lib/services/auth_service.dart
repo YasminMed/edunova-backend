@@ -114,7 +114,7 @@ class AuthService {
       }
 
       final formData = FormData.fromMap(data);
-      final response = await _dio.put('/auth/update-profile-photo', data: formData);
+      final response = await _dio.post('/auth/update-profile-photo', data: formData);
       return response.data['photoUrl'];
     } on DioException catch (e) {
       throw _handleError(e);
