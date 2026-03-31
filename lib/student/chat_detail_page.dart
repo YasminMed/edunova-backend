@@ -15,6 +15,7 @@ class ChatDetailPage extends StatefulWidget {
   final String name;
   final Color avatarColor;
   final bool isGroup;
+  final String? photoUrl;
 
   const ChatDetailPage({
     super.key,
@@ -23,6 +24,7 @@ class ChatDetailPage extends StatefulWidget {
     required this.name,
     required this.avatarColor,
     required this.isGroup,
+    this.photoUrl,
   });
 
   @override
@@ -178,11 +180,16 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               CircleAvatar(
                 backgroundColor: widget.avatarColor.withOpacity(0.2),
                 radius: 18,
-                child: Icon(
-                  widget.isGroup ? Icons.groups_rounded : Icons.person_rounded,
-                  color: widget.avatarColor,
-                  size: 20,
-                ),
+                backgroundImage: widget.photoUrl != null 
+                    ? NetworkImage("${ChatService.baseUrl}${widget.photoUrl}") 
+                    : null,
+                child: widget.photoUrl == null 
+                    ? Icon(
+                        widget.isGroup ? Icons.groups_rounded : Icons.person_rounded,
+                        color: widget.avatarColor,
+                        size: 20,
+                      )
+                    : null,
               ),
               const SizedBox(width: 10),
               Expanded(

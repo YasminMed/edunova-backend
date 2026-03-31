@@ -57,6 +57,7 @@ class _ChatPageState extends State<ChatPage>
           'other_user_id': s.otherUser.id,
           'other_user_email': s.otherUser.email,
           'name': s.otherUser.fullName,
+          'photo_url': s.otherUser.photoUrl,
           'message': s.latestMessage.isEmpty ? 'Say Hi!' : s.latestMessage,
           'time': _formatTime(s.latestMessageTime),
           'unread': s.unreadCount > 0,
@@ -168,6 +169,7 @@ class _ChatPageState extends State<ChatPage>
                                         name: session.otherUser.fullName,
                                         avatarColor: Colors.blueAccent,
                                         isGroup: false,
+                                        photoUrl: session.otherUser.photoUrl,
                                       ),
                                     ),
                                   ).then((_) => _loadChats());
@@ -352,6 +354,7 @@ class _ChatPageState extends State<ChatPage>
           unreadCount: chat['unreadCount'],
           avatarColor: chat['avatarColor'],
           isGroup: false,
+          photoUrl: chat['photo_url'],
         );
       },
     );
@@ -431,6 +434,7 @@ class _ChatPageState extends State<ChatPage>
                   name: name,
                   avatarColor: avatarColor,
                   isGroup: false,
+                  photoUrl: photoUrl,
                 ),
               ),
             ).then((_) => _loadChats());

@@ -2153,7 +2153,8 @@ async def get_user_chat_sessions(user_email: str, db: Session = Depends(get_db))
                 "id": other_user.id,
                 "full_name": other_user.full_name,
                 "email": other_user.email,
-                "role": other_user.role
+                "role": other_user.role,
+                "image_url": other_user.image_url
             },
             "latest_message": latest_msg.content if latest_msg else "",
             "latest_message_time": latest_msg.created_at.isoformat() if latest_msg and latest_msg.created_at else "",

@@ -3,12 +3,14 @@ class ChatUser {
   final String fullName;
   final String email;
   final String role;
+  final String? photoUrl;
 
   ChatUser({
     required this.id,
     required this.fullName,
     required this.email,
     required this.role,
+    this.photoUrl,
   });
 
   factory ChatUser.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class ChatUser {
       fullName: json['full_name'] ?? 'Unknown',
       email: json['email'] ?? '',
       role: json['role'] ?? 'student',
+      photoUrl: json['image_url'],
     );
   }
 }
