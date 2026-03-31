@@ -62,6 +62,7 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
           'student',
           department: userData['department'],
           stage: userData['stage'],
+          photoUrl: userData['photoUrl'],
         );
 
         if (!mounted) return;

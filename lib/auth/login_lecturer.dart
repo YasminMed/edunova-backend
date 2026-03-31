@@ -61,6 +61,7 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
           'lecturer',
           department: userData['department'],
           stage: userData['stage'],
+          photoUrl: userData['photoUrl'],
         );
 
         if (!userProvider.isProfileComplete) {

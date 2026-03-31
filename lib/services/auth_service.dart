@@ -90,6 +90,24 @@ class AuthService {
     }
   }
 
+  Future<String> updateProfilePhoto({
+    required String email,
+    required String role,
+    required String filePath,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'email': email,
+        'role': role,
+        'file': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.put('/auth/update-profile-photo', data: formData);
+      return response.data['photoUrl'];
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Future<Map<String, dynamic>> changePassword({
     required String email,
     required String oldPassword,

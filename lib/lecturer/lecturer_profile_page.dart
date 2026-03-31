@@ -7,6 +7,7 @@ import '../auth/change_password_lecturer.dart';
 import '../auth/welcome_page.dart';
 import '../providers/user_provider.dart';
 import '../services/auth_service.dart';
+import 'package:file_picker/file_picker.dart';
 
 class LecturerProfilePage extends StatefulWidget {
   const LecturerProfilePage({super.key});
@@ -295,6 +296,52 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
     );
   }
 
+  Future<void> _pickAndUploadPhoto() async {
+    final userProvider = context.read<UserProvider>();
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final filePath = result.files.single.path!;
+        
+        // Show loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Uploading photo...'), duration: Duration(seconds: 2)),
+        );
+
+        final newPhotoUrl = await _authService.updateProfilePhoto(
+          email: userProvider.email!,
+          role: 'lecturer',
+          filePath: filePath,
+        );
+
+        userProvider.setUser(
+          userProvider.fullName!,
+          userProvider.email!,
+          'lecturer',
+          department: userProvider.department,
+          stage: userProvider.stage,
+          photoUrl: newPhotoUrl,
+        );
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)?.translate('photo_updated') ?? 'Photo updated successfully'),
+            backgroundColor: AppColors.secondary,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
@@ -317,16 +364,23 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
                     color: AppColors.secondary,
                     shape: BoxShape.circle,
                   ),
-                  child: const CircleAvatar(
+                  child: CircleAvatar(
                     radius: 60,
-                    backgroundImage: NetworkImage(
-                      'https://i.pravatar.cc/300?img=11',
-                    ), // Mock Image
-                    backgroundColor: Colors.grey,
+                    backgroundImage: userProvider.photoUrl != null
+                        ? NetworkImage(
+                            userProvider.photoUrl!.startsWith('http')
+                                ? userProvider.photoUrl!
+                                : "${AuthService.baseUrl}${userProvider.photoUrl!}",
+                          )
+                        : null,
+                    backgroundColor: Colors.grey[300],
+                    child: userProvider.photoUrl == null
+                        ? const Icon(Icons.person, size: 60, color: Colors.white)
+                        : null,
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {},
+                  onTap: _pickAndUploadPhoto,
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
