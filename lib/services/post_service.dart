@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'auth_service.dart';
 
 class PostService {
@@ -13,6 +15,8 @@ class PostService {
     required String title,
     required String description,
     File? image,
+    Uint8List? bytes,
+    String? fileName,
   }) async {
     try {
       FormData formData = FormData.fromMap({
@@ -20,7 +24,12 @@ class PostService {
         "description": description,
       });
 
-      if (image != null) {
+      if (kIsWeb && bytes != null) {
+        formData.files.add(MapEntry(
+          "image",
+          MultipartFile.fromBytes(bytes, filename: fileName ?? 'post.jpg'),
+        ));
+      } else if (image != null) {
         formData.files.add(MapEntry(
           "image",
           await MultipartFile.fromFile(image.path, filename: image.path.split('/').last),

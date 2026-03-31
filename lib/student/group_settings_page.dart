@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../constants/app_colors.dart';
@@ -32,6 +34,8 @@ class _GroupSettingsPageState extends State<GroupSettingsPage> {
   bool _isLoading = true;
   bool _isSaving = false;
   String? _selectedImagePath;
+  Uint8List? _selectedImageBytes;
+  String? _selectedImageName;
   
   Map<String, dynamic>? _groupDetails;
   List<dynamic> _members = [];
@@ -86,10 +90,17 @@ class _GroupSettingsPageState extends State<GroupSettingsPage> {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.image,
     );
+    
+    bool hasFile = result != null && (kIsWeb ? result.files.single.bytes != null : result.files.single.path != null);
 
-    if (result != null && result.files.single.path != null) {
+    if (hasFile) {
       setState(() {
-        _selectedImagePath = result.files.single.path;
+        if (kIsWeb) {
+          _selectedImageBytes = result.files.single.bytes;
+          _selectedImageName = result.files.single.name;
+        } else {
+          _selectedImagePath = result.files.single.path;
+        }
       });
     }
   }
@@ -109,6 +120,8 @@ class _GroupSettingsPageState extends State<GroupSettingsPage> {
       ownerEmail,
       name: nameToUpdate,
       imagePath: _selectedImagePath,
+      bytes: _selectedImageBytes,
+      fileName: _selectedImageName,
     );
 
     if (mounted) {
@@ -266,10 +279,12 @@ class _GroupSettingsPageState extends State<GroupSettingsPage> {
                     CircleAvatar(
                       radius: 50,
                       backgroundColor: AppColors.primary.withOpacity(0.2),
-                      backgroundImage: _selectedImagePath != null
-                          ? FileImage(File(_selectedImagePath!))
+                      backgroundImage: (_selectedImageBytes != null || _selectedImagePath != null)
+                          ? (kIsWeb 
+                              ? MemoryImage(_selectedImageBytes!) as ImageProvider
+                              : FileImage(File(_selectedImagePath!)) as ImageProvider)
                           : (widget.photoUrl != null ? NetworkImage("${ChatService.baseUrl}${widget.photoUrl}") : null) as ImageProvider?,
-                      child: (_selectedImagePath == null && widget.photoUrl == null)
+                      child: (_selectedImageBytes == null && _selectedImagePath == null && widget.photoUrl == null)
                           ? const Icon(Icons.groups_rounded, size: 50, color: AppColors.primary)
                           : null,
                     ),

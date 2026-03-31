@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
@@ -20,6 +22,8 @@ class _PostCreationPageState extends State<PostCreationPage> {
   
   String _activeTab = "New"; // "New" or "Posted"
   File? _selectedImage;
+  Uint8List? _selectedImageBytes;
+  String? _selectedImageName;
   bool _isUploading = false;
   
   List<dynamic> _myPosts = [];
@@ -71,10 +75,19 @@ class _PostCreationPageState extends State<PostCreationPage> {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.image,
     );
+    
+    bool hasFile = result != null && (kIsWeb ? result.files.single.bytes != null : result.files.single.path != null);
 
-    if (result != null) {
+    if (hasFile) {
       setState(() {
-        _selectedImage = File(result.files.single.path!);
+        if (kIsWeb) {
+          _selectedImageBytes = result.files.single.bytes;
+          _selectedImageName = result.files.single.name;
+          _selectedImage = null;
+        } else {
+          _selectedImage = File(result.files.single.path!);
+          _selectedImageBytes = null;
+        }
       });
     }
   }
@@ -159,7 +172,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
         children: [
           _buildInputCard(isDark),
           const SizedBox(height: 24),
-          if (_selectedImage != null) _buildImagePreview(),
+          if (_selectedImage != null || _selectedImageBytes != null) _buildImagePreview(),
           const SizedBox(height: 24),
           _buildMediaSection(isDark),
           const SizedBox(height: 40),
@@ -175,18 +188,29 @@ class _PostCreationPageState extends State<PostCreationPage> {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          child: Image.file(
-            _selectedImage!,
-            width: double.infinity,
-            height: 200,
-            fit: BoxFit.cover,
-          ),
+          child: kIsWeb 
+            ? Image.memory(
+                _selectedImageBytes!,
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
+              )
+            : Image.file(
+                _selectedImage!,
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
+              ),
         ),
         Positioned(
           top: 10,
           right: 10,
           child: GestureDetector(
-            onTap: () => setState(() => _selectedImage = null),
+            onTap: () => setState(() {
+              _selectedImage = null;
+              _selectedImageBytes = null;
+              _selectedImageName = null;
+            }),
             child: Container(
               padding: const EdgeInsets.all(5),
               decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
@@ -354,7 +378,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
           _selectedImage != null ? "Image Selected" : "Add Image", 
           Colors.blue,
           _pickImage,
-          _selectedImage != null
+          (_selectedImage != null || _selectedImageBytes != null)
         ),
       ],
     );
@@ -421,6 +445,8 @@ class _PostCreationPageState extends State<PostCreationPage> {
               title: _titleController.text.trim(),
               description: _descController.text.trim(),
               image: _selectedImage,
+              bytes: _selectedImageBytes,
+              fileName: _selectedImageName,
             );
             
             if (mounted) {
@@ -428,6 +454,8 @@ class _PostCreationPageState extends State<PostCreationPage> {
               _descController.clear();
               setState(() {
                 _selectedImage = null;
+                _selectedImageBytes = null;
+                _selectedImageName = null;
                 _activeTab = "Posted";
               });
               _fetchMyPosts();

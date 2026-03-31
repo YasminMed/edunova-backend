@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../models/chat_session.dart';
 import '../models/group_chat.dart';
 
@@ -93,7 +95,7 @@ class ChatService {
     }
   }
 
-  Future<int?> createGroupChat(String name, String adminEmail, List<String> memberEmails, {String? imagePath}) async {
+  Future<int?> createGroupChat(String name, String adminEmail, List<String> memberEmails, {String? imagePath, Uint8List? bytes, String? fileName}) async {
     try {
       final Map<String, dynamic> formDataMap = {
         "name": name,
@@ -101,7 +103,9 @@ class ChatService {
         "member_emails": memberEmails, // Backend parses strings 
       };
 
-      if (imagePath != null && imagePath.isNotEmpty) {
+      if (kIsWeb && bytes != null) {
+        formDataMap["photo"] = MultipartFile.fromBytes(bytes, filename: fileName ?? 'group.jpg');
+      } else if (imagePath != null && imagePath.isNotEmpty) {
         formDataMap["photo"] = await MultipartFile.fromFile(imagePath);
       }
 
@@ -161,13 +165,17 @@ class ChatService {
     }
   }
 
-  Future<bool> updateGroupChat(int groupId, String adminEmail, {String? name, String? imagePath}) async {
+  Future<bool> updateGroupChat(int groupId, String adminEmail, {String? name, String? imagePath, Uint8List? bytes, String? fileName}) async {
     try {
       final Map<String, dynamic> data = {"admin_email": adminEmail};
       if (name != null) data["name"] = name;
-      if (imagePath != null && imagePath.isNotEmpty) {
+      
+      if (kIsWeb && bytes != null) {
+        data["photo"] = MultipartFile.fromBytes(bytes, filename: fileName ?? 'group.jpg');
+      } else if (imagePath != null && imagePath.isNotEmpty) {
         data["photo"] = await MultipartFile.fromFile(imagePath);
       }
+      
       final response = await _dio.put("/groups/$groupId", data: FormData.fromMap(data));
       return response.statusCode == 200;
     } catch (e) {

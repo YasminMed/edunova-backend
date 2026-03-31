@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
@@ -24,6 +26,8 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
   final List<ChatUser> _selectedUsers = [];
   bool _isLoadingUsers = true;
   String? _selectedImagePath;
+  Uint8List? _selectedImageBytes;
+  String? _selectedImageName;
   bool _isCreating = false;
 
   @override
@@ -48,10 +52,17 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.image,
     );
+    
+    bool hasFile = result != null && (kIsWeb ? result.files.single.bytes != null : result.files.single.path != null);
 
-    if (result != null && result.files.single.path != null) {
+    if (hasFile) {
       setState(() {
-        _selectedImagePath = result.files.single.path;
+        if (kIsWeb) {
+          _selectedImageBytes = result.files.single.bytes;
+          _selectedImageName = result.files.single.name;
+        } else {
+          _selectedImagePath = result.files.single.path;
+        }
       });
     }
   }
@@ -81,7 +92,9 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
         groupName, 
         currentUserEmail, 
         memberEmails, 
-        imagePath: _selectedImagePath
+        imagePath: _selectedImagePath,
+        bytes: _selectedImageBytes,
+        fileName: _selectedImageName,
       );
       
       if (mounted) {
@@ -150,14 +163,16 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.1),
                       shape: BoxShape.circle,
-                      image: _selectedImagePath != null
+                      image: (_selectedImageBytes != null || _selectedImagePath != null)
                           ? DecorationImage(
-                              image: FileImage(File(_selectedImagePath!)),
+                              image: kIsWeb 
+                                  ? MemoryImage(_selectedImageBytes!) as ImageProvider
+                                  : FileImage(File(_selectedImagePath!)) as ImageProvider,
                               fit: BoxFit.cover,
                             )
                           : null,
                     ),
-                    child: _selectedImagePath == null
+                    child: (_selectedImageBytes == null && _selectedImagePath == null)
                         ? const Icon(
                             Icons.groups_rounded,
                             size: 50,
