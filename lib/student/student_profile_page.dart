@@ -319,7 +319,9 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         type: FileType.image,
       );
 
-      if (result != null && (result.files.single.path != null || result.files.single.bytes != null)) {
+      bool hasFile = result != null && (kIsWeb ? result.files.single.bytes != null : result.files.single.path != null);
+
+      if (hasFile) {
         // Show loading
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Uploading photo...'), duration: Duration(seconds: 2)),
