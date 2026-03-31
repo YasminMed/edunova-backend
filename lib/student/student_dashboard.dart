@@ -82,6 +82,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
       extendBody: true,
       body: Stack(
@@ -89,56 +92,48 @@ class _StudentDashboardState extends State<StudentDashboard> {
           // Body Content
           _buildBody(),
 
-          // Bottom Navigation Bar with Enhanced Shadow
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      height: 70,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(30),
-                        border: Theme.of(context).brightness == Brightness.dark
-                            ? null
-                            : Border.all(
-                                color: Theme.of(
-                                  context,
-                                ).dividerColor.withValues(alpha: 0.6),
-                              ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.2),
-                            blurRadius: 25,
-                            spreadRadius: -5,
-                            offset: const Offset(0, 10),
-                          ),
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildNavItem(Icons.person_outline_rounded, 0),
-                          _buildNavItem(Icons.chat_bubble_outline_rounded, 1),
-                          _buildNavItem(Icons.dashboard_rounded, 2),
-                          _buildNavItem(
-                            Icons.smart_toy_outlined,
-                            3,
-                          ), // AI Agent
-                          _buildNavItem(Icons.settings_outlined, 4),
-                        ],
-                      ),
+          // Bottom Navigation Bar
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: bottomPadding > 0 ? bottomPadding : 24,
+            child: Container(
+              height: 72,
+              decoration: BoxDecoration(
+                color: isDark 
+                    ? const Color(0xFF1E293B).withOpacity(0.95) // Dark Slate
+                    : Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(36),
+                border: Border.all(
+                  color: isDark 
+                      ? Colors.white.withOpacity(0.05) 
+                      : Colors.black.withOpacity(0.03),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.4 : 0.08),
+                    blurRadius: 30,
+                    spreadRadius: -2,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(36),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildNavItem(Icons.person_rounded, 0),
+                        _buildNavItem(Icons.chat_bubble_rounded, 1),
+                        _buildNavItem(Icons.grid_view_rounded, 2),
+                        _buildNavItem(Icons.smart_toy_rounded, 3),
+                        _buildNavItem(Icons.settings_rounded, 4),
+                      ],
                     ),
                   ),
                 ),
@@ -441,39 +436,33 @@ class _StudentDashboardState extends State<StudentDashboard> {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              isDark
-                  ? Theme.of(context).cardColor
-                  : Theme.of(context).cardColor.withValues(alpha: 0.9),
-              isDark
-                  ? Theme.of(context).cardColor.withValues(alpha: 0.7)
-                  : Theme.of(context).cardColor.withValues(alpha: 0.6),
-            ],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
+          color: isDark 
+              ? Colors.white.withOpacity(0.05) 
+              : const Color(0xFFFBFDFF),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: isDark 
+                ? Colors.white.withOpacity(0.08) 
+                : Colors.black.withOpacity(0.03),
+            width: 1.5,
           ),
-          borderRadius: BorderRadius.circular(24),
-          border: isDark
-              ? Border.all(color: Colors.white.withValues(alpha: 0.05))
-              : null,
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: 0.1),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: Icon(icon, color: color, size: 30),
+              child: Icon(icon, color: color, size: 28),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -483,16 +472,17 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   Text(
                     title,
                     style: TextDesign.h3.copyWith(
-                      fontSize: 18,
-                      color: isDark ? Colors.white : Colors.black87,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : AppColors.primaryText,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
                     style: TextDesign.body.copyWith(
-                      color: AppColors.mutedText,
-                      fontSize: 14,
+                      color: isDark ? Colors.white60 : AppColors.mutedText,
+                      fontSize: 13,
                     ),
                   ),
                 ],
@@ -500,8 +490,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
             Icon(
               Icons.arrow_forward_ios_rounded,
-              color: AppColors.mutedText.withValues(alpha: 0.5),
-              size: 20,
+              color: AppColors.mutedText.withOpacity(0.3),
+              size: 16,
             ),
           ],
         ),
@@ -510,28 +500,21 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildProgressCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).brightness == Brightness.dark
-                ? Theme.of(context).cardColor
-                : Theme.of(context).cardColor.withValues(alpha: 0.8),
-            Theme.of(context).brightness == Brightness.dark
-                ? Theme.of(context).cardColor.withValues(alpha: 0.8)
-                : Theme.of(context).cardColor.withValues(alpha: 0.5),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFFBFDFF),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.02),
         ),
-        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.15),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 25,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -547,9 +530,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       "Your Progress",
                   style: TextDesign.h2.copyWith(
                     fontSize: 22,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black87,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : AppColors.primaryText,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -558,103 +540,78 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       "Perfect, keep going!",
                   style: TextDesign.body.copyWith(
                     color: AppColors.secondary,
-                    fontWeight: FontWeight.bold,
-                    fontStyle: FontStyle.italic,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    _rankText,
-                    style: TextDesign.body.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.stars_rounded,
-                        color: Colors.amber,
-                        size: 14,
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        "Marks: $_totalMarks",
+                      child: Text(
+                        _rankText,
                         style: TextDesign.body.copyWith(
-                          color: Colors.amber[800],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.stars_rounded, color: Colors.amber, size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            "$_totalMarks",
+                            style: TextDesign.body.copyWith(
+                              color: Colors.amber[800],
+                              fontWeight: FontWeight.w800,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
           const SizedBox(width: 16),
-          // Circular Progress Only
           Stack(
             alignment: Alignment.center,
             children: [
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Theme.of(context).cardColor.withValues(alpha: 0.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.2),
-                      blurRadius: 15,
-                    ),
-                  ],
-                ),
+              SizedBox(
+                width: 85,
+                height: 85,
                 child: CircularProgressIndicator(
                   value: _progressValue,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundColor: AppColors.primary.withOpacity(0.08),
                   color: AppColors.primary,
-                  strokeWidth: 8,
+                  strokeWidth: 9,
                   strokeCap: StrokeCap.round,
                 ),
               ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "${(_progressValue * 100).toInt()}%",
-                    style: TextDesign.h3.copyWith(
-                      fontSize: 20,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white
-                          : Colors.black87,
-                    ),
-                  ),
-                ],
+              Text(
+                "${(_progressValue * 100).toInt()}%",
+                style: TextDesign.h3.copyWith(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : AppColors.primaryText,
+                ),
               ),
             ],
           ),
@@ -665,21 +622,43 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   Widget _buildNavItem(IconData icon, int index) {
     final bool isSelected = _selectedIndex == index;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return GestureDetector(
       onTap: () => _onItemTapped(index),
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(12),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.1)
+              ? (isDark ? Colors.white.withOpacity(0.08) : AppColors.primary.withOpacity(0.12))
               : Colors.transparent,
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(24),
         ),
-        child: Icon(
-          icon,
-          color: isSelected ? AppColors.primary : AppColors.mutedText,
-          size: 26,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected 
+                  ? (isDark ? Colors.white : AppColors.primary) 
+                  : (isDark ? Colors.white38 : AppColors.mutedText),
+              size: 24,
+            ),
+            if (isSelected) ...[
+              const SizedBox(height: 4),
+              Container(
+                width: 4,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white : AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -752,18 +731,22 @@ class _DashboardGridItemState extends State<_DashboardGridItem>
         scale: _scaleAnimation,
         child: Container(
           decoration: BoxDecoration(
-            color: isDark
-                ? Theme.of(context).cardColor
-                : Theme.of(context).cardColor.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(20),
-            border: isDark
-                ? Border.all(color: Colors.white.withValues(alpha: 0.05))
-                : null,
+            color: isDark 
+                ? Colors.white.withOpacity(0.05) 
+                : const Color(0xFFFBFDFF).withOpacity(0.95),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: isDark 
+                  ? Colors.white.withOpacity(0.08) 
+                  : Colors.white.withOpacity(0.4),
+              width: 1,
+            ),
             boxShadow: [
               BoxShadow(
-                color: widget.color.withValues(alpha: 0.15),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
+                color: isDark ? Colors.black26 : Colors.blueGrey.withOpacity(0.06),
+                blurRadius: 15,
+                spreadRadius: 2,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -771,20 +754,21 @@ class _DashboardGridItemState extends State<_DashboardGridItem>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: widget.color.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
+                  color: widget.color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Icon(widget.icon, color: widget.color, size: 28),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Text(
                 widget.title,
                 style: TextDesign.body.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   fontSize: 13,
-                  color: isDark ? Colors.white : Colors.black87,
+                  letterSpacing: 0.1,
+                  color: isDark ? Colors.white.withOpacity(0.9) : AppColors.primaryText,
                 ),
                 textAlign: TextAlign.center,
               ),
