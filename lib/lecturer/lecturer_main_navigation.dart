@@ -26,6 +26,9 @@ class _LecturerMainNavigationState extends State<LecturerMainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
       extendBody: true,
       body: Stack(
@@ -37,41 +40,45 @@ class _LecturerMainNavigationState extends State<LecturerMainNavigation> {
           Positioned(
             left: 20,
             right: 20,
-            bottom: 24,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  height: 70,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(30),
-                    border: Theme.of(context).brightness == Brightness.dark
-                        ? null
-                        : Border.all(
-                            color: Theme.of(
-                              context,
-                            ).dividerColor.withOpacity(0.6),
-                          ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.secondary.withOpacity(0.2),
-                        blurRadius: 25,
-                        spreadRadius: -5,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
+            bottom: bottomPadding > 0 ? bottomPadding : 24,
+            child: Container(
+              height: 72,
+              decoration: BoxDecoration(
+                color: isDark 
+                    ? const Color(0xFF1E293B).withOpacity(0.95) // Dark Slate
+                    : Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(36),
+                border: Border.all(
+                  color: isDark 
+                      ? Colors.white.withOpacity(0.05) 
+                      : Colors.black.withOpacity(0.03),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.4 : 0.08),
+                    blurRadius: 30,
+                    spreadRadius: -2,
+                    offset: const Offset(0, 10),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildNavItem(Icons.person_outline_rounded, 0),
-                      _buildNavItem(Icons.chat_bubble_outline_rounded, 1),
-                      _buildNavItem(Icons.dashboard_rounded, 2),
-                      _buildNavItem(Icons.smart_toy_outlined, 3),
-                      _buildNavItem(Icons.settings_outlined, 4),
-                    ],
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(36),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildNavItem(Icons.person_rounded, 0),
+                        _buildNavItem(Icons.chat_bubble_rounded, 1),
+                        _buildNavItem(Icons.grid_view_rounded, 2),
+                        _buildNavItem(Icons.smart_toy_rounded, 3),
+                        _buildNavItem(Icons.settings_rounded, 4),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -101,21 +108,43 @@ class _LecturerMainNavigationState extends State<LecturerMainNavigation> {
 
   Widget _buildNavItem(IconData icon, int index) {
     final bool isSelected = _selectedIndex == index;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return GestureDetector(
       onTap: () => _onItemTapped(index),
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(12),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.secondary.withOpacity(0.1)
+              ? (isDark ? Colors.white.withOpacity(0.08) : AppColors.secondary.withOpacity(0.12))
               : Colors.transparent,
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(24),
         ),
-        child: Icon(
-          icon,
-          color: isSelected ? AppColors.secondary : AppColors.mutedText,
-          size: 26,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected 
+                  ? (isDark ? Colors.white : AppColors.secondary) 
+                  : (isDark ? Colors.white38 : AppColors.mutedText),
+              size: 24,
+            ),
+            if (isSelected) ...[
+              const SizedBox(height: 4),
+              Container(
+                width: 4,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white : AppColors.secondary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

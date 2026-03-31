@@ -261,18 +261,18 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF1A237E).withOpacity(0.85),
-            const Color(0xFF0D47A1),
+            const Color(0xFF1E3A8A).withOpacity(0.95), // Deep Professional Indigo
+            const Color(0xFF1E40AF),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0D47A1).withOpacity(0.35),
-            blurRadius: 25,
-            offset: const Offset(0, 12),
+            color: const Color(0xFF1E40AF).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -340,48 +340,51 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(28),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.7),
-          borderRadius: BorderRadius.circular(24),
+          color: isDark 
+              ? Colors.white.withOpacity(0.05) 
+              : const Color(0xFFFBFDFF).withOpacity(0.95), // Premium off-white
+          borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: isDark ? Colors.white10 : Colors.white.withOpacity(0.5),
-            width: 1.5,
+            color: isDark 
+                ? Colors.white.withOpacity(0.08) 
+                : Colors.white.withOpacity(0.4),
+            width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
+              color: isDark ? Colors.black26 : Colors.blueGrey.withOpacity(0.06),
+              blurRadius: 15,
+              spreadRadius: 2,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 26),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14), // Slightly more padding
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20), // Squared-circle look
               ),
-              const SizedBox(height: 10),
-              Text(
-                title,
-                style: TextDesign.body.copyWith(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white.withOpacity(0.9) : AppColors.primaryText,
-                ),
-                textAlign: TextAlign.center,
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: TextDesign.body.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.1,
+                color: isDark ? Colors.white.withOpacity(0.9) : AppColors.primaryText,
               ),
-            ],
-          ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
