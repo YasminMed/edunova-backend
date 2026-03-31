@@ -1719,12 +1719,12 @@ async def get_lecturer_student_analysis(
     
     # Identify requested scope
     if department:
-        target_depts = [department]
+        target_depts = [department.strip()]
     else:
         target_depts = [d.strip() for d in (lecturer.department or "").split(',') if d.strip()]
         
     if stage:
-        target_stages = [stage]
+        target_stages = [stage.strip()]
     else:
         target_stages = [s.strip() for s in (lecturer.stage or "").split(',') if s.strip()]
     
@@ -1812,16 +1812,23 @@ async def get_lecturer_student_analysis(
     avg_mark = sum(all_scores) / len(all_scores) if all_scores else 0.0
     
     # Engagement: submissions vs expected
-    courses = db.query(models.Course).filter(models.Course.lecturer_id == lecturer.id).all()
+    courses = db.query(models.Course).filter(
+        models.Course.lecturer_id == lecturer.id,
+        models.Course.department.in_(target_depts),
+        models.Course.stage.in_(target_stages)
+    ).all()
     course_ids = [c.id for c in courses]
     assign_count = db.query(models.Assignment).filter(models.Assignment.course_id.in_(course_ids)).count()
     expected_subs = assign_count * len(student_ids)
-    actual_subs = db.query(models.AssignmentSubmission).join(models.Assignment).filter(
-        models.Assignment.course_id.in_(course_ids),
-        models.AssignmentSubmission.student_id.in_(student_ids)
-    ).count()
     
-    engagement = (actual_subs / expected_subs * 100) if expected_subs > 0 else 0.0
+    if expected_subs > 0:
+        actual_subs = db.query(models.AssignmentSubmission).join(models.Assignment).filter(
+            models.Assignment.course_id.in_(course_ids),
+            models.AssignmentSubmission.student_id.in_(student_ids)
+        ).count()
+        engagement = (actual_subs / expected_subs * 100)
+    else:
+        engagement = 0.0
     
     # Materials Used: count of resources + assignments + quizzes by lecturer
     if course_ids:
