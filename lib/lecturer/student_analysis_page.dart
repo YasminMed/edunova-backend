@@ -19,13 +19,32 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
   String? _errorMessage;
   Map<String, dynamic>? _analysisData;
 
+  String _selectedDepartment = 'All';
+  String _selectedStage = 'All';
+  List<String> _availableDepartments = ['All'];
+  List<String> _availableStages = ['All'];
+
   @override
   void initState() {
     super.initState();
+    _initFilters();
     _loadAnalysis();
   }
 
+  void _initFilters() {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (userProvider.department != null) {
+      final depts = userProvider.department!.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
+      _availableDepartments.addAll(depts);
+    }
+    if (userProvider.stage != null) {
+      final stages = userProvider.stage!.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
+      _availableStages.addAll(stages);
+    }
+  }
+
   Future<void> _loadAnalysis() async {
+    setState(() => _isLoading = true);
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final email = userProvider.email;
 
@@ -38,7 +57,11 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
     }
 
     try {
-      final data = await _materialService.fetchStudentAnalysis(email);
+      final data = await _materialService.fetchStudentAnalysis(
+        email,
+        department: _selectedDepartment == 'All' ? null : _selectedDepartment,
+        stage: _selectedStage == 'All' ? null : _selectedStage,
+      );
       setState(() {
         _analysisData = data;
         _isLoading = false;
@@ -79,6 +102,8 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _buildFilters(isDark),
+                        const SizedBox(height: 24),
                         _buildChartCard(isDark),
                         const SizedBox(height: 32),
                         Text(
@@ -418,6 +443,91 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildFilters(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildFilterDropdown(
+                label: "Department",
+                value: _selectedDepartment,
+                items: _availableDepartments,
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() => _selectedDepartment = val);
+                    _loadAnalysis();
+                  }
+                },
+                isDark: isDark,
+              ),
+              const SizedBox(width: 12),
+              _buildFilterDropdown(
+                label: "Stage",
+                value: _selectedStage,
+                items: _availableStages,
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() => _selectedStage = val);
+                    _loadAnalysis();
+                  }
+                },
+                isDark: isDark,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterDropdown({
+    required String label,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.grey.shade200,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          icon: Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: isDark ? Colors.white60 : Colors.grey),
+          dropdownColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+          style: TextStyle(
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+          items: items.map((String item) {
+            return DropdownMenuItem<String>(
+              value: item,
+              child: Text(item),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ),
     );
   }
 }

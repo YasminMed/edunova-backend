@@ -57,7 +57,7 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
                   email: userProvider.email!,
                   role: 'lecturer',
                 );
-                userProvider.setUser(
+                await userProvider.setUser(
                   nameController.text.trim(),
                   userProvider.email!,
                   'lecturer',
@@ -320,7 +320,7 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
           fileName: result.files.single.name,
         );
 
-        userProvider.setUser(
+        await userProvider.setUser(
           userProvider.fullName!,
           userProvider.email!,
           'lecturer',

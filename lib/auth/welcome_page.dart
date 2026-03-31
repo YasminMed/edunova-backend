@@ -7,6 +7,9 @@ import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'onboarding_page.dart';
+import '../providers/user_provider.dart';
+import '../student/student_dashboard.dart';
+import '../lecturer/lecturer_main_navigation.dart';
 
 // Provider for Welcome Logic
 class WelcomeProvider extends ChangeNotifier {
@@ -138,33 +141,54 @@ class _WelcomePageState extends State<WelcomePage>
 
       // 6. Navigate
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const OnboardingPage(),
-            transitionsBuilder: (_, animation, __, child) {
-              const begin = Offset(0.0, 0.1); // Slight slide up
-              const end = Offset.zero;
-              const curve = Curves.easeOutQuart;
+        final userProvider = context.read<UserProvider>();
+        await userProvider.loadUser();
 
-              var tween = Tween(
-                begin: begin,
-                end: end,
-              ).chain(CurveTween(curve: curve));
-              var offsetAnimation = animation.drive(tween);
-              var fadeAnimation = Tween(
-                begin: 0.0,
-                end: 1.0,
-              ).animate(animation);
+        if (userProvider.email != null && userProvider.role != null) {
+          // User is already logged in, skip onboarding/login
+          Widget nextScreen;
+          if (userProvider.role == 'student') {
+            nextScreen = const StudentDashboard();
+          } else {
+            nextScreen = const LecturerMainNavigation();
+          }
 
-              return FadeTransition(
-                opacity: fadeAnimation,
-                child: SlideTransition(position: offsetAnimation, child: child),
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 1200),
-          ),
-        );
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => nextScreen),
+            (route) => false,
+          );
+        } else {
+          // No session, go to Onboarding
+          Navigator.pushReplacement(
+            context,
+            PageRouteBuilder(
+              pageBuilder: (_, __, ___) => const OnboardingPage(),
+              transitionsBuilder: (_, animation, __, child) {
+                const begin = Offset(0.0, 0.1); // Slight slide up
+                const end = Offset.zero;
+                const curve = Curves.easeOutQuart;
+
+                var tween = Tween(
+                  begin: begin,
+                  end: end,
+                ).chain(CurveTween(curve: curve));
+                var offsetAnimation = animation.drive(tween);
+                var fadeAnimation = Tween(
+                  begin: 0.0,
+                  end: 1.0,
+                ).animate(animation);
+
+                return FadeTransition(
+                  opacity: fadeAnimation,
+                  child:
+                      SlideTransition(position: offsetAnimation, child: child),
+                );
+              },
+              transitionDuration: const Duration(milliseconds: 1200),
+            ),
+          );
+        }
       }
     }
   }

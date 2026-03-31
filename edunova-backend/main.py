@@ -1707,16 +1707,28 @@ async def update_lecturer_experience(email: str, years: int, db: Session = Depen
     return {"message": "Experience updated successfully"}
 
 @app.get("/lecturer/student-analysis")
-async def get_lecturer_student_analysis(lecturer_email: str, db: Session = Depends(get_db)):
+async def get_lecturer_student_analysis(
+    lecturer_email: str, 
+    department: Optional[str] = None, 
+    stage: Optional[str] = None, 
+    db: Session = Depends(get_db)
+):
     lecturer = db.query(models.User).filter(models.User.email == lecturer_email).first()
     if not lecturer:
         raise HTTPException(status_code=404, detail="Lecturer not found")
     
-    # Get depts and stages lecturer is responsible for
-    dept_list = [d.strip() for d in (lecturer.department or "").split(',') if d.strip()]
-    stage_list = [s.strip() for s in (lecturer.stage or "").split(',') if s.strip()]
+    # Identify requested scope
+    if department:
+        target_depts = [department]
+    else:
+        target_depts = [d.strip() for d in (lecturer.department or "").split(',') if d.strip()]
+        
+    if stage:
+        target_stages = [stage]
+    else:
+        target_stages = [s.strip() for s in (lecturer.stage or "").split(',') if s.strip()]
     
-    if not dept_list or not stage_list:
+    if not target_depts or not target_stages:
         return {
             "performance_trend": [0, 0, 0, 0, 0, 0, 0],
             "attendance_analytics": {"attended": 0, "late": 0, "absent": 0, "average_rate": 0},
@@ -1727,8 +1739,8 @@ async def get_lecturer_student_analysis(lecturer_email: str, db: Session = Depen
     # Get students belonging to these depts and stages
     students = db.query(models.User).filter(
         models.User.role == "student",
-        models.User.department.in_(dept_list),
-        models.User.stage.in_(stage_list)
+        models.User.department.in_(target_depts),
+        models.User.stage.in_(target_stages)
     ).all()
     student_ids = [s.id for s in students]
     

@@ -484,11 +484,15 @@ class MaterialService {
     }
   }
 
-  Future<Map<String, dynamic>> fetchStudentAnalysis(String lecturerEmail) async {
+  Future<Map<String, dynamic>> fetchStudentAnalysis(String lecturerEmail, {String? department, String? stage}) async {
     try {
       final response = await _dio.get(
         "/lecturer/student-analysis",
-        queryParameters: {"lecturer_email": lecturerEmail},
+        queryParameters: {
+          "lecturer_email": lecturerEmail,
+          if (department != null) "department": department,
+          if (stage != null) "stage": stage,
+        },
       );
       return response.data;
     } on DioException catch (e) {

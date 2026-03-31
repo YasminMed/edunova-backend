@@ -56,13 +56,13 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
         if (!mounted) return;
 
         // Store user data in UserProvider
-        context.read<UserProvider>().setUser(
+        await context.read<UserProvider>().setUser(
           userData['fullName'] ?? 'Student',
           _emailController.text.trim(),
           'student',
           department: userData['department'],
           stage: userData['stage'],
-          photoUrl: userData['photoUrl'],
+          photoUrl: userData['image_url'],
         );
 
         if (!mounted) return;

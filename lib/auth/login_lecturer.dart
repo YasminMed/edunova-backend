@@ -55,13 +55,13 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
         if (!mounted) return;
 
         final userProvider = context.read<UserProvider>();
-        userProvider.setUser(
+        await userProvider.setUser(
           userData['fullName'] ?? 'Lecturer',
           _emailController.text.trim(),
           'lecturer',
           department: userData['department'],
           stage: userData['stage'],
-          photoUrl: userData['photoUrl'],
+          photoUrl: userData['image_url'],
         );
 
         if (!userProvider.isProfileComplete) {
