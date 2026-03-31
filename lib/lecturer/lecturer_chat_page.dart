@@ -57,6 +57,7 @@ class _LecturerChatPageState extends State<LecturerChatPage>
           'unread': s.unreadCount > 0,
           'unreadCount': s.unreadCount,
           'avatarColor': Colors.blueAccent,
+          'photo_url': s.otherUser.photoUrl,
         });
       }
       
@@ -174,6 +175,7 @@ class _LecturerChatPageState extends State<LecturerChatPage>
                                         name: session.otherUser.fullName,
                                         avatarColor: Colors.blueAccent,
                                         isGroup: false,
+                                        photoUrl: session.otherUser.photoUrl,
                                       ),
                                     ),
                                   ).then((_) => _loadChats());
@@ -333,6 +335,7 @@ class _LecturerChatPageState extends State<LecturerChatPage>
                       name: chat['name'],
                       avatarColor: avatarColor,
                       isGroup: false,
+                      photoUrl: chat['photo_url'],
                     ),
                   ),
                 ).then((_) => _loadChats());
@@ -372,7 +375,7 @@ class _LecturerChatPageState extends State<LecturerChatPage>
                         decoration: BoxDecoration(
                           color: avatarColor.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(18),
-                          image: isGroupView && chat['photo_url'] != null 
+                          image: chat['photo_url'] != null 
                               ? DecorationImage(
                                   image: NetworkImage("${ChatService.baseUrl}${chat['photo_url']}"),
                                   fit: BoxFit.cover,
@@ -381,7 +384,9 @@ class _LecturerChatPageState extends State<LecturerChatPage>
                         ),
                         child: (isGroupView && chat['photo_url'] == null) 
                             ? Icon(Icons.groups_rounded, color: avatarColor, size: 28)
-                            : (!isGroupView ? Icon(Icons.person_rounded, color: avatarColor, size: 28) : null),
+                            : (!isGroupView && chat['photo_url'] == null 
+                                ? Icon(Icons.person_rounded, color: avatarColor, size: 28) 
+                                : null),
                       ),
                       if (unread)
                         Positioned(
