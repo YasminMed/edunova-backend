@@ -496,7 +496,7 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      activity['desc'] ?? '',
+                      _getLocalizedActivityDesc(context, activity),
                       style: TextDesign.body.copyWith(
                         fontSize: 13,
                         color: isDark ? Colors.white60 : Colors.grey[600],
@@ -519,5 +519,59 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
         );
       }).toList(),
     );
+  }
+
+  String _getLocalizedActivityDesc(BuildContext context, Map<String, dynamic> activity) {
+    final l10n = AppLocalizations.of(context);
+    final type = activity['type'] ?? 'default';
+    final desc = activity['desc'] ?? '';
+    
+    String actionKey = 'activity_unknown';
+    String englishAction = '';
+    
+    switch (type) {
+      case 'quiz_submitted':
+        actionKey = 'activity_quiz_submitted';
+        englishAction = 'Submitted quiz';
+        break;
+      case 'assignment_submitted':
+        actionKey = 'activity_assignment_submitted';
+        englishAction = 'Submitted assignment';
+        break;
+      case 'comment_added':
+        actionKey = 'activity_comment_added';
+        englishAction = 'Added a comment';
+        break;
+      case 'material_viewed':
+        actionKey = 'activity_material_viewed';
+        englishAction = 'Viewed material';
+        break;
+    }
+    
+    if (actionKey == 'activity_unknown') return desc;
+    
+    final localizedAction = l10n?.translate(actionKey) ?? englishAction;
+    
+    // Try to extract the name of the assignment/quiz/etc from the English desc
+    // Format usually is "Action 'Name'" or "'Action 'Name'"
+    String content = "";
+    if (desc.contains("'")) {
+      // Find where the English action ends or where the first quote of the name starts
+      int nameStart = desc.toLowerCase().indexOf(englishAction.toLowerCase());
+      if (nameStart != -1) {
+        nameStart += englishAction.length;
+        content = desc.substring(nameStart).trim();
+      } else {
+        // Fallback: find the first quote that isn't at the very start
+        int firstQuote = desc.indexOf("'", desc.startsWith("'") ? 1 : 0);
+        if (firstQuote != -1) {
+          content = desc.substring(firstQuote).trim();
+        }
+      }
+    } else if (desc.toLowerCase().startsWith(englishAction.toLowerCase())) {
+      content = desc.substring(englishAction.length).trim();
+    }
+    
+    return content.isEmpty ? localizedAction : "$localizedAction $content";
   }
 }

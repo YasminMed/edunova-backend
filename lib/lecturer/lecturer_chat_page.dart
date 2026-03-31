@@ -9,7 +9,6 @@ import '../models/chat_session.dart';
 import '../student/chat_detail_page.dart';
 import '../student/group_chat_detail_page.dart';
 import '../student/create_group_sheet.dart';
-import '../student/saved_messages_page.dart';
 
 class LecturerChatPage extends StatefulWidget {
   const LecturerChatPage({super.key});
@@ -238,23 +237,11 @@ class _LecturerChatPageState extends State<LecturerChatPage>
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'mark_read') _markAllAsRead();
-              if (value == 'saved') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SavedMessagesPage(),
-                  ),
-                );
-              }
             },
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'mark_read',
                 child: Text('Mark all as read'),
-              ),
-              const PopupMenuItem(
-                value: 'saved',
-                child: Text('Saved Messages'),
               ),
             ],
           ),

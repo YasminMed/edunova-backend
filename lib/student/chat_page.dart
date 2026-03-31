@@ -9,7 +9,6 @@ import '../models/chat_session.dart';
 import 'chat_detail_page.dart';
 import 'group_chat_detail_page.dart';
 import 'create_group_sheet.dart';
-import 'saved_messages_page.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -274,13 +273,6 @@ class _ChatPageState extends State<ChatPage>
               onSelected: (value) {
                 if (value == 'mark_read') {
                   _markAllAsRead();
-                } else if (value == 'saved') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SavedMessagesPage(),
-                    ),
-                  );
                 }
               },
               itemBuilder: (BuildContext context) {
@@ -289,12 +281,6 @@ class _ChatPageState extends State<ChatPage>
                     value: 'mark_read',
                     child: Text(
                       AppLocalizations.of(context)?.translate('mark_all_read') ?? 'Mark all as read',
-                    ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'saved',
-                    child: Text(
-                      AppLocalizations.of(context)?.translate('saved_messages') ?? 'Saved Messages',
                     ),
                   ),
                 ];
