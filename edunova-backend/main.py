@@ -448,6 +448,68 @@ async def update_profile(profile: ProfileUpdate, db: Session = Depends(get_db)):
         "stage": db_user.stage
     }
 
+@app.post("/auth/update-profile-photo")
+async def update_profile_photo(
+    email: str = Form(...),
+    role: str = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    print(f"DEBUG: Update photo request for {email} ({role})")
+    db_user = db.query(models.User).filter(models.User.email == email).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Save the file
+    file_ext = file.filename.split(".")[-1]
+    file_name = f"profile_{secrets.token_hex(8)}.{file_ext}"
+    file_path = os.path.join(UPLOAD_DIR, file_name)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    photo_url = f"/uploads/{file_name}"
+    db_user.image_url = photo_url
+    db.commit()
+    db.refresh(db_user)
+    
+    return {"message": "Photo updated successfully", "photoUrl": photo_url}
+
+@app.post("/auth/change-password")
+async def change_password(
+    email: str = Body(embed=True),
+    oldPassword: str = Body(embed=True),
+    newPassword: str = Body(embed=True),
+    role: str = Body(embed=True),
+    db: Session = Depends(get_db)
+):
+    print(f"DEBUG: Change password request for {email}")
+    db_user = db.query(models.User).filter(models.User.email == email).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if db_user.password != oldPassword:
+        raise HTTPException(status_code=400, detail="Incorrect old password")
+        
+    db_user.password = newPassword
+    db.commit()
+    return {"message": "Password updated successfully"}
+
+@app.delete("/auth/delete-account")
+async def delete_account(
+    params: dict = Body(...),
+    db: Session = Depends(get_db)
+):
+    email = params.get("email")
+    print(f"DEBUG: Delete account request for {email}")
+    db_user = db.query(models.User).filter(models.User.email == email).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    db.delete(db_user)
+    db.commit()
+    return {"message": "Account deleted successfully"}
+
 @app.get("/admin/clear-all")
 @app.post("/admin/clear-all")
 async def clear_all_data(db: Session = Depends(get_db)):
