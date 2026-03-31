@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
@@ -318,9 +319,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         type: FileType.image,
       );
 
-      if (result != null && result.files.single.path != null) {
-        final filePath = result.files.single.path!;
-        
+      if (result != null && (result.files.single.path != null || result.files.single.bytes != null)) {
         // Show loading
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Uploading photo...'), duration: Duration(seconds: 2)),
@@ -329,7 +328,9 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         final newPhotoUrl = await _authService.updateProfilePhoto(
           email: userProvider.email!,
           role: userProvider.role!,
-          filePath: filePath,
+          filePath: kIsWeb ? null : result.files.single.path,
+          bytes: kIsWeb ? result.files.single.bytes : null,
+          fileName: result.files.single.name,
         );
 
         userProvider.setUser(

@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 
 class AuthService {
   static const String baseUrl = "https://web-production-06d8c.up.railway.app";
@@ -93,14 +95,25 @@ class AuthService {
   Future<String> updateProfilePhoto({
     required String email,
     required String role,
-    required String filePath,
+    String? filePath,
+    Uint8List? bytes,
+    String? fileName,
   }) async {
     try {
-      final formData = FormData.fromMap({
+      final Map<String, dynamic> data = {
         'email': email,
         'role': role,
-        'file': await MultipartFile.fromFile(filePath),
-      });
+      };
+
+      if (kIsWeb && bytes != null) {
+        data['file'] = MultipartFile.fromBytes(bytes, filename: fileName ?? 'profile.jpg');
+      } else if (filePath != null) {
+        data['file'] = await MultipartFile.fromFile(filePath);
+      } else {
+        throw Exception("No file provided for upload");
+      }
+
+      final formData = FormData.fromMap(data);
       final response = await _dio.put('/auth/update-profile-photo', data: formData);
       return response.data['photoUrl'];
     } on DioException catch (e) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
@@ -303,9 +304,7 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
         type: FileType.image,
       );
 
-      if (result != null && result.files.single.path != null) {
-        final filePath = result.files.single.path!;
-        
+      if (result != null && (result.files.single.path != null || result.files.single.bytes != null)) {
         // Show loading
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Uploading photo...'), duration: Duration(seconds: 2)),
@@ -314,7 +313,9 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
         final newPhotoUrl = await _authService.updateProfilePhoto(
           email: userProvider.email!,
           role: 'lecturer',
-          filePath: filePath,
+          filePath: kIsWeb ? null : result.files.single.path,
+          bytes: kIsWeb ? result.files.single.bytes : null,
+          fileName: result.files.single.name,
         );
 
         userProvider.setUser(
