@@ -133,7 +133,7 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 15,
                                 mainAxisSpacing: 15,
-                                childAspectRatio: 0.85,
+                                childAspectRatio: 1.15, // Shorter cards
                               ),
                               itemCount: viewModel.subjects.length,
                               itemBuilder: (context, index) {

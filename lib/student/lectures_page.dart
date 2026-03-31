@@ -85,7 +85,7 @@ class _LecturesPageState extends State<LecturesPage> {
                 crossAxisCount: 2,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
-                childAspectRatio: 0.85,
+                childAspectRatio: 1.05, // More compact height
               ),
               itemCount: _lectures.length,
               itemBuilder: (context, index) {
@@ -141,15 +141,15 @@ class _LecturesPageState extends State<LecturesPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                    Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(isDark ? 0.1 : 0.6),
-                      shape: BoxShape.circle,
+                      color: mainColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(
                       _getIconForCourse(lecture['subject']),
-                      color: isDark ? mainColor : mainColor.withOpacity(0.9),
-                      size: 24,
+                      color: isDark ? Colors.white : mainColor,
+                      size: 26,
                     ),
                   ),
                   const Spacer(),

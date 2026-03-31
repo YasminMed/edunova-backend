@@ -382,63 +382,22 @@ class _ChatPageState extends State<ChatPage>
     }).toList();
 
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 10, bottom: 80),
+      padding: const EdgeInsets.only(top: 10, bottom: 100),
       itemCount: filteredGroups.length,
       itemBuilder: (context, index) {
         final group = filteredGroups[index];
-        return ListTile(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => GroupChatDetailPage(
-                  groupId: group['group_id'],
-                  groupName: group['name'],
-                  photoUrl: group['photo_url'],
-                  adminId: group['admin_id'],
-                ),
-              ),
-            ).then((_) => _loadChats());
-          },
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          leading: Stack(
-            children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: (group['avatarColor'] as Color).withOpacity(0.2),
-                backgroundImage: group['photo_url'] != null ? NetworkImage("${ChatService.baseUrl}${group['photo_url']}") : null,
-                child: group['photo_url'] == null ? Icon(Icons.groups_rounded, color: group['avatarColor'], size: 28) : null,
-              ),
-            ],
-          ),
-          title: Text(
-            group['name'],
-            style: TextDesign.h3.copyWith(
-              fontSize: 16,
-              color: Theme.of(context).textTheme.bodyLarge?.color,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              group['message'],
-              style: TextDesign.body.copyWith(
-                color: AppColors.mutedText,
-                fontSize: 14,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          trailing: Text(
-            group['time'],
-            style: TextDesign.body.copyWith(
-              color: AppColors.mutedText,
-              fontSize: 12,
-            ),
-          ),
+        return _buildChatTile(
+          context: context,
+          sessionId: group['group_id'],
+          otherUserEmail: "", // Group doesn't have otherUserEmail in this context
+          name: group['name'],
+          message: group['message'],
+          time: group['time'],
+          unread: group['unread'] ?? false,
+          unreadCount: group['unreadCount'] ?? 0,
+          avatarColor: group['avatarColor'],
+          isGroup: true,
+          photoUrl: group['photo_url'],
         );
       },
     );
@@ -455,109 +414,182 @@ class _ChatPageState extends State<ChatPage>
     required int unreadCount,
     required Color avatarColor,
     required bool isGroup,
+    String? photoUrl,
   }) {
-    return ListTile(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChatDetailPage(
-              sessionId: sessionId,
-              otherUserEmail: otherUserEmail,
-              name: name,
-              avatarColor: avatarColor,
-              isGroup: isGroup,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white : AppColors.primaryText;
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: InkWell(
+        onTap: () {
+          if (isGroup) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => GroupChatDetailPage(
+                  groupId: sessionId,
+                  groupName: name,
+                  photoUrl: photoUrl,
+                  adminId: 0, // Placeholder
+                ),
+              ),
+            ).then((_) => _loadChats());
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChatDetailPage(
+                  sessionId: sessionId,
+                  otherUserEmail: otherUserEmail,
+                  name: name,
+                  avatarColor: avatarColor,
+                  isGroup: false,
+                ),
+              ),
+            ).then((_) => _loadChats());
+          }
+        },
+        borderRadius: BorderRadius.circular(24),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDark 
+                ? Colors.white.withOpacity(0.04) 
+                : const Color(0xFFFBFDFF),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: unread 
+                  ? AppColors.primary.withOpacity(0.2) 
+                  : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.02)),
+              width: 1.5,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ).then((_) => _loadChats()); // reload chats on return
-      },
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      leading: Stack(
-        children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: avatarColor.withOpacity(0.2),
-            child: Icon(
-              isGroup ? Icons.groups_rounded : Icons.person_rounded,
-              color: avatarColor,
-              size: 28,
-            ),
-          ),
-          if (unread)
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    width: 2,
+          child: Row(
+            children: [
+              // Avatar Section
+              Stack(
+                children: [
+                   Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: avatarColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(18),
+                      image: photoUrl != null 
+                          ? DecorationImage(
+                              image: NetworkImage("${ChatService.baseUrl}$photoUrl"),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                    ),
+                    child: photoUrl == null 
+                        ? Icon(
+                            isGroup ? Icons.groups_rounded : Icons.person_rounded,
+                            color: avatarColor,
+                            size: 28,
+                          ) 
+                        : null,
                   ),
+                  if (unread)
+                    Positioned(
+                      right: -2,
+                      top: -2,
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 16),
+              // Content Section
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: TextDesign.h3.copyWith(
+                              fontSize: 16,
+                              fontWeight: unread ? FontWeight.w900 : FontWeight.w700,
+                              color: titleColor,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          time,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: unread ? FontWeight.w800 : FontWeight.w500,
+                            color: unread ? AppColors.primary : AppColors.mutedText,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            message,
+                            style: TextDesign.body.copyWith(
+                              fontSize: 14,
+                              color: unread 
+                                  ? titleColor.withOpacity(0.9) 
+                                  : AppColors.mutedText,
+                              fontWeight: unread ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (unreadCount > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              unreadCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ),
-        ],
-      ),
-      title: Text(
-        name,
-        style: TextDesign.h3.copyWith(
-          fontSize: 16,
-          color: Theme.of(context).textTheme.bodyLarge?.color,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Text(
-          message,
-          style: TextDesign.body.copyWith(
-            color: unread
-                ? Theme.of(context).textTheme.bodyLarge?.color
-                : AppColors.mutedText,
-            fontWeight: unread ? FontWeight.w600 : FontWeight.normal,
-            fontSize: 14,
+            ],
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            time,
-            style: TextDesign.body.copyWith(
-              color: unread ? AppColors.primary : AppColors.mutedText,
-              fontWeight: unread ? FontWeight.bold : FontWeight.normal,
-              fontSize: 12,
-            ),
-          ),
-          if (unread && unreadCount > 0) ...[
-            const SizedBox(height: 3),
-            Container(
-              padding: const EdgeInsets.all(5),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                unreadCount.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ],
       ),
     );
   }

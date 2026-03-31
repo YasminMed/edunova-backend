@@ -19,16 +19,19 @@ class LecturerMaterialsViewModel extends BaseViewModel {
     setBusy(true);
     try {
       final response = await _materialService.getCourses(email: email, role: role);
-      _subjects = response.map((s) => {
-        'id': s['id'] as int,
-        'name': s['name'] as String,
-        'code': s['code'] as String,
-        'department': s['department'] as String?,
-        'stage': s['stage'] as String?,
-        'students': s['students'] ?? 0,
-        'materials': s['materials'] ?? 0,
-        'image': s['image_url'] != null ? "${AuthService.baseUrl}${s['image_url']}" : null,
-        'color': Colors.blue, // Default color
+      _subjects = response.map((s) {
+        final id = s['id'] as int;
+        return {
+          'id': id,
+          'name': s['name'] as String,
+          'code': s['code'] as String,
+          'department': s['department'] as String?,
+          'stage': s['stage'] as String?,
+          'students': s['students'] ?? 0,
+          'materials': s['materials'] ?? 0,
+          'image': s['image_url'] != null ? "${AuthService.baseUrl}${s['image_url']}" : null,
+          'color': _getCourseColor(id),
+        };
       }).toList().cast<Map<String, dynamic>>();
       _errorMessage = null;
     } catch (e) {
@@ -101,5 +104,18 @@ class LecturerMaterialsViewModel extends BaseViewModel {
     } catch (e) {
       debugPrint("Error deleting course: $e");
     }
+  }
+
+  Color _getCourseColor(int id) {
+    const List<Color> academicColors = [
+      Color(0xFF2563EB), // Royal Blue
+      Color(0xFF0D9488), // Teal
+      Color(0xFF7C3AED), // Violet
+      Color(0xFFDB2777), // Pink
+      Color(0xFFEA580C), // Deep Orange
+      Color(0xFF16A34A), // Green
+      Color(0xFF4F46E5), // Indigo
+    ];
+    return academicColors[id % academicColors.length];
   }
 }

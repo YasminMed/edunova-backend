@@ -150,10 +150,10 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 3, // Smaller cards
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 0.9,
+                  crossAxisCount: 3, 
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 1.05, // More compact
                   children: [
                     _buildDashboardCard(
                       title: l10n?.translate('analysis') ?? "Analysis",
@@ -366,19 +366,19 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(14), // Slightly more padding
+              padding: const EdgeInsets.all(10), // Reduced from 14
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20), // Squared-circle look
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(icon, color: color, size: 28),
+              child: Icon(icon, color: color, size: 24), // Reduced from 28
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8), // Reduced from 12
             Text(
               title,
               style: TextDesign.body.copyWith(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
+                fontSize: 11, // Reduced from 13
+                fontWeight: FontWeight.w800,
                 letterSpacing: 0.1,
                 color: isDark ? Colors.white.withOpacity(0.9) : AppColors.primaryText,
               ),
