@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'dart:async';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:file_picker/file_picker.dart';
@@ -20,31 +19,31 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
   late AnimationController _starController;
   final AudioPlayer _player = AudioPlayer();
   bool _isPlaying = false;
-  String _currentTrack = 'focus_nature';
+  String _currentTrack = 'rain_focus';
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
 
   final List<Map<String, dynamic>> _library = [
     {
+      'id': 'rain_focus',
+      'title': 'Calming Rain',
+      'icon': Icons.water_drop_rounded,
+      'color': const Color(0xFF6366F1),
+      'asset': 'assets/audio/calming-rain.mp3',
+    },
+    {
       'id': 'nature_focus',
-      'title': 'Nature Focus',
+      'title': 'Birds & Nature',
       'icon': Icons.forest_rounded,
       'color': const Color(0xFF10B981),
-      'url': 'https://assets.mixkit.co/music/preview/mixkit-forest-bird-chirps-2434.mp3',
+      'asset': 'assets/audio/birds-nature.mp3',
     },
     {
       'id': 'piano_focus',
-      'title': 'Piano Focus',
+      'title': 'Study Piano',
       'icon': Icons.piano_rounded,
-      'color': Colors.blue,
-      'url': 'https://www.mboxdrive.com/Yiruma%20-%20River%20Flows%20In%20You.mp3',
-    },
-    {
-      'id': 'rainy_focus',
-      'title': 'Rainy Focus',
-      'icon': Icons.umbrella_rounded,
-      'color': Colors.indigo,
-      'url': 'https://assets.mixkit.co/music/preview/mixkit-rainy-night-2442.mp3',
+      'color': const Color(0xFF3B82F6),
+      'asset': 'assets/audio/study-piano-music.mp3',
     },
   ];
 
@@ -58,6 +57,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat();
+    _pulseController.stop(); // Start stopped, resume on play
 
     _starController = AnimationController(
       vsync: this,
@@ -103,7 +103,10 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
 
   Future<void> _togglePlay() async {
     if (_player.processingState == ProcessingState.idle) {
-      final track = _library.firstWhere((t) => t['id'] == _currentTrack);
+      final track = _library.firstWhere(
+        (t) => t['id'] == _currentTrack,
+        orElse: () => _library.first,
+      );
       await _playTrack(track);
     } else {
       if (_isPlaying) {
@@ -116,16 +119,13 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
 
   Future<void> _playTrack(Map<String, dynamic> track) async {
     try {
-      if (track['url'] != null) {
-        if (track['url'].startsWith('assets/')) {
-          await _player.setAsset(track['url']);
-        } else {
-          await _player.setUrl(track['url']);
-        }
+      await _player.stop();
+      if (track['asset'] != null) {
+        await _player.setAsset(track['asset']);
       } else if (track['filePath'] != null) {
         await _player.setFilePath(track['filePath']);
       }
-      _currentTrack = track['id'];
+      setState(() => _currentTrack = track['id']);
       await _player.play();
     } catch (e) {
       debugPrint("Error playing track: $e");
@@ -139,40 +139,46 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
     _player.seek(newPosition);
   }
 
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final secs = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$secs';
+  }
+
   Future<void> _pickAndAddMusic() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.audio);
     if (result != null && result.files.single.path != null) {
       final file = result.files.single;
-      
+
       if (!mounted) return;
-      
+
       final TextEditingController nameController = TextEditingController();
       String? customName = await showDialog<String>(
         context: context,
-        builder: (context) {
-          final isDark = Theme.of(context).brightness == Brightness.dark;
+        builder: (ctx) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
           return AlertDialog(
-            backgroundColor: Theme.of(context).cardColor,
+            backgroundColor: Theme.of(ctx).cardColor,
             title: Text(
-              AppLocalizations.of(context)?.translate('music_name') ?? 'Music Name',
+              AppLocalizations.of(ctx)?.translate('music_name') ?? 'Music Name',
               style: TextStyle(color: isDark ? Colors.white : Colors.black87),
             ),
             content: TextField(
               controller: nameController,
               decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)?.translate('enter_music_name') ?? 'Enter music name',
+                hintText: AppLocalizations.of(ctx)?.translate('enter_music_name') ?? 'Enter music name',
               ),
               autofocus: true,
               style: TextStyle(color: isDark ? Colors.white : Colors.black87),
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context, null),
-                child: Text(AppLocalizations.of(context)?.translate('cancel') ?? 'Cancel'),
+                onPressed: () => Navigator.pop(ctx, null),
+                child: Text(AppLocalizations.of(ctx)?.translate('cancel') ?? 'Cancel'),
               ),
               TextButton(
-                onPressed: () => Navigator.pop(context, nameController.text.trim()),
-                child: Text(AppLocalizations.of(context)?.translate('add') ?? 'Add'),
+                onPressed: () => Navigator.pop(ctx, nameController.text.trim()),
+                child: Text(AppLocalizations.of(ctx)?.translate('add') ?? 'Add'),
               ),
             ],
           );
@@ -184,6 +190,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
       setState(() {
         _library.add({
           'id': customName,
+          'title': customName,
           'icon': Icons.audiotrack_rounded,
           'color': Colors.purple,
           'filePath': file.path,
@@ -221,11 +228,8 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Player Card with Dreamy Animation
             _buildEnhancedPlayerCard(context),
             const SizedBox(height: 32),
-
-            // Library Section
             Text(
               l10n?.translate('library') ?? 'Focus Library',
               style: TextDesign.h3.copyWith(
@@ -233,7 +237,6 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
               ),
             ),
             const SizedBox(height: 16),
-
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -263,16 +266,19 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
   Widget _buildEnhancedPlayerCard(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentTrackData = _library.firstWhere(
+      (t) => t['id'] == _currentTrack,
+      orElse: () => _library.first,
+    );
 
     return Container(
       width: double.infinity,
-      height: 260,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF16161D) : Colors.white,
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
             blurRadius: 30,
             offset: const Offset(0, 15),
           ),
@@ -281,30 +287,33 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
         child: Stack(
-          alignment: Alignment.center,
           children: [
             // Dreamy Star Field & Bokeh Background
-            AnimatedBuilder(
-              animation: _starController,
-              builder: (context, child) {
-                return CustomPaint(
-                  painter: DreamyBackgroundPainter(
-                    progress: _starController.value,
-                    color: AppColors.primary,
-                    isDark: isDark,
-                  ),
-                  size: const Size(double.infinity, double.infinity),
-                );
-              },
+            SizedBox(
+              width: double.infinity,
+              height: 300,
+              child: AnimatedBuilder(
+                animation: _starController,
+                builder: (context, child) {
+                  return CustomPaint(
+                    painter: DreamyBackgroundPainter(
+                      progress: _starController.value,
+                      color: currentTrackData['color'] as Color,
+                      isDark: isDark,
+                    ),
+                  );
+                },
+              ),
             ),
 
             // Glassmorphism Overlay
             Container(
+              height: 300,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.white.withOpacity(isDark ? 0.02 : 0.3),
-                    Colors.white.withOpacity(isDark ? 0.01 : 0.05),
+                    Colors.white.withValues(alpha: isDark ? 0.02 : 0.3),
+                    Colors.white.withValues(alpha: isDark ? 0.01 : 0.05),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -314,61 +323,130 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
 
             // Player Content
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // Now Playing Badge
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: (currentTrackData['color'] as Color).withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       l10n?.translate('now_playing') ?? 'NOW PLAYING',
-                      style: const TextStyle(
-                        color: AppColors.primary,
+                      style: TextStyle(
+                        color: currentTrackData['color'] as Color,
                         fontWeight: FontWeight.bold,
                         fontSize: 10,
                         letterSpacing: 2.0,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                    Text(
-                      l10n?.translate(_currentTrack) ??
-                          _library.firstWhere((t) => t['id'] == _currentTrack, orElse: () => {'id': _currentTrack})['title'] ??
-                          _currentTrack.replaceAll('_', ' '),
-                      style: TextDesign.h2.copyWith(
-                        color: isDark ? Colors.white : Colors.black87,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 12),
 
-                  // Controls
+                  // Track icon
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: (currentTrackData['color'] as Color).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      currentTrackData['icon'] as IconData,
+                      color: currentTrackData['color'] as Color,
+                      size: 36,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Track title
+                  Text(
+                    currentTrackData['title'] ?? _currentTrack.replaceAll('_', ' '),
+                    style: TextDesign.h2.copyWith(
+                      color: isDark ? Colors.white : Colors.black87,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Progress bar
+                  if (_duration > Duration.zero)
+                    Column(
+                      children: [
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            trackHeight: 4,
+                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                            activeTrackColor: currentTrackData['color'] as Color,
+                            inactiveTrackColor: (currentTrackData['color'] as Color).withValues(alpha: 0.2),
+                            thumbColor: currentTrackData['color'] as Color,
+                          ),
+                          child: Slider(
+                            value: _position.inSeconds.toDouble().clamp(0, _duration.inSeconds.toDouble()),
+                            max: _duration.inSeconds.toDouble(),
+                            onChanged: (value) {
+                              _player.seek(Duration(seconds: value.toInt()));
+                            },
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _formatDuration(_position),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isDark ? Colors.white54 : Colors.black45,
+                                ),
+                              ),
+                              Text(
+                                _formatDuration(_duration),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isDark ? Colors.white54 : Colors.black45,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                  const SizedBox(height: 8),
+
+                  // Controls: -10 | play/pause | +10
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildControlButton(Icons.replay_10_rounded, () => _skip(-10)),
+                      _buildControlButton(
+                        Icons.replay_10_rounded,
+                        () => _skip(-10),
+                        currentTrackData['color'] as Color,
+                      ),
                       const SizedBox(width: 30),
                       GestureDetector(
                         onTap: _togglePlay,
-                        child: Container(
-                          padding: const EdgeInsets.all(20),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                            gradient: LinearGradient(
+                              colors: [
+                                currentTrackData['color'] as Color,
+                                (currentTrackData['color'] as Color).withValues(alpha: 0.7),
+                              ],
                             ),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF6366F1).withOpacity(0.5),
+                                color: (currentTrackData['color'] as Color).withValues(alpha: 0.5),
                                 blurRadius: 20,
                                 offset: const Offset(0, 10),
                               ),
@@ -384,7 +462,11 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                         ),
                       ),
                       const SizedBox(width: 30),
-                      _buildControlButton(Icons.forward_10_rounded, () => _skip(10)),
+                      _buildControlButton(
+                        Icons.forward_10_rounded,
+                        () => _skip(10),
+                        currentTrackData['color'] as Color,
+                      ),
                     ],
                   ),
                 ],
@@ -396,10 +478,10 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildControlButton(IconData icon, VoidCallback onTap) {
+  Widget _buildControlButton(IconData icon, VoidCallback onTap, Color color) {
     return IconButton(
       icon: Icon(icon, size: 36),
-      color: AppColors.primary.withOpacity(0.8),
+      color: color.withValues(alpha: 0.85),
       onPressed: onTap,
     );
   }
@@ -411,6 +493,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
+    final Color cardColor = item['color'] as Color;
 
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 300),
@@ -420,22 +503,22 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
           scale: scale,
           child: GestureDetector(
             onTap: () async {
-              setState(() {
-                _currentTrack = item['id'];
-              });
-              await _playTrack(item);
+              if (isCurrent) {
+                // Same track — toggle play/pause
+                await _togglePlay();
+              } else {
+                await _playTrack(item);
+              }
             },
             child: Container(
               decoration: BoxDecoration(
-                color: isCurrent
-                    ? Colors.transparent
-                    : Theme.of(context).cardColor,
+                color: isCurrent ? Colors.transparent : Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(24),
                 gradient: isCurrent
                     ? LinearGradient(
                         colors: [
-                          item['color'].withOpacity(0.2),
-                          item['color'].withOpacity(0.05),
+                          cardColor.withValues(alpha: 0.2),
+                          cardColor.withValues(alpha: 0.05),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -443,14 +526,14 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                     : null,
                 border: Border.all(
                   color: isCurrent
-                      ? item['color']
-                      : Theme.of(context).dividerColor.withOpacity(0.1),
+                      ? cardColor
+                      : Theme.of(context).dividerColor.withValues(alpha: 0.1),
                   width: isCurrent ? 3 : 2,
                 ),
                 boxShadow: isCurrent
                     ? [
                         BoxShadow(
-                          color: item['color'].withOpacity(0.3),
+                          color: cardColor.withValues(alpha: 0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -462,7 +545,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                   if (isCurrent && _isPlaying)
                     Positioned.fill(
                       child: CustomPaint(
-                        painter: CardGlowPainter(color: item['color']),
+                        painter: CardGlowPainter(color: cardColor),
                       ),
                     ),
                   Center(
@@ -472,12 +555,15 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: item['color'].withOpacity(0.1),
+                            color: cardColor.withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            item['icon'],
-                            color: item['color'],
+                            // Show pause icon when this track is currently playing
+                            isCurrent && _isPlaying
+                                ? Icons.pause_rounded
+                                : (isCurrent ? Icons.play_arrow_rounded : item['icon'] as IconData),
+                            color: cardColor,
                             size: 36,
                           ),
                         ),
@@ -485,13 +571,13 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                         Text(
                           l10n?.translate(item['id']) ?? item['title'] ?? item['id'],
                           style: TextDesign.h3.copyWith(
-                            fontSize: 14,
+                            fontSize: 13,
                             color: isDark ? Colors.white : Colors.black87,
-                            fontWeight: isCurrent
-                                ? FontWeight.bold
-                                : FontWeight.w600,
+                            fontWeight: isCurrent ? FontWeight.bold : FontWeight.w600,
                           ),
                           textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -515,7 +601,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: Theme.of(context).dividerColor.withOpacity(0.1),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
             style: BorderStyle.solid,
           ),
         ),
@@ -525,7 +611,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.mutedText.withOpacity(0.1),
+                color: AppColors.mutedText.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -574,11 +660,11 @@ class DreamyBackgroundPainter extends CustomPainter {
       final starSize = random.nextDouble() * 2.0;
       final opacity = (math.sin(progress * 2 * math.pi + i) + 1) / 2;
 
-      paint.color = Colors.white.withOpacity(opacity * (isDark ? 0.4 : 0.6));
+      paint.color = Colors.white.withValues(alpha: opacity * (isDark ? 0.4 : 0.6));
       canvas.drawCircle(Offset(x, y), starSize, paint);
     }
 
-    // Draw larger luminous bokeh circles (spread out across 4 quadrants)
+    // Draw larger luminous bokeh circles
     final quadrants = [
       const Offset(0.2, 0.2),
       const Offset(0.8, 0.3),
@@ -595,12 +681,10 @@ class DreamyBackgroundPainter extends CustomPainter {
       final y = (q.dy * size.height) + movementY;
       final circleRadius = 50.0 + (i * 10);
 
-      // Create a soft radial-like look using layered circles
-      paint.color = color.withOpacity(isDark ? 0.05 : 0.15);
+      paint.color = color.withValues(alpha: isDark ? 0.07 : 0.18);
       canvas.drawCircle(Offset(x, y), circleRadius, paint);
 
-      // Add a smaller, brighter core for some circles to mimic light spots
-      paint.color = color.withOpacity(isDark ? 0.03 : 0.1);
+      paint.color = color.withValues(alpha: isDark ? 0.04 : 0.1);
       canvas.drawCircle(Offset(x, y), circleRadius * 0.6, paint);
     }
   }
@@ -616,10 +700,9 @@ class CardGlowPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color.withOpacity(0.05)
+      ..color = color.withValues(alpha: 0.05)
       ..style = PaintingStyle.fill;
 
-    // Subtle glow radiating from center of card
     canvas.drawCircle(
       Offset(size.width / 2, size.height / 2),
       size.width * 0.6,

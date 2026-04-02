@@ -74,7 +74,7 @@ class _FacultyPageState extends State<FacultyPage> {
           : _lecturers.isEmpty
               ? Center(
                   child: Text(
-                    "No lecturers found for your stage.",
+                    AppLocalizations.of(context)?.translate('no_lecturers_found') ?? "No lecturers found for your stage.",
                     style: TextDesign.body.copyWith(color: AppColors.mutedText),
                   ),
                 )
@@ -162,7 +162,7 @@ class _FacultyPageState extends State<FacultyPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "${teacher['years_of_experience']} Years Experience",
+                      "${teacher['years_of_experience']} ${AppLocalizations.of(context)?.translate('years_exp_label') ?? 'Years Experience'}",
                       style: TextDesign.body.copyWith(
                         color: AppColors.mutedText,
                         fontSize: 13,
@@ -188,9 +188,9 @@ class _FacultyPageState extends State<FacultyPage> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    "Contact",
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  child: Text(
+                    AppLocalizations.of(context)?.translate('contact_button') ?? "Contact",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -198,7 +198,7 @@ class _FacultyPageState extends State<FacultyPage> {
               GestureDetector(
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Profile feature coming soon!')),
+                    SnackBar(content: Text(AppLocalizations.of(context)?.translate('coming_soon') ?? 'Profile feature coming soon!')),
                   );
                 },
                 child: Container(

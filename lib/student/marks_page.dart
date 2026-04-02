@@ -222,7 +222,7 @@ class _MarksPageState extends State<MarksPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  feedback,
+                  _getLocalizedFeedback(context, feedback),
                   style: TextDesign.body.copyWith(
                     color: Colors.white.withOpacity(0.7),
                     fontSize: 13,
@@ -239,7 +239,7 @@ class _MarksPageState extends State<MarksPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    "Rank: $rank / $totalStudents",
+                    "${l10n?.translate('rank_label') ?? 'Rank'}: $rank / $totalStudents",
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -327,12 +327,27 @@ class _MarksPageState extends State<MarksPage> {
             child: LinearProgressIndicator(
               value: (subject['mark'] as num).toDouble() / 100,
               minHeight: 6,
-              backgroundColor: subjectColor.withOpacity(0.1),
+              backgroundColor: subjectColor.withValues(alpha: 0.1),
               valueColor: AlwaysStoppedAnimation<Color>(subjectColor),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _getLocalizedFeedback(BuildContext context, String feedback) {
+    final l10n = AppLocalizations.of(context);
+    final f = feedback.toLowerCase();
+    if (f.contains("perfect") || f.contains("outstanding")) {
+      return l10n?.translate('feedback_perfect') ?? feedback;
+    } else if (f.contains("great") || f.contains("excellent")) {
+      return l10n?.translate('feedback_great') ?? feedback;
+    } else if (f.contains("good effort") || f.contains("improve")) {
+      return l10n?.translate('feedback_good') ?? feedback;
+    } else if (f.contains("pushing") || f.contains("learn something new")) {
+      return l10n?.translate('feedback_push') ?? feedback;
+    }
+    return feedback;
   }
 }

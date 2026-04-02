@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
@@ -60,32 +59,37 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
   Future<void> _editYearsExp() async {
     final controller = TextEditingController(text: _yearsExp.toString());
     final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context);
 
     final result = await showDialog<int>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Edit Experience"),
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n?.translate('edit_experience') ?? "Edit Experience"),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: "Years of Experience",
-            hintText: "Enter number of years",
+          decoration: InputDecoration(
+            labelText: l10n?.translate('years_exp_label') ?? "Years of Experience",
+            hintText: () {
+              final field = l10n?.translate('enter_field');
+              final label = l10n?.translate('years_exp_label') ?? 'years';
+              return field != null ? field.replaceFirst('{field}', label) : "Enter number of years";
+            }(),
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n?.translate('cancel') ?? "Cancel"),
           ),
           ElevatedButton(
             onPressed: () {
               final val = int.tryParse(controller.text);
               if (val != null) {
-                Navigator.pop(context, val);
+                Navigator.pop(ctx, val);
               }
             },
-            child: const Text("Save"),
+            child: Text(l10n?.translate('save') ?? "Save"),
           ),
         ],
       ),
@@ -94,11 +98,13 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
     if (result != null && result != _yearsExp) {
       try {
         await _materialService.updateLecturerExperience(userProvider.email!, result);
-        setState(() => _yearsExp = result);
+        if (mounted) setState(() => _yearsExp = result);
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to update experience")),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n?.translate('failed_to_update_experience') ?? "Failed to update experience")),
+          );
+        }
       }
     }
   }
@@ -238,7 +244,7 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
                               Icon(Icons.history_rounded, size: 48, color: titleColor.withOpacity(0.2)),
                               const SizedBox(height: 12),
                               Text(
-                                "No recent activities found",
+                                l10n?.translate('no_recent_activity') ?? "No recent activities found",
                                 style: TextStyle(color: titleColor.withOpacity(0.5)),
                               ),
                             ],
@@ -421,22 +427,23 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
   }
 
   Widget _buildActivityList(bool isDark) {
+    final l10n = AppLocalizations.of(context);
     if (_activities.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(40),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+            color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
           ),
         ),
         child: Column(
           children: [
-            Icon(Icons.history_rounded, size: 48, color: Colors.grey.withOpacity(0.5)),
+            Icon(Icons.history_rounded, size: 48, color: Colors.grey.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
             Text(
-              "No recent activity",
+              l10n?.translate('no_recent_activity') ?? "No recent activity",
               style: TextStyle(
                 color: Colors.grey.withOpacity(0.8),
                 fontWeight: FontWeight.w600,

@@ -94,7 +94,7 @@ class _RanksPageState extends State<RanksPage>
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = "Connection error. Please try again later.";
+        _errorMessage = AppLocalizations.of(context)?.translate('retry') ?? "Connection error. Please try again later.";
         _isLoading = false;
       });
     }
@@ -141,13 +141,13 @@ class _RanksPageState extends State<RanksPage>
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _fetchLeaderboard,
-                        child: const Text("Retry"),
+                        child: Text(l10n?.translate('retry') ?? "Retry"),
                       ),
                     ],
                   ),
                 )
               : _students.isEmpty
-                  ? const Center(child: Text("No ranking data yet"))
+                  ? Center(child: Text(l10n?.translate('no_ranking_data') ?? "No ranking data yet"))
                   : Column(
                       children: [
                         if (_students.length >= 3) _buildPodium(context),
@@ -219,6 +219,7 @@ class _RanksPageState extends State<RanksPage>
     bool isFirst = false,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -318,9 +319,9 @@ class _RanksPageState extends State<RanksPage>
                   fontSize: 14,
                 ),
               ),
-              const Text(
-                "pts",
-                style: TextStyle(color: Colors.white70, fontSize: 10),
+              Text(
+                l10n?.translate('pts') ?? "pts",
+                style: const TextStyle(color: Colors.white70, fontSize: 10),
               ),
             ],
           ),
@@ -331,6 +332,7 @@ class _RanksPageState extends State<RanksPage>
 
   Widget _buildRankingTile(BuildContext context, Map<String, dynamic> student) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -383,9 +385,9 @@ class _RanksPageState extends State<RanksPage>
             ),
           ),
           const SizedBox(width: 4),
-          const Text(
-            "pts",
-            style: TextStyle(color: AppColors.mutedText, fontSize: 12),
+          Text(
+            l10n?.translate('pts') ?? "pts",
+            style: const TextStyle(color: AppColors.mutedText, fontSize: 12),
           ),
         ],
       ),
