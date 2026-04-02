@@ -162,7 +162,6 @@ class MusicProvider extends ChangeNotifier {
                 'iconName': 'audiotrack',
                 'colorValue': (t['color'] as Color).value,
                 'filePath': t['filePath'],
-                'bytesBase64': t['bytes'] != null ? base64Encode(t['bytes'] as Uint8List) : null,
               })
           .toList();
       
@@ -187,13 +186,7 @@ class MusicProvider extends ChangeNotifier {
 
   Map<String, dynamic> _deserializeTrack(Map<String, dynamic> data) {
     Uint8List? parsedBytes;
-    if (data['bytesBase64'] != null) {
-      try {
-        parsedBytes = base64Decode(data['bytesBase64']);
-      } catch (e) {
-        debugPrint("Error decoding base64 audio bytes: $e");
-      }
-    } else if (data['bytes'] != null) {
+    if (data['bytes'] != null) {
       parsedBytes = data['bytes'] as Uint8List;
     }
 
