@@ -278,6 +278,11 @@ async def startup_event():
             "CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY AUTOINCREMENT, type VARCHAR NOT NULL, user_id INTEGER REFERENCES users(id), lecturer_id INTEGER REFERENCES users(id), description VARCHAR, created_at DATETIME)"
         )
 
+        run_sql(
+            "CREATE TABLE IF NOT EXISTS post_likes (id SERIAL PRIMARY KEY, post_id INTEGER REFERENCES posts(id), user_email VARCHAR NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+            "CREATE TABLE IF NOT EXISTS post_likes (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER REFERENCES posts(id), user_email VARCHAR NOT NULL, created_at DATETIME)"
+        )
+
         # Create default user if none exists
         if db.query(models.User).count() == 0:
             default_user = models.User(
@@ -663,18 +668,52 @@ async def get_comments(post_id: int, db: Session = Depends(get_db)):
         })
     return result
 
+@app.post("/posts/{post_id}/like")
+async def toggle_post_like(post_id: int, user_email: str = Body(..., embed=True), db: Session = Depends(get_db)):
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+        
+    existing_like = db.query(models.PostLike).filter(
+        models.PostLike.post_id == post_id,
+        models.PostLike.user_email == user_email
+    ).first()
+    
+    if existing_like:
+        db.delete(existing_like)
+        db.commit()
+        return {"message": "Post unliked", "liked": False}
+    else:
+        new_like = models.PostLike(post_id=post_id, user_email=user_email)
+        db.add(new_like)
+        db.commit()
+        return {"message": "Post liked", "liked": True}
+
 @app.get("/posts")
-async def get_posts(db: Session = Depends(get_db)):
+async def get_posts(email: Optional[str] = None, db: Session = Depends(get_db)):
     posts = db.query(models.Post).order_by(models.Post.created_at.desc()).all()
     result = []
     for post in posts:
+        likes_count = db.query(models.PostLike).filter(models.PostLike.post_id == post.id).count()
+        comments_count = db.query(models.Comment).filter(models.Comment.post_id == post.id).count()
+        
+        has_liked = False
+        if email:
+            has_liked = db.query(models.PostLike).filter(
+                models.PostLike.post_id == post.id,
+                models.PostLike.user_email == email
+            ).first() is not None
+
         post_data = {
             "id": post.id,
             "title": post.title,
             "description": post.description,
             "image_url": post.image_url,
             "created_at": post.created_at.isoformat() if post.created_at else None,
-            "author_name": post.author.full_name if post.author else "Lecturer"
+            "author_name": post.author.full_name if post.author else "Lecturer",
+            "likes_count": likes_count,
+            "comments_count": comments_count,
+            "has_liked": has_liked
         }
         result.append(post_data)
     return result

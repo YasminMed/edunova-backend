@@ -39,6 +39,17 @@ class Post(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     author = relationship("User", back_populates="posts")
+    likes = relationship("PostLike", back_populates="post", cascade="all, delete-orphan")
+
+class PostLike(Base):
+    __tablename__ = "post_likes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("posts.id"))
+    user_email = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    post = relationship("Post", back_populates="likes")
 
 class Course(Base):
     __tablename__ = "courses"
