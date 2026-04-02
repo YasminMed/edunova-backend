@@ -228,18 +228,19 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
             validator:
                 validator ??
                 (value) {
+                  final l10n = AppLocalizations.of(context);
                   if (value == null || value.isEmpty) {
-                    return 'Please enter $label';
+                    return l10n?.translate('enter_field')?.replaceFirst('{field}', label) ?? 'Please enter $label';
                   }
                   if (!isPassword &&
                       label.toLowerCase().contains('email') &&
                       !RegExp(
                         r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
                       ).hasMatch(value)) {
-                    return 'Please enter a valid email (e.g. user@example.com)';
+                    return l10n?.translate('error_email_valid') ?? 'Please enter a valid email';
                   }
                   if (isPassword && value.length < 8) {
-                    return 'Password must be at least 8 characters';
+                    return l10n?.translate('error_password_length') ?? 'Password must be at least 8 characters';
                   }
                   return null;
                 },
@@ -381,11 +382,12 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
                               if (_confirmPasswordError != null) setState(() => _confirmPasswordError = null);
                             },
                             validator: (value) {
+                              final l10n = AppLocalizations.of(context);
                               if (value == null || value.isEmpty) {
-                                return 'Please confirm your password';
+                                return l10n?.translate('enter_field')?.replaceFirst('{field}', l10n.translate('confirm_password') ?? 'Confirm Password') ?? 'Please confirm your password';
                               }
                               if (value != _passwordController.text) {
-                                return 'Passwords do not match';
+                                return l10n?.translate('error_password_match') ?? 'Passwords do not match';
                               }
                               return null;
                             },

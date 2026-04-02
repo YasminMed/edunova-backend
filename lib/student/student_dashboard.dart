@@ -35,7 +35,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   final MaterialService _materialService = MaterialService();
 
   double _progressValue = 0.0;
-  String _rankText = "Loading...";
+  String _rankText = "";
   int _totalMarks = 0;
 
   @override
@@ -55,14 +55,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
       if (mounted) {
         setState(() {
           _progressValue = (data['progress'] as num).toDouble() / 100.0;
-          _rankText = data['rank_text'] ?? "Rank Pending";
+          _rankText = data['rank_text'] ?? (AppLocalizations.of(context)?.translate('rank_pending') ?? "Rank Pending");
           _totalMarks = data['total_academic_marks'] ?? 0;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _rankText = "Score Pending";
+          _rankText = AppLocalizations.of(context)?.translate('score_pending') ?? "Score Pending";
         });
       }
     }

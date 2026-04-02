@@ -38,8 +38,8 @@ class _LecturesPageState extends State<LecturesPage> {
             'id': c['id'],
             'subject': c['name'],
             'code': c['code'] ?? 'CODE123',
-            'description': c['description'] ?? 'No description available.',
-            'professor': c['lecturer_name'] ?? 'Lecturer',
+            'description': c['description'] ?? (AppLocalizations.of(context)?.translate('no_description') ?? 'No description available.'),
+            'professor': c['lecturer_name'] ?? (AppLocalizations.of(context)?.translate('lecturer') ?? 'Lecturer'),
             'progress': 0.0,
             'gradient': _getGradientColors(c['id']),
           };
@@ -78,7 +78,7 @@ class _LecturesPageState extends State<LecturesPage> {
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator())
         : _lectures.isEmpty
-          ? const Center(child: Text("No courses available yet."))
+          ? Center(child: Text(l10n?.translate('no_courses_yet') ?? "No courses available yet."))
           : GridView.builder(
               padding: const EdgeInsets.all(20),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
