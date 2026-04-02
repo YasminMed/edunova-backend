@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'package:just_audio/just_audio.dart';
-import 'package:audio_session/audio_session.dart';
+import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/music_provider.dart';
 
 class MusicPage extends StatefulWidget {
   const MusicPage({super.key});
@@ -17,41 +17,10 @@ class MusicPage extends StatefulWidget {
 class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late AnimationController _starController;
-  final AudioPlayer _player = AudioPlayer();
-  bool _isPlaying = false;
-  String _currentTrack = 'rain_focus';
-  Duration _duration = Duration.zero;
-  Duration _position = Duration.zero;
-
-  final List<Map<String, dynamic>> _library = [
-    {
-      'id': 'rain_focus',
-      'title': 'Calming Rain',
-      'icon': Icons.water_drop_rounded,
-      'color': const Color(0xFF6366F1),
-      'asset': 'assets/audio/calming-rain.mp3',
-    },
-    {
-      'id': 'nature_focus',
-      'title': 'Birds & Nature',
-      'icon': Icons.forest_rounded,
-      'color': const Color(0xFF10B981),
-      'asset': 'assets/audio/birds-nature.mp3',
-    },
-    {
-      'id': 'piano_focus',
-      'title': 'Study Piano',
-      'icon': Icons.piano_rounded,
-      'color': const Color(0xFF3B82F6),
-      'asset': 'assets/audio/study-piano-music.mp3',
-    },
-  ];
-
+  
   @override
   void initState() {
     super.initState();
-    _initAudioSession();
-    _setupAudioListeners();
 
     _pulseController = AnimationController(
       vsync: this,
@@ -65,78 +34,11 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
     )..repeat();
   }
 
-  Future<void> _initAudioSession() async {
-    final session = await AudioSession.instance;
-    await session.configure(const AudioSessionConfiguration.music());
-  }
-
-  void _setupAudioListeners() {
-    _player.playerStateStream.listen((state) {
-      if (mounted) {
-        setState(() {
-          _isPlaying = state.playing;
-          if (_isPlaying) {
-            _pulseController.repeat();
-          } else {
-            _pulseController.stop();
-          }
-        });
-      }
-    });
-
-    _player.durationStream.listen((d) {
-      if (mounted) setState(() => _duration = d ?? Duration.zero);
-    });
-
-    _player.positionStream.listen((p) {
-      if (mounted) setState(() => _position = p);
-    });
-  }
-
   @override
   void dispose() {
     _pulseController.dispose();
     _starController.dispose();
-    _player.dispose();
     super.dispose();
-  }
-
-  Future<void> _togglePlay() async {
-    if (_player.processingState == ProcessingState.idle) {
-      final track = _library.firstWhere(
-        (t) => t['id'] == _currentTrack,
-        orElse: () => _library.first,
-      );
-      await _playTrack(track);
-    } else {
-      if (_isPlaying) {
-        await _player.pause();
-      } else {
-        await _player.play();
-      }
-    }
-  }
-
-  Future<void> _playTrack(Map<String, dynamic> track) async {
-    try {
-      await _player.stop();
-      if (track['asset'] != null) {
-        await _player.setAsset(track['asset']);
-      } else if (track['filePath'] != null) {
-        await _player.setFilePath(track['filePath']);
-      }
-      setState(() => _currentTrack = track['id']);
-      await _player.play();
-    } catch (e) {
-      debugPrint("Error playing track: $e");
-    }
-  }
-
-  void _skip(int seconds) {
-    var newPosition = _position + Duration(seconds: seconds);
-    if (newPosition < Duration.zero) newPosition = Duration.zero;
-    if (newPosition > _duration) newPosition = _duration;
-    _player.seek(newPosition);
   }
 
   String _formatDuration(Duration d) {
@@ -145,7 +47,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
     return '$minutes:$secs';
   }
 
-  Future<void> _pickAndAddMusic() async {
+  Future<void> _pickAndAddMusic(MusicProvider musicProvider) async {
     final result = await FilePicker.platform.pickFiles(type: FileType.audio);
     if (result != null && result.files.single.path != null) {
       final file = result.files.single;
@@ -187,15 +89,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
 
       if (customName == null || customName.isEmpty) return;
 
-      setState(() {
-        _library.add({
-          'id': customName,
-          'title': customName,
-          'icon': Icons.audiotrack_rounded,
-          'color': Colors.purple,
-          'filePath': file.path,
-        });
-      });
+      await musicProvider.addCustomTrack(name: customName, filePath: file.path!);
     }
   }
 
@@ -203,6 +97,16 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
+    final musicProvider = Provider.of<MusicProvider>(context);
+
+    // Update pulse controller based on global playing state
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (musicProvider.isPlaying && !_pulseController.isAnimating) {
+        _pulseController.repeat();
+      } else if (!musicProvider.isPlaying && _pulseController.isAnimating) {
+        _pulseController.stop();
+      }
+    });
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -228,7 +132,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildEnhancedPlayerCard(context),
+            _buildEnhancedPlayerCard(context, musicProvider),
             const SizedBox(height: 32),
             Text(
               l10n?.translate('library') ?? 'Focus Library',
@@ -246,14 +150,14 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                 mainAxisSpacing: 16,
                 childAspectRatio: 1.1,
               ),
-              itemCount: _library.length + 1,
+              itemCount: musicProvider.library.length + 1,
               itemBuilder: (context, index) {
-                if (index < _library.length) {
-                  final item = _library[index];
-                  final isCurrent = _currentTrack == item['id'];
-                  return _buildInteractiveMusicCard(context, item, isCurrent);
+                if (index < musicProvider.library.length) {
+                  final item = musicProvider.library[index];
+                  final isCurrent = musicProvider.currentTrack == item['id'];
+                  return _buildInteractiveMusicCard(context, item, isCurrent, musicProvider);
                 } else {
-                  return _buildAddMusicCard(context);
+                  return _buildAddMusicCard(context, musicProvider);
                 }
               },
             ),
@@ -263,12 +167,13 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildEnhancedPlayerCard(BuildContext context) {
+  Widget _buildEnhancedPlayerCard(BuildContext context, MusicProvider provider) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currentTrackData = _library.firstWhere(
-      (t) => t['id'] == _currentTrack,
-      orElse: () => _library.first,
+    
+    final currentTrackData = provider.library.firstWhere(
+      (t) => t['id'] == provider.currentTrack,
+      orElse: () => provider.library.first,
     );
 
     return Container(
@@ -363,7 +268,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
 
                   // Track title
                   Text(
-                    currentTrackData['title'] ?? _currentTrack.replaceAll('_', ' '),
+                    provider.formatTitle(currentTrackData['title'] ?? currentTrackData['id']),
                     style: TextDesign.h2.copyWith(
                       color: isDark ? Colors.white : Colors.black87,
                       fontSize: 22,
@@ -374,7 +279,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                   const SizedBox(height: 16),
 
                   // Progress bar
-                  if (_duration > Duration.zero)
+                  if (provider.duration > Duration.zero)
                     Column(
                       children: [
                         SliderTheme(
@@ -387,10 +292,10 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                             thumbColor: currentTrackData['color'] as Color,
                           ),
                           child: Slider(
-                            value: _position.inSeconds.toDouble().clamp(0, _duration.inSeconds.toDouble()),
-                            max: _duration.inSeconds.toDouble(),
+                            value: provider.position.inSeconds.toDouble().clamp(0, provider.duration.inSeconds.toDouble()),
+                            max: provider.duration.inSeconds.toDouble(),
                             onChanged: (value) {
-                              _player.seek(Duration(seconds: value.toInt()));
+                              provider.player.seek(Duration(seconds: value.toInt()));
                             },
                           ),
                         ),
@@ -400,14 +305,14 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                _formatDuration(_position),
+                                _formatDuration(provider.position),
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: isDark ? Colors.white54 : Colors.black45,
                                 ),
                               ),
                               Text(
-                                _formatDuration(_duration),
+                                _formatDuration(provider.duration),
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: isDark ? Colors.white54 : Colors.black45,
@@ -427,12 +332,12 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                     children: [
                       _buildControlButton(
                         Icons.replay_10_rounded,
-                        () => _skip(-10),
+                        () => provider.skip(-10),
                         currentTrackData['color'] as Color,
                       ),
                       const SizedBox(width: 30),
                       GestureDetector(
-                        onTap: _togglePlay,
+                        onTap: () => provider.togglePlay(null),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.all(18),
@@ -453,7 +358,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                             ],
                           ),
                           child: Icon(
-                            _isPlaying
+                            provider.isPlaying
                                 ? Icons.pause_rounded
                                 : Icons.play_arrow_rounded,
                             color: Colors.white,
@@ -464,7 +369,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                       const SizedBox(width: 30),
                       _buildControlButton(
                         Icons.forward_10_rounded,
-                        () => _skip(10),
+                        () => provider.skip(10),
                         currentTrackData['color'] as Color,
                       ),
                     ],
@@ -490,6 +395,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
     BuildContext context,
     Map<String, dynamic> item,
     bool isCurrent,
+    MusicProvider provider,
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
@@ -502,14 +408,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
         return Transform.scale(
           scale: scale,
           child: GestureDetector(
-            onTap: () async {
-              if (isCurrent) {
-                // Same track — toggle play/pause
-                await _togglePlay();
-              } else {
-                await _playTrack(item);
-              }
-            },
+            onTap: () => provider.togglePlay(item),
             child: Container(
               decoration: BoxDecoration(
                 color: isCurrent ? Colors.transparent : Theme.of(context).cardColor,
@@ -542,7 +441,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
               ),
               child: Stack(
                 children: [
-                  if (isCurrent && _isPlaying)
+                  if (isCurrent && provider.isPlaying)
                     Positioned.fill(
                       child: CustomPaint(
                         painter: CardGlowPainter(color: cardColor),
@@ -559,17 +458,14 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            // Show pause icon when this track is currently playing
-                            isCurrent && _isPlaying
-                                ? Icons.pause_rounded
-                                : (isCurrent ? Icons.play_arrow_rounded : item['icon'] as IconData),
+                            item['icon'] as IconData, // Kept the item's original icon as requested
                             color: cardColor,
                             size: 36,
                           ),
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          l10n?.translate(item['id']) ?? item['title'] ?? item['id'],
+                          provider.formatTitle(l10n?.translate(item['id']) ?? item['title'] ?? item['id']),
                           style: TextDesign.h3.copyWith(
                             fontSize: 13,
                             color: isDark ? Colors.white : Colors.black87,
@@ -591,11 +487,11 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildAddMusicCard(BuildContext context) {
+  Widget _buildAddMusicCard(BuildContext context, MusicProvider provider) {
     final l10n = AppLocalizations.of(context);
 
     return GestureDetector(
-      onTap: _pickAndAddMusic,
+      onTap: () => _pickAndAddMusic(provider),
       child: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,

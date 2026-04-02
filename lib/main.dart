@@ -12,6 +12,7 @@ import 'l10n/kurdish_material_localizations.dart';
 import 'providers/theme_provider.dart';
 import 'providers/user_provider.dart';
 import 'viewmodels/lecturer/lecturer_materials_viewmodel.dart';
+import 'providers/music_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +38,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => LecturerMaterialsViewModel()),
+        ChangeNotifierProvider(create: (_) => MusicProvider()),
       ],
       child: const MyApp(),
     ),
