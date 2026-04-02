@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'my_audio_source.dart';
 
 class MusicProvider extends ChangeNotifier {
   final AudioPlayer _player = AudioPlayer();
@@ -95,7 +96,9 @@ class MusicProvider extends ChangeNotifier {
   Future<void> playTrack(Map<String, dynamic> track) async {
     try {
       await _player.stop();
-      if (track['asset'] != null) {
+      if (track['bytes'] != null) {
+        await _player.setAudioSource(MyAudioSource(track['bytes'] as Uint8List));
+      } else if (track['asset'] != null) {
         await _player.setAsset(track['asset']);
       } else if (track['filePath'] != null) {
         await _player.setFilePath(track['filePath']);
@@ -130,7 +133,7 @@ class MusicProvider extends ChangeNotifier {
         .join(' ');
   }
 
-  Future<void> addCustomTrack({required String name, required String filePath}) async {
+  Future<void> addCustomTrack({required String name, String? filePath, Uint8List? bytes}) async {
     final newTrack = {
       'id': 'custom_${DateTime.now().millisecondsSinceEpoch}',
       'title': name,
@@ -138,6 +141,7 @@ class MusicProvider extends ChangeNotifier {
       'iconName': 'audiotrack',
       'colorValue': Colors.purple.value,
       'filePath': filePath,
+      'bytes': bytes,
     };
 
     final tempTrack = _deserializeTrack(newTrack);
@@ -147,20 +151,25 @@ class MusicProvider extends ChangeNotifier {
   }
 
   Future<void> _saveCustomTracks() async {
-    final prefs = await SharedPreferences.getInstance();
-    // Only save custom tracks
-    final customTracks = _library
-        .where((t) => t['id'].toString().startsWith('custom_'))
-        .map((t) => {
-              'id': t['id'],
-              'title': t['title'],
-              'iconName': 'audiotrack',
-              'colorValue': (t['color'] as Color).value,
-              'filePath': t['filePath'],
-            })
-        .toList();
-    
-    await prefs.setString('custom_music_tracks', jsonEncode(customTracks));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // Only save custom tracks
+      final customTracks = _library
+          .where((t) => t['id'].toString().startsWith('custom_'))
+          .map((t) => {
+                'id': t['id'],
+                'title': t['title'],
+                'iconName': 'audiotrack',
+                'colorValue': (t['color'] as Color).value,
+                'filePath': t['filePath'],
+                'bytesBase64': t['bytes'] != null ? base64Encode(t['bytes'] as Uint8List) : null,
+              })
+          .toList();
+      
+      await prefs.setString('custom_music_tracks', jsonEncode(customTracks));
+    } catch (e) {
+      debugPrint("Could not save custom tracks to SharedPreferences (likely Web quota exceeded): $e");
+    }
   }
 
   Future<void> _loadCustomTracks() async {
@@ -177,12 +186,24 @@ class MusicProvider extends ChangeNotifier {
   }
 
   Map<String, dynamic> _deserializeTrack(Map<String, dynamic> data) {
+    Uint8List? parsedBytes;
+    if (data['bytesBase64'] != null) {
+      try {
+        parsedBytes = base64Decode(data['bytesBase64']);
+      } catch (e) {
+        debugPrint("Error decoding base64 audio bytes: $e");
+      }
+    } else if (data['bytes'] != null) {
+      parsedBytes = data['bytes'] as Uint8List;
+    }
+
     return {
       'id': data['id'],
       'title': data['title'],
       'icon': Icons.audiotrack_rounded,
       'color': Color(data['colorValue'] ?? Colors.purple.value),
       'filePath': data['filePath'],
+      'bytes': parsedBytes,
     };
   }
 

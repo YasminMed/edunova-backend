@@ -48,8 +48,12 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
   }
 
   Future<void> _pickAndAddMusic(MusicProvider musicProvider) async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
-    if (result != null && result.files.single.path != null) {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.audio,
+      withData: true, // Crucial for Web since path is null
+    );
+    
+    if (result != null && result.files.isNotEmpty) {
       final file = result.files.single;
 
       if (!mounted) return;
@@ -89,7 +93,12 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
 
       if (customName == null || customName.isEmpty) return;
 
-      await musicProvider.addCustomTrack(name: customName, filePath: file.path!);
+      // Pass the name, the path (might be null on web), and the bytes (for web support)
+      await musicProvider.addCustomTrack(
+        name: customName, 
+        filePath: file.path, 
+        bytes: file.bytes,
+      );
     }
   }
 
