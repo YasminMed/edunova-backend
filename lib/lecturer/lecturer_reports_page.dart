@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
-import 'dart:io';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../services/material_service.dart';
@@ -20,20 +19,50 @@ class _LecturerReportsPageState extends State<LecturerReportsPage> {
   Map<String, dynamic>? _reportData;
   bool _isLoading = true;
   bool _isDownloading = false;
+  String? _selectedDepartment;
+  String? _selectedStage;
+  List<String> _deptList = [];
+  List<String> _stageList = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchReportData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initFilters();
+      _fetchReportData();
+    });
+  }
+
+  void _initFilters() {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (userProvider.department != null) {
+      _deptList = userProvider.department!
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    if (userProvider.stage != null) {
+      _stageList = userProvider.stage!
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    setState(() {});
   }
 
   Future<void> _fetchReportData() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     if (userProvider.email == null) return;
 
+    setState(() => _isLoading = true);
+
     try {
       final data = await _materialService.fetchFacultyReports(
         userProvider.email!,
+        department: _selectedDepartment,
+        stage: _selectedStage,
       );
       setState(() {
         _reportData = data;
@@ -64,6 +93,8 @@ class _LecturerReportsPageState extends State<LecturerReportsPage> {
       final savedPath = await _materialService.downloadFacultyReport(
         userProvider.email!,
         filePath,
+        department: _selectedDepartment,
+        stage: _selectedStage,
       );
 
       if (savedPath != null && mounted) {
@@ -113,6 +144,8 @@ class _LecturerReportsPageState extends State<LecturerReportsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _buildFilterSection(isDark),
+                    const SizedBox(height: 24),
                     _buildReportSummary(isDark),
                     const SizedBox(height: 30),
                     Text(
@@ -282,9 +315,11 @@ class _LecturerReportsPageState extends State<LecturerReportsPage> {
             "Generate Full Academic Report",
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          const Text(
-            "PDF format, includes all subject statistics",
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+          Text(
+            _selectedDepartment != null || _selectedStage != null
+                ? "Filtered by specific criteria"
+                : "PDF format, includes all subject statistics",
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
           const SizedBox(height: 16),
           _isDownloading
@@ -300,6 +335,111 @@ class _LecturerReportsPageState extends State<LecturerReportsPage> {
                   ),
                 ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilterSection(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Filter Reports",
+              style: TextDesign.h3.copyWith(
+                color: isDark ? Colors.white : AppColors.primaryText,
+              ),
+            ),
+            if (_selectedDepartment != null || _selectedStage != null)
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _selectedDepartment = null;
+                    _selectedStage = null;
+                  });
+                  _fetchReportData();
+                },
+                icon: const Icon(Icons.clear_rounded, size: 16, color: Colors.redAccent),
+                label: const Text(
+                  "Clear Filters",
+                  style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildFilterDropdown(
+                label: "Department",
+                value: _selectedDepartment,
+                items: _deptList,
+                onChanged: (val) {
+                  setState(() => _selectedDepartment = val);
+                  _fetchReportData();
+                },
+                isDark: isDark,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildFilterDropdown(
+                label: "Stage",
+                value: _selectedStage,
+                items: _stageList,
+                onChanged: (val) {
+                  setState(() => _selectedStage = val);
+                  _fetchReportData();
+                },
+                isDark: isDark,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterDropdown({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required Function(String?) onChanged,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.grey[200]!,
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          hint: Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          isExpanded: true,
+          style: TextStyle(
+            color: isDark ? Colors.white : AppColors.primaryText,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+          onChanged: onChanged,
+          items: items.map((item) {
+            return DropdownMenuItem(
+              value: item,
+              child: Text(item, overflow: TextOverflow.ellipsis),
+            );
+          }).toList(),
+        ),
       ),
     );
   }

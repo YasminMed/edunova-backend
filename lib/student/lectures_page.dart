@@ -128,15 +128,22 @@ class _LecturesPageState extends State<LecturesPage> {
           borderRadius: BorderRadius.circular(24),
           child: Container(
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              gradient: LinearGradient(
+                colors: [
+                  mainColor.withValues(alpha: isDark ? 0.2 : 0.4),
+                  mainColor.withValues(alpha: isDark ? 0.05 : 0.15),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: mainColor.withValues(alpha: isDark ? 0.3 : 0.5),
+                color: mainColor.withValues(alpha: 0.4),
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: mainColor.withValues(alpha: isDark ? 0.1 : 0.15),
+                  color: mainColor.withValues(alpha: isDark ? 0.05 : 0.1),
                   blurRadius: 15,
                   offset: const Offset(0, 6),
                 ),
@@ -146,18 +153,16 @@ class _LecturesPageState extends State<LecturesPage> {
               borderRadius: BorderRadius.circular(24),
               child: Stack(
                 children: [
-                  // Subtle Gradient Overlay
-                  Positioned.fill(
+                  // Abstract background icon circle similar to lecturer style
+                  Positioned(
+                    top: -20,
+                    right: -20,
                     child: Container(
+                      width: 100,
+                      height: 100,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            mainColor.withValues(alpha: isDark ? 0.05 : 0.1),
-                            mainColor.withValues(alpha: isDark ? 0.02 : 0.05),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        shape: BoxShape.circle,
+                        color: mainColor.withValues(alpha: 0.1),
                       ),
                     ),
                   ),
@@ -169,12 +174,12 @@ class _LecturesPageState extends State<LecturesPage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: mainColor.withValues(alpha: isDark ? 0.15 : 0.1),
+                            color: mainColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Icon(
                             _getIconForCourse(lecture['subject']),
-                            color: isDark ? Colors.white : mainColor,
+                            color: isDark ? mainColor : mainColor.withValues(alpha: 0.9),
                             size: 26,
                           ),
                         ),
@@ -183,6 +188,7 @@ class _LecturesPageState extends State<LecturesPage> {
                           lecture['subject'],
                           style: TextDesign.h3.copyWith(
                             color: isDark ? Colors.white : AppColors.primaryText,
+                            fontWeight: FontWeight.w900,
                             fontSize: 16,
                             height: 1.2,
                           ),
@@ -193,9 +199,7 @@ class _LecturesPageState extends State<LecturesPage> {
                         Text(
                           lecture['code'],
                           style: TextStyle(
-                            color: isDark
-                                ? Colors.white54
-                                : AppColors.primaryText.withOpacity(0.6),
+                            color: isDark ? mainColor : mainColor.withValues(alpha: 0.8),
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
@@ -205,22 +209,18 @@ class _LecturesPageState extends State<LecturesPage> {
                         Row(
                           children: [
                             Icon(
-                              Icons.person,
-                              size: 12,
-                              color: isDark
-                                  ? Colors.white54
-                                  : AppColors.primaryText.withOpacity(0.5),
+                              Icons.person_rounded,
+                              size: 14,
+                              color: isDark ? mainColor : mainColor.withValues(alpha: 0.7),
                             ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 lecture['professor'],
                                 style: TextStyle(
-                                  color: isDark
-                                      ? Colors.white70
-                                      : AppColors.primaryText.withOpacity(0.7),
+                                  color: isDark ? Colors.white70 : AppColors.primaryText.withOpacity(0.7),
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

@@ -617,11 +617,19 @@ class MaterialService {
     }
   }
 
-  Future<Map<String, dynamic>> fetchFacultyReports(String email) async {
+  Future<Map<String, dynamic>> fetchFacultyReports(
+    String email, {
+    String? department,
+    String? stage,
+  }) async {
     try {
       final response = await _dio.get(
         "/lecturer/faculty-reports",
-        queryParameters: {"email": email},
+        queryParameters: {
+          "email": email,
+          if (department != null) "selected_department": department,
+          if (stage != null) "selected_stage": stage,
+        },
       );
       return response.data;
     } on DioException catch (e) {
@@ -629,12 +637,21 @@ class MaterialService {
     }
   }
 
-  Future<String?> downloadFacultyReport(String email, String savePath) async {
+  Future<String?> downloadFacultyReport(
+    String email,
+    String savePath, {
+    String? department,
+    String? stage,
+  }) async {
     try {
       await _dio.download(
         "/lecturer/download-report",
         savePath,
-        queryParameters: {"email": email},
+        queryParameters: {
+          "email": email,
+          if (department != null) "selected_department": department,
+          if (stage != null) "selected_stage": stage,
+        },
       );
       return savePath;
     } on DioException catch (e) {

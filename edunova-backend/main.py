@@ -1971,13 +1971,18 @@ async def update_lecturer_experience(email: str, years: int, db: Session = Depen
     return {"message": "Experience updated successfully", "years": years}
 
 @app.get("/lecturer/faculty-reports")
-async def get_faculty_reports(email: str, db: Session = Depends(get_db)):
+async def get_faculty_reports(
+    email: str, 
+    selected_department: Optional[str] = Query(None),
+    selected_stage: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     lecturer = db.query(models.User).filter(models.User.email == email).first()
     if not lecturer:
         raise HTTPException(status_code=404, detail="Lecturer not found")
         
-    dept_list = [d.strip() for d in (lecturer.department or "").split(',') if d.strip()]
-    stage_list = [s.strip() for s in (lecturer.stage or "").split(',') if s.strip()]
+    dept_list = [selected_department] if selected_department else [d.strip() for d in (lecturer.department or "").split(',') if d.strip()]
+    stage_list = [selected_stage] if selected_stage else [s.strip() for s in (lecturer.stage or "").split(',') if s.strip()]
     
     students = db.query(models.User).filter(
         models.User.role == "student",
@@ -2039,8 +2044,13 @@ async def get_faculty_reports(email: str, db: Session = Depends(get_db)):
     }
 
 @app.get("/lecturer/download-report")
-async def download_faculty_report(email: str, db: Session = Depends(get_db)):
-    data = await get_faculty_reports(email, db)
+async def download_faculty_report(
+    email: str, 
+    selected_department: Optional[str] = Query(None),
+    selected_stage: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    data = await get_faculty_reports(email, selected_department, selected_stage, db)
     lecturer = db.query(models.User).filter(models.User.email == email).first()
     
     pdf = FPDF()
@@ -2049,6 +2059,10 @@ async def download_faculty_report(email: str, db: Session = Depends(get_db)):
     pdf.cell(200, 10, txt="EduNova Faculty Report", ln=True, align='C')
     pdf.set_font("helvetica", size=12)
     pdf.cell(200, 10, txt=f"Lecturer: {lecturer.full_name}", ln=True, align='L')
+    if selected_department:
+        pdf.cell(200, 10, txt=f"Department: {selected_department}", ln=True, align='L')
+    if selected_stage:
+        pdf.cell(200, 10, txt=f"Stage: {selected_stage}", ln=True, align='L')
     pdf.cell(200, 10, txt=f"Date: {datetime.datetime.now().strftime('%Y-%m-%d')}", ln=True, align='L')
     pdf.ln(10)
     
