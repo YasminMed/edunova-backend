@@ -18,12 +18,12 @@ class VerificationCodeLecturerPage extends StatefulWidget {
 
 class _VerificationCodeLecturerPageState
     extends State<VerificationCodeLecturerPage> {
-  // 4 Controllers for 4 boxes
+  // 6 Controllers for 6 boxes
   final List<TextEditingController> _controllers = List.generate(
-    4,
+    6,
     (_) => TextEditingController(),
   );
-  final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   final AuthService _authService = AuthService();
   bool _isLoading = false;
 
@@ -39,7 +39,7 @@ class _VerificationCodeLecturerPageState
   }
 
   void _onCodeChanged(String value, int index) {
-    if (value.length == 1 && index < 3) {
+    if (value.length == 1 && index < 5) {
       _focusNodes[index + 1].requestFocus();
     } else if (value.isEmpty && index > 0) {
       _focusNodes[index - 1].requestFocus();
@@ -49,7 +49,7 @@ class _VerificationCodeLecturerPageState
   Future<void> _handleVerify() async {
     // Check if all filled
     String otp = _controllers.map((c) => c.text).join();
-    if (otp.length == 4) {
+    if (otp.length == 6) {
       setState(() => _isLoading = true);
       try {
         await _authService.verifyOtp(widget.email, otp);
@@ -74,8 +74,8 @@ class _VerificationCodeLecturerPageState
 
   Widget _buildCodeBox(int index) {
     return Container(
-      width: 60,
-      height: 60,
+      width: 45,
+      height: 55,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.8),
         borderRadius: BorderRadius.circular(12),
@@ -139,7 +139,7 @@ class _VerificationCodeLecturerPageState
                     AppLocalizations.of(
                           context,
                         )?.translate('verification_subtitle') ??
-                        "Enter the 4-digit code sent to your email",
+                        "Enter the 6-digit code sent to your email",
                     style: TextDesign.body,
                     textAlign: TextAlign.center,
                   ),
@@ -168,7 +168,7 @@ class _VerificationCodeLecturerPageState
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: List.generate(
-                            4,
+                            6,
                             (index) => _buildCodeBox(index),
                           ),
                         ),

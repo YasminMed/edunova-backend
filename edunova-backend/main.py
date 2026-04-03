@@ -571,18 +571,50 @@ async def get_status(db: Session = Depends(get_db)):
     except Exception as e:
         return {"error": str(e)}
 
+import urllib.request
+import json
+from datetime import datetime, timedelta
+
+GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx5v84SlG3X-CYn6onunVbc2w9_um4Dx8qYUAJK3wuIQ5PP-z4OuMLybGfefhb-tSOV/exec"
+otp_storage = {}
+
 @app.post("/auth/send-otp")
 async def send_otp(request: OTPRequest):
     otp = "".join([str(secrets.randbelow(10)) for _ in range(6)])
-    # TODO: Implement email sending logic
-    return {"message": f"OTP sent to {request.email} (mock)", "otp": otp}
+    
+    try:
+        data = json.dumps({"email": request.email, "otp": otp}).encode("utf-8")
+        req = urllib.request.Request(GOOGLE_SCRIPT_URL, data=data, headers={'Content-Type': 'application/json'})
+        response = urllib.request.urlopen(req, timeout=10)
+        res_data = json.loads(response.read().decode("utf-8"))
+        if not res_data.get("success"):
+            raise Exception("Script returned error: " + str(res_data))
+    except Exception as e:
+        print("OTP Send Error:", e)
+        raise HTTPException(status_code=500, detail="Failed to send OTP via email.")
+        
+    otp_storage[request.email] = {
+        "otp": otp,
+        "expires": datetime.utcnow() + timedelta(minutes=10)
+    }
+    
+    return {"message": "OTP sent successfully"}
 
 @app.post("/auth/verify-otp")
 async def verify_otp(request: VerifyOTPRequest):
-    # TODO: Implement real verification logic
-    if request.otp == "1234": # Mock code for testing
-        return {"message": "OTP verified successfully"}
-    raise HTTPException(status_code=400, detail="Invalid OTP code")
+    record = otp_storage.get(request.email)
+    if not record:
+        raise HTTPException(status_code=400, detail="No OTP found or it has expired.")
+        
+    if datetime.utcnow() > record["expires"]:
+        del otp_storage[request.email]
+        raise HTTPException(status_code=400, detail="OTP has expired.")
+        
+    if request.otp != record["otp"]:
+        raise HTTPException(status_code=400, detail="Invalid OTP code.")
+        
+    del otp_storage[request.email]
+    return {"message": "OTP verified successfully"}
 
 # --- Posts Endpoints ---
 
