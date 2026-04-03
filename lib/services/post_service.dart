@@ -42,9 +42,11 @@ class PostService {
     }
   }
 
-  Future<List<dynamic>> getPosts() async {
+  Future<List<dynamic>> getPosts({String? email}) async {
     try {
-      final response = await _dio.get("/posts");
+      final response = await _dio.get("/posts", queryParameters: {
+        if (email != null) "email": email,
+      });
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -74,6 +76,17 @@ class PostService {
         "user_email": email,
         "content": content,
       });
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<bool> likePost(int postId, String email) async {
+    try {
+      final response = await _dio.post("/posts/$postId/like", data: {
+        "user_email": email,
+      });
+      return response.data['liked'] ?? false;
     } on DioException catch (e) {
       throw _handleError(e);
     }

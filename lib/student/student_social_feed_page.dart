@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../services/post_service.dart';
 import '../services/auth_service.dart';
 import '../providers/user_provider.dart';
+import '../widgets/share_post_bottom_sheet.dart';
 
 class StudentSocialFeedPage extends StatefulWidget {
   const StudentSocialFeedPage({super.key});
@@ -28,7 +29,8 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
 
   Future<void> _fetchPosts() async {
     try {
-      final posts = await _postService.getPosts();
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final posts = await _postService.getPosts(email: userProvider.email);
       setState(() {
         _posts = posts;
         _isLoading = false;
@@ -120,6 +122,7 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                           final post = _posts[index];
                           final String? imageUrl = post['image_url'];
                           final fullImageUrl = imageUrl != null ? "${AuthService.baseUrl}$imageUrl" : null;
+                          final bool hasLiked = post['has_liked'] ?? false;
                           
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 20),
@@ -130,9 +133,50 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                               title: post['title'] ?? "No Title",
                               description: post['description'] ?? "",
                               image: fullImageUrl,
-                              likes: 0,
+                              likes: (post['likes_count'] ?? 0).toInt(),
                               comments: (post['comments_count'] ?? 0).toInt(),
+                              hasLiked: hasLiked,
                               postId: post['id'],
+                              onLike: () async {
+                                final userProvider = Provider.of<UserProvider>(context, listen: false);
+                                if (userProvider.email != null) {
+                                  // Optimistic UI update
+                                  setState(() {
+                                    post['has_liked'] = !hasLiked;
+                                    post['likes_count'] = (post['likes_count'] ?? 0) + (hasLiked ? -1 : 1);
+                                  });
+                                  try {
+                                    final result = await _postService.likePost(post['id'], userProvider.email!);
+                                    // Sync with backend truth
+                                    if (mounted) {
+                                      setState(() {
+                                        post['has_liked'] = result;
+                                      });
+                                    }
+                                  } catch (e) {
+                                    // Revert on fail
+                                    if (mounted) {
+                                      setState(() {
+                                        post['has_liked'] = hasLiked;
+                                        post['likes_count'] = (post['likes_count'] ?? 0) + (hasLiked ? 1 : -1);
+                                      });
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to update like")));
+                                    }
+                                  }
+                                }
+                              },
+                              onShare: () {
+                                if (!context.mounted) return;
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                  ),
+                                  builder: (context) => SharePostBottomSheet(post: post),
+                                );
+                              },
                             ),
                           );
                         },
@@ -144,9 +188,12 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
   String _formatTimestamp(String? isoDate) {
     if (isoDate == null) return "Just now";
     try {
-      final date = DateTime.parse(isoDate);
+      DateTime date = DateTime.parse(isoDate);
+      if (!isoDate.endsWith('Z')) {
+        date = DateTime.parse('${isoDate}Z');
+      }
       final now = DateTime.now();
-      final diff = now.difference(date);
+      final diff = now.difference(date.toLocal());
       if (diff.inMinutes < 60) return "${diff.inMinutes}m ago";
       if (diff.inHours < 24) return "${diff.inHours}h ago";
       return "${diff.inDays}d ago";
@@ -164,7 +211,10 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
     String? image,
     required int likes,
     required int comments,
+    required bool hasLiked,
     required int postId,
+    VoidCallback? onLike,
+    VoidCallback? onShare,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
@@ -174,7 +224,7 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -191,7 +241,7 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                 Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                       child: Text(
                         userName[0],
                         style: const TextStyle(
@@ -280,9 +330,10 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
             child: Row(
               children: [
                 _buildInteractionBtn(
-                  Icons.favorite_outline_rounded,
+                  hasLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                   likes.toString(),
-                  Colors.redAccent,
+                  hasLiked ? Colors.redAccent : Colors.grey[600]!,
+                  onTap: onLike,
                 ),
                 const SizedBox(width: 24),
                 _buildInteractionBtn(
@@ -296,6 +347,7 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                   Icons.share_outlined,
                   AppLocalizations.of(context)?.translate('share') ?? "Share",
                   Colors.blueAccent,
+                  onTap: onShare,
                 ),
               ],
             ),
@@ -387,11 +439,8 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                               children: [
                                 CircleAvatar(
                                   radius: 18,
-                                  backgroundColor: AppColors.primary.withOpacity(0.1),
-                                  child: Text(
-                                    (c['user_name'] ?? "?")[0],
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
-                                  ),
+                                  backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
+                                  child: const Icon(Icons.person, color: AppColors.secondary),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -404,9 +453,18 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          c['user_name'] ?? "User",
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              c['user_name'] ?? "User",
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                            ),
+                                            const Spacer(),
+                                            Text(
+                                              _formatTimestamp(c['created_at']),
+                                              style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                                            ),
+                                          ],
                                         ),
                                         const SizedBox(height: 4),
                                         Text(

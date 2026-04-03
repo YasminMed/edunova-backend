@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../services/post_service.dart';
 import '../services/auth_service.dart';
+import '../providers/user_provider.dart';
+import '../widgets/share_post_bottom_sheet.dart';
 
 class PostCreationPage extends StatefulWidget {
   const PostCreationPage({super.key});
@@ -261,7 +264,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
                 Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: AppColors.secondary.withOpacity(0.1),
+                      backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
                       child: const Icon(Icons.person, color: AppColors.secondary),
                     ),
                     const SizedBox(width: 12),
@@ -269,15 +272,21 @@ class _PostCreationPageState extends State<PostCreationPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("You", style: TextDesign.body.copyWith(fontWeight: FontWeight.bold)),
-                          Text(post['created_at'] != null ? "Posted just now" : "", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text(
+                            post['author_email'] == Provider.of<UserProvider>(context, listen: false).email
+                                ? "You"
+                                : (post['author_name'] ?? "Lecturer"),
+                            style: TextDesign.body.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          Text(_formatTimestamp(post['created_at']), style: const TextStyle(fontSize: 12, color: Colors.grey)),
                         ],
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
-                      onPressed: () => _showDeleteDialog(post['id']),
-                    ),
+                    if (post['author_email'] == Provider.of<UserProvider>(context, listen: false).email)
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                        onPressed: () => _showDeleteDialog(post['id']),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -296,9 +305,38 @@ class _PostCreationPageState extends State<PostCreationPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildStatItem(Icons.favorite_border_rounded, "Likes"),
-                    _buildStatItem(Icons.chat_bubble_outline_rounded, "Comments"),
-                    _buildStatItem(Icons.share_outlined, "Share"),
+                    _buildStatItem(
+                      post['has_liked'] == true ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      "${post['likes_count'] ?? 0} Likes",
+                      color: post['has_liked'] == true ? Colors.redAccent : Colors.grey,
+                      onTap: () async {
+                        final userProvider = Provider.of<UserProvider>(context, listen: false);
+                        if (userProvider.email != null) {
+                          await _postService.likePost(post['id'], userProvider.email!);
+                          _fetchMyPosts();
+                        }
+                      },
+                    ),
+                    _buildStatItem(
+                      Icons.chat_bubble_outline_rounded,
+                      "${post['comments_count'] ?? 0} Comments",
+                      onTap: () => _showCommentsBottomSheet(context, post['id']),
+                    ),
+                    _buildStatItem(
+                      Icons.share_outlined, 
+                      "Share",
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                          ),
+                          builder: (context) => SharePostBottomSheet(post: post),
+                        );
+                      }
+                    ),
                   ],
                 ),
               ],
@@ -309,13 +347,197 @@ class _PostCreationPageState extends State<PostCreationPage> {
     );
   }
 
-  Widget _buildStatItem(IconData icon, String label) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: Colors.grey),
-        const SizedBox(width: 4),
-        Text("0", style: const TextStyle(color: Colors.grey, fontSize: 13)), // Placeholder 0
-      ],
+  String _formatTimestamp(String? isoDate) {
+    if (isoDate == null) return "Just now";
+    try {
+      DateTime date = DateTime.parse(isoDate);
+      if (!isoDate.endsWith('Z')) {
+        date = DateTime.parse('${isoDate}Z');
+      }
+      final now = DateTime.now();
+      final diff = now.difference(date.toLocal());
+      if (diff.inMinutes < 60) return "${diff.inMinutes}m ago";
+      if (diff.inHours < 24) return "${diff.inHours}h ago";
+      return "${diff.inDays}d ago";
+    } catch (_) {
+      return "Recently";
+    }
+  }
+
+  Widget _buildStatItem(IconData icon, String label, {Color color = Colors.grey, VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 4),
+            Text(label, style: TextStyle(color: color, fontSize: 13)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCommentsBottomSheet(BuildContext context, int postId) {
+    final commentController = TextEditingController();
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.75,
+            decoration: BoxDecoration(
+              color: isDark ? Theme.of(context).scaffoldBackgroundColor : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            ),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text("Comments", style: TextDesign.h3),
+                const Divider(),
+                Expanded(
+                  child: FutureBuilder<List<dynamic>>(
+                    future: _postService.getComments(postId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final comments = snapshot.data ?? [];
+                      if (comments.isEmpty) {
+                        return Center(
+                          child: Text(
+                            "No comments yet. Be the first!",
+                            style: TextStyle(color: Colors.grey[500]),
+                          ),
+                        );
+                      }
+                      return ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        itemCount: comments.length,
+                        itemBuilder: (context, index) {
+                          final c = comments[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
+                                  child: const Icon(Icons.person, color: AppColors.secondary),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.grey[800] : Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              c['user_name'] ?? "User",
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                            ),
+                                            const Spacer(),
+                                            Text(
+                                              _formatTimestamp(c['created_at']),
+                                              style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          c['content'] ?? "",
+                                          style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const Divider(),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: commentController,
+                          decoration: InputDecoration(
+                            hintText: "Add a comment...",
+                            filled: true,
+                            fillColor: isDark ? Colors.grey[800] : Colors.grey[200],
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(25),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: () async {
+                          if (commentController.text.isNotEmpty && userProvider.email != null) {
+                            try {
+                              await _postService.addComment(
+                                postId,
+                                userProvider.email!,
+                                commentController.text,
+                              );
+                              commentController.clear();
+                              setModalState(() {}); // Refresh future builder
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("Failed to post comment")),
+                                );
+                              }
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.send_rounded, color: AppColors.primary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -393,10 +615,10 @@ class _PostCreationPageState extends State<PostCreationPage> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 20),
             decoration: BoxDecoration(
-              color: isSelected ? color.withOpacity(0.2) : color.withOpacity(0.1),
+              color: isSelected ? color.withValues(alpha: 0.2) : color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isSelected ? color : color.withOpacity(0.3), 
+                color: isSelected ? color : color.withValues(alpha: 0.3), 
                 width: isSelected ? 2 : 1
               ),
             ),
