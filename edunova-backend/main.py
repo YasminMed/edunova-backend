@@ -577,6 +577,7 @@ from datetime import datetime, timedelta
 
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx5v84SlG3X-CYn6onunVbc2w9_um4Dx8qYUAJK3wuIQ5PP-z4OuMLybGfefhb-tSOV/exec"
 otp_storage = {}
+verified_reset_emails = set()
 
 @app.post("/auth/send-otp")
 async def send_otp(request: OTPRequest):
@@ -614,7 +615,28 @@ async def verify_otp(request: VerifyOTPRequest):
         raise HTTPException(status_code=400, detail="Invalid OTP code.")
         
     del otp_storage[request.email]
+    verified_reset_emails.add(request.email)
     return {"message": "OTP verified successfully"}
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    newPassword: str
+    role: str = "student"
+
+@app.post("/auth/reset-password")
+async def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+    if request.email not in verified_reset_emails:
+        raise HTTPException(status_code=403, detail="Email not verified for password reset. Please request a new OTP.")
+        
+    db_user = db.query(models.User).filter(models.User.email == request.email).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    db_user.password = request.newPassword
+    db.commit()
+    
+    verified_reset_emails.remove(request.email)
+    return {"message": "Password reset successfully"}
 
 # --- Posts Endpoints ---
 

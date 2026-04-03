@@ -158,6 +158,26 @@ class AuthService {
     }
   }
 
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String newPassword,
+    required String role,
+  }) async {
+    try {
+      final response = await _dio.post(
+        "/auth/reset-password",
+        data: {
+          "email": email,
+          "newPassword": newPassword,
+          "role": role,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Future<Map<String, dynamic>> deleteAccount({
     required String email,
     required String role,

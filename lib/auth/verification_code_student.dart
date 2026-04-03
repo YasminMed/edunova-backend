@@ -3,7 +3,7 @@ import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../widgets/animated_background.dart';
 import '../widgets/custom_button.dart';
-import 'change_password_student.dart';
+import 'reset_password_student.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 
@@ -56,7 +56,7 @@ class _VerificationCodeStudentPageState
         if (!mounted) return;
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const ChangePasswordStudentPage()),
+          MaterialPageRoute(builder: (_) => ResetPasswordStudentPage(email: widget.email)),
         );
       } catch (e) {
         if (!mounted) return;
