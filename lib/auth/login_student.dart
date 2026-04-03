@@ -12,9 +12,7 @@ import 'package:provider/provider.dart';
 import 'department_stage_selection.dart';
 
 class LoginStudentPage extends StatefulWidget {
-  const LoginStudentPage({
-    super.key,
-  });
+  const LoginStudentPage({super.key});
 
   @override
   State<LoginStudentPage> createState() => _LoginStudentPageState();
@@ -52,7 +50,7 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
           _passwordController.text,
           'student',
         );
-        
+
         if (!mounted) return;
 
         // Store user data in UserProvider
@@ -78,9 +76,11 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
         final errorMsg = e.toString().toLowerCase();
 
         setState(() {
-          if (errorMsg.contains("email") || errorMsg.contains("not registered")) {
+          if (errorMsg.contains("email") ||
+              errorMsg.contains("not registered")) {
             _emailError = e.toString();
-          } else if (errorMsg.contains("password") || errorMsg.contains("incorrect")) {
+          } else if (errorMsg.contains("password") ||
+              errorMsg.contains("incorrect")) {
             _passwordError = e.toString();
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -317,7 +317,8 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
 
                           const SizedBox(height: 32),
                           CustomButton(
-                            text: AppLocalizations.of(
+                            text:
+                                AppLocalizations.of(
                                   context,
                                 )?.translate('login') ??
                                 "Login",
@@ -345,10 +346,11 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const DepartmentStageSelectionPage(
-                                  role: 'student',
-                                  isLogin: false,
-                                ),
+                                builder: (_) =>
+                                    const DepartmentStageSelectionPage(
+                                      role: 'student',
+                                      isLogin: false,
+                                    ),
                               ),
                             );
                           },

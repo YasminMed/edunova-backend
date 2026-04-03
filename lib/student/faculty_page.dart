@@ -72,19 +72,20 @@ class _FacultyPageState extends State<FacultyPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _lecturers.isEmpty
-              ? Center(
-                  child: Text(
-                    AppLocalizations.of(context)?.translate('no_lecturers_found') ?? "No lecturers found for your stage.",
-                    style: TextDesign.body.copyWith(color: AppColors.mutedText),
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(24),
-                  itemCount: _lecturers.length,
-                  itemBuilder: (context, index) {
-                    return _buildTeacherCard(context, _lecturers[index]);
-                  },
-                ),
+          ? Center(
+              child: Text(
+                AppLocalizations.of(context)?.translate('no_lecturers_found') ??
+                    "No lecturers found for your stage.",
+                style: TextDesign.body.copyWith(color: AppColors.mutedText),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(24),
+              itemCount: _lecturers.length,
+              itemBuilder: (context, index) {
+                return _buildTeacherCard(context, _lecturers[index]);
+              },
+            ),
     );
   }
 
@@ -115,17 +116,16 @@ class _FacultyPageState extends State<FacultyPage> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [
-                      color,
-                      color.withOpacity(0.3),
-                    ],
+                    colors: [color, color.withOpacity(0.3)],
                   ),
                 ),
                 child: CircleAvatar(
                   radius: 35,
                   backgroundColor: color.withOpacity(0.2),
                   backgroundImage: teacher['image_url'] != null
-                      ? NetworkImage("${AuthService.baseUrl}${teacher['image_url']}")
+                      ? NetworkImage(
+                          "${AuthService.baseUrl}${teacher['image_url']}",
+                        )
                       : null,
                   child: teacher['image_url'] == null
                       ? Text(
@@ -189,7 +189,8 @@ class _FacultyPageState extends State<FacultyPage> {
                     elevation: 0,
                   ),
                   child: Text(
-                    AppLocalizations.of(context)?.translate('contact_button') ?? "Contact",
+                    AppLocalizations.of(context)?.translate('contact_button') ??
+                        "Contact",
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -198,7 +199,14 @@ class _FacultyPageState extends State<FacultyPage> {
               GestureDetector(
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(AppLocalizations.of(context)?.translate('coming_soon') ?? 'Profile feature coming soon!')),
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(
+                              context,
+                            )?.translate('coming_soon') ??
+                            'Profile feature coming soon!',
+                      ),
+                    ),
                   );
                 },
                 child: Container(
@@ -224,13 +232,13 @@ class _FacultyPageState extends State<FacultyPage> {
   void _contactLecturer(Map<String, dynamic> lecturer) async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final chatService = ChatService();
-    
+
     if (userProvider.email != null) {
       final session = await chatService.startChatSession(
         userProvider.email!,
         lecturer['id'],
       );
-      
+
       if (session != null && mounted) {
         Navigator.push(
           context,

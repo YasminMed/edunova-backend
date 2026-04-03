@@ -52,22 +52,31 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
     try {
       final filters = ["PDFs", "Assignments", "Quizzes", "Exams", "Attendance"];
       final category = filters[_selectedFilterIndex];
-      
+
       if (category == "Assignments" || category == "Quizzes") {
         final bool isQuiz = category == "Quizzes";
-        final items = isQuiz 
+        final items = isQuiz
             ? await _materialService.getQuizzes(widget.lecture['id'])
             : await _materialService.getAssignments(widget.lecture['id']);
-            
+
         setState(() => _resources = items);
-        
-        final userEmail = Provider.of<UserProvider>(context, listen: false).email;
+
+        final userEmail = Provider.of<UserProvider>(
+          context,
+          listen: false,
+        ).email;
         if (userEmail != null) {
           for (var item in items) {
             try {
               final sub = isQuiz
-                  ? await _materialService.getMyQuizSubmission(item['id'], userEmail)
-                  : await _materialService.getMySubmission(item['id'], userEmail);
+                  ? await _materialService.getMyQuizSubmission(
+                      item['id'],
+                      userEmail,
+                    )
+                  : await _materialService.getMySubmission(
+                      item['id'],
+                      userEmail,
+                    );
               if (sub != null) {
                 setState(() => _userSubmissions[item['id']] = sub);
               }
@@ -77,9 +86,15 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
           }
         }
       } else if (category == "Exams") {
-        final userEmail = Provider.of<UserProvider>(context, listen: false).email;
+        final userEmail = Provider.of<UserProvider>(
+          context,
+          listen: false,
+        ).email;
         if (userEmail != null) {
-          final response = await _materialService.getMyExamMarks(widget.lecture['id'], userEmail);
+          final response = await _materialService.getMyExamMarks(
+            widget.lecture['id'],
+            userEmail,
+          );
           setState(() => _resources = response);
         } else {
           setState(() => _resources = []);
@@ -101,7 +116,10 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
     setState(() => _isLoading = true);
     try {
       final email = Provider.of<UserProvider>(context, listen: false).email;
-      final response = await _materialService.getAttendance(widget.lecture['id'], studentEmail: email);
+      final response = await _materialService.getAttendance(
+        widget.lecture['id'],
+        studentEmail: email,
+      );
       setState(() {
         _attendance = response;
         _isLoading = false;
@@ -113,11 +131,13 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
-    final Color color = (widget.lecture['color'] as Color?) ?? 
-                        ((widget.lecture['gradient'] as List<Color>?)?.isNotEmpty == true 
-                            ? (widget.lecture['gradient'] as List<Color>)[0] 
-                            : AppColors.primary);
+    final Color color =
+        (widget.lecture['color'] as Color?) ??
+        ((widget.lecture['gradient'] as List<Color>?)?.isNotEmpty == true
+            ? (widget.lecture['gradient'] as List<Color>)[0]
+            : AppColors.primary);
 
     final List<String> filters = [
       l10n?.translate('pdfs') ?? 'PDFs',
@@ -128,7 +148,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Background Aesthetic
@@ -173,10 +193,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                   background: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          color,
-                          color.withOpacity(0.8),
-                        ],
+                        colors: [color, color.withOpacity(0.8)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -221,15 +238,17 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                                     : AppColors.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: isSelected 
-                                      ? AppColors.primary 
+                                  color: isSelected
+                                      ? AppColors.primary
                                       : AppColors.primary.withOpacity(0.2),
                                   width: 1.5,
                                 ),
                                 boxShadow: isSelected
                                     ? [
                                         BoxShadow(
-                                          color: AppColors.primary.withOpacity(0.3),
+                                          color: AppColors.primary.withOpacity(
+                                            0.3,
+                                          ),
                                           blurRadius: 10,
                                           offset: const Offset(0, 4),
                                         ),
@@ -239,7 +258,11 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                               child: Text(
                                 filters[index],
                                 style: TextStyle(
-                                  color: isSelected ? Colors.white : Colors.black87,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : (isDark
+                                            ? Colors.white
+                                            : Colors.black87),
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -255,9 +278,11 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
               // Content Area
               SliverPadding(
                 padding: const EdgeInsets.all(20),
-                sliver: _isLoading 
-                  ? const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator()))
-                  : _buildFilteredContent(),
+                sliver: _isLoading
+                    ? const SliverToBoxAdapter(
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    : _buildFilteredContent(),
               ),
             ],
           ),
@@ -267,10 +292,11 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   }
 
   Widget _buildFilteredContent() {
-    final Color color = (widget.lecture['color'] as Color?) ?? 
-                        ((widget.lecture['gradient'] as List<Color>?)?.isNotEmpty == true 
-                            ? (widget.lecture['gradient'] as List<Color>)[0] 
-                            : AppColors.primary);
+    final Color color =
+        (widget.lecture['color'] as Color?) ??
+        ((widget.lecture['gradient'] as List<Color>?)?.isNotEmpty == true
+            ? (widget.lecture['gradient'] as List<Color>)[0]
+            : AppColors.primary);
 
     switch (_selectedFilterIndex) {
       case 0: // PDFs
@@ -304,10 +330,12 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   }
 
   Widget _buildAttendanceView() {
-    final Color color = (widget.lecture['color'] as Color?) ?? 
-                        ((widget.lecture['gradient'] as List<Color>?)?.isNotEmpty == true 
-                            ? (widget.lecture['gradient'] as List<Color>)[0] 
-                            : AppColors.primary);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color color =
+        (widget.lecture['color'] as Color?) ??
+        ((widget.lecture['gradient'] as List<Color>?)?.isNotEmpty == true
+            ? (widget.lecture['gradient'] as List<Color>)[0]
+            : AppColors.primary);
 
     // Calculate interactive rate
     double rate = 0;
@@ -349,7 +377,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                     Text(
                       "${(rate * 100).toInt()}%",
                       style: TextDesign.h1.copyWith(
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                   ],
@@ -365,6 +393,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   }
 
   Widget _buildAttendanceList() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: _attendance.map((record) {
         Color statusColor = Colors.green;
@@ -383,9 +412,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
             children: [
               Text(
                 record['date'].toString().split('T')[0],
-                style: TextStyle(
-                  color: Colors.black,
-                ),
+                style: TextStyle(color: isDark ? Colors.white : Colors.black),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -418,6 +445,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
     String categoryName,
     Color color,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (_resources.isEmpty) {
       return SliverToBoxAdapter(
         child: Center(
@@ -425,11 +453,16 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 40),
-              Icon(Icons.folder_open_rounded,
-                  size: 64, color: color.withOpacity(0.3)),
+              Icon(
+                Icons.folder_open_rounded,
+                size: 64,
+                color: color.withOpacity(0.3),
+              ),
               const SizedBox(height: 16),
-              Text("No $categoryName uploaded yet.",
-                  style: const TextStyle(color: Colors.black)),
+              Text(
+                "No $categoryName uploaded yet.",
+                style: TextStyle(color: isDark ? Colors.white : Colors.black),
+              ),
             ],
           ),
         ),
@@ -439,30 +472,41 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
       delegate: SliverChildBuilderDelegate((context, index) {
         if (index >= _resources.length) return null;
         final resource = _resources[index];
-        final isAssignmentOrQuiz = _selectedFilterIndex == 1 || _selectedFilterIndex == 2;
+        final isAssignmentOrQuiz =
+            _selectedFilterIndex == 1 || _selectedFilterIndex == 2;
         final isQuiz = _selectedFilterIndex == 2;
-        final submission = isAssignmentOrQuiz ? _userSubmissions[resource['id']] : null;
-        
+        final submission = isAssignmentOrQuiz
+            ? _userSubmissions[resource['id']]
+            : null;
+
         TextEditingController? controller;
         if (isAssignmentOrQuiz) {
-            controller = _controllers.putIfAbsent(resource['id'], () => TextEditingController());
+          controller = _controllers.putIfAbsent(
+            resource['id'],
+            () => TextEditingController(),
+          );
         }
 
         return GestureDetector(
-          onTap: isAssignmentOrQuiz ? null : () async {
-            if (_selectedFilterIndex == 0) { // PDF
-               try {
-                 await _materialService.incrementResourceView(resource['id']);
-                 if (mounted) {
-                   ScaffoldMessenger.of(context).showSnackBar(
-                     const SnackBar(content: Text("Opening Material...")),
-                   );
-                 }
-               } catch(e) {
-                 debugPrint("Error incrementing view: $e");
-               }
-            }
-          },
+          onTap: isAssignmentOrQuiz
+              ? null
+              : () async {
+                  if (_selectedFilterIndex == 0) {
+                    // PDF
+                    try {
+                      await _materialService.incrementResourceView(
+                        resource['id'],
+                      );
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Opening Material...")),
+                        );
+                      }
+                    } catch (e) {
+                      debugPrint("Error incrementing view: $e");
+                    }
+                  }
+                },
           child: Container(
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(20),
@@ -470,7 +514,10 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 10,
+                ),
               ],
             ),
             child: Column(
@@ -491,57 +538,74 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Text(
+                            resource['title'],
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          if (resource['deadline'] != null)
                             Text(
-                              resource['title'],
-                              style: TextStyle(
+                              "Deadline: ${resource['deadline'].toString().split('T')[0]}",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.redAccent,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                              ),
+                            )
+                          else
+                            Text(
+                              resource['resource_date'] ??
+                                  (resource['created_at'] != null
+                                      ? "Shared on ${resource['created_at'].toString().split('T')[0]}"
+                                      : "Shared recently"),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? Colors.white70 : Colors.black54,
                               ),
                             ),
-                            if (resource['deadline'] != null)
-                              Text(
-                                "Deadline: ${resource['deadline'].toString().split('T')[0]}",
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.redAccent,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              )
-                            else
-                              Text(
-                                resource['resource_date'] ?? (resource['created_at'] != null
-                                  ? "Shared on ${resource['created_at'].toString().split('T')[0]}"
-                                  : "Shared recently"),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.black54,
-                                ),
-                              ),
                         ],
                       ),
                     ),
-                    if (submission != null && (submission['is_graded'] == true || submission['is_graded'] == 1))
+                    if (submission != null &&
+                        (submission['is_graded'] == true ||
+                            submission['is_graded'] == 1))
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.green.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           "Grade: ${submission['grade']}",
-                          style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
+                          style: const TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                         ),
                       )
                     else if (submission != null)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.orange.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Text(
                           "Uploaded",
-                          style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                   ],
@@ -550,7 +614,10 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                   const SizedBox(height: 12),
                   Text(
                     resource['content'] ?? "",
-                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                   ),
                   if (resource['file_url'] != null) ...[
                     const SizedBox(height: 8),
@@ -558,9 +625,20 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                       onTap: () {},
                       child: Row(
                         children: [
-                          Icon(Icons.attach_file_rounded, size: 14, color: color),
+                          Icon(
+                            Icons.attach_file_rounded,
+                            size: 14,
+                            color: color,
+                          ),
                           const SizedBox(width: 4),
-                          const Text("Reference Material", style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                          const Text(
+                            "Reference Material",
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -572,7 +650,9 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                     decoration: InputDecoration(
                       hintText: "Your answer here...",
                       filled: true,
-                      fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.grey[200],
+                      fillColor: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[800]
+                          : Colors.grey[200],
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -584,8 +664,13 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () async {
-                        final email = Provider.of<UserProvider>(context, listen: false).email;
-                        if (email != null && controller != null && controller.text.isNotEmpty) {
+                        final email = Provider.of<UserProvider>(
+                          context,
+                          listen: false,
+                        ).email;
+                        if (email != null &&
+                            controller != null &&
+                            controller.text.isNotEmpty) {
                           try {
                             if (isQuiz) {
                               await _materialService.submitQuizSolution(
@@ -602,32 +687,52 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                             }
                             _loadContent(); // Refresh
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: Text(isQuiz ? 'Quiz Submitted Successfully' : 'Assignment Submitted Successfully'),
-                                backgroundColor: Colors.green,
-                              ));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    isQuiz
+                                        ? 'Quiz Submitted Successfully'
+                                        : 'Assignment Submitted Successfully',
+                                  ),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
                             }
-                          } catch(e) {
+                          } catch (e) {
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to submit. Check backend connection.')));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Failed to submit. Check backend connection.',
+                                  ),
+                                ),
+                              );
                             }
                           }
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: submission != null ? Colors.orange : AppColors.primary,
+                        backgroundColor: submission != null
+                            ? Colors.orange
+                            : AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 2,
                         shadowColor: Colors.black.withOpacity(0.3),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       child: Text(
-                        submission != null ? "Edit Submission" : "Submit Answer",
+                        submission != null
+                            ? "Edit Submission"
+                            : "Submit Answer",
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
-                  if (submission != null && (submission['is_graded'] == true || submission['is_graded'] == 1)) ...[
+                  if (submission != null &&
+                      (submission['is_graded'] == true ||
+                          submission['is_graded'] == 1)) ...[
                     const Divider(height: 32),
                     Container(
                       width: double.infinity,
@@ -635,29 +740,47 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                       decoration: BoxDecoration(
                         color: Colors.green.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.green.withOpacity(0.3)),
+                        border: Border.all(
+                          color: Colors.green.withOpacity(0.3),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20),
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                color: Colors.green,
+                                size: 20,
+                              ),
                               const SizedBox(width: 8),
-                              Text("Lecturer Feedback", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16)),
+                              Text(
+                                "Lecturer Feedback",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                  fontSize: 16,
+                                ),
+                              ),
                             ],
                           ),
-                          if (submission['lecturer_note'] != null && submission['lecturer_note'].toString().isNotEmpty) ...[
+                          if (submission['lecturer_note'] != null &&
+                              submission['lecturer_note']
+                                  .toString()
+                                  .isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Text(
                               "Grade: ${submission['grade']} - Note: ${submission['lecturer_note']}",
-                              style: const TextStyle(color: Colors.black),
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
                             ),
-                          ]
+                          ],
                         ],
                       ),
                     ),
-                  ]
+                  ],
                 ],
               ],
             ),
@@ -668,6 +791,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
   }
 
   Widget _buildExamsView(Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (_resources.isEmpty) {
       return SliverToBoxAdapter(
         child: Center(
@@ -675,9 +799,18 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 40),
-              Icon(Icons.assignment_turned_in_rounded, size: 64, color: color.withOpacity(0.3)),
+              Icon(
+                Icons.assignment_turned_in_rounded,
+                size: 64,
+                color: color.withOpacity(0.3),
+              ),
               const SizedBox(height: 16),
-              const Text("No exams recorded yet.", style: TextStyle(color: Colors.black54)),
+              Text(
+                "No exams recorded yet.",
+                style: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                ),
+              ),
             ],
           ),
         ),
@@ -685,54 +818,57 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
     }
 
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final exam = _resources[index];
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8),
-              ],
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final exam = _resources[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8),
+            ],
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 8,
             ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(Icons.school_rounded, color: color),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
-              title: Text(
-                exam['exam_type'] ?? "Exam",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+              child: Icon(Icons.school_rounded, color: color),
+            ),
+            title: Text(
+              exam['exam_type'] ?? "Exam",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black,
               ),
-              subtitle: Text(
-                exam['created_at'] != null 
+            ),
+            subtitle: Text(
+              exam['created_at'] != null
                   ? "Recorded on ${exam['created_at'].toString().split('T')[0]}"
                   : "Recently recorded",
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              trailing: Text(
-                "${exam['mark']}%",
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? Colors.white70 : Colors.grey,
               ),
             ),
-          );
-        },
-        childCount: _resources.length,
-      ),
+            trailing: Text(
+              "${exam['mark']}%",
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ),
+        );
+      }, childCount: _resources.length),
     );
   }
 }

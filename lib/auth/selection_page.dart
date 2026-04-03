@@ -31,7 +31,6 @@ class SelectionPage extends StatelessWidget {
 class _SelectionPageView extends StatelessWidget {
   const _SelectionPageView();
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

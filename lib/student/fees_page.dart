@@ -20,8 +20,11 @@ class _FeesPageState extends State<FeesPage> {
   List<Map<String, dynamic>> installments = [];
   String nextPaymentDate = '...';
   bool isLoading = true;
-  final Dio _dio = Dio(BaseOptions(baseUrl: AuthService.baseUrl)); // Using consistent Railway URL 
-  String get studentEmail => context.read<UserProvider>().email ?? "student@edunova.com";
+  final Dio _dio = Dio(
+    BaseOptions(baseUrl: AuthService.baseUrl),
+  ); // Using consistent Railway URL
+  String get studentEmail =>
+      context.read<UserProvider>().email ?? "student@edunova.com";
 
   int get totalDebt {
     if (installments.isEmpty) return 0;
@@ -47,7 +50,10 @@ class _FeesPageState extends State<FeesPage> {
   int get remainingAmount => totalDebt - paidAmount;
 
   String _formatNumber(int number) {
-    return number.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+    return number.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
   }
 
   @override
@@ -62,14 +68,18 @@ class _FeesPageState extends State<FeesPage> {
       if (response.statusCode == 200) {
         final List data = response.data;
         setState(() {
-          installments = data.map((item) => {
-            'id': item['id'],
-            'title': item['title'],
-            'amount': item['amount'],
-            'status': item['status'],
-            'date': item['due_date'],
-          }).toList();
-          
+          installments = data
+              .map(
+                (item) => {
+                  'id': item['id'],
+                  'title': item['title'],
+                  'amount': item['amount'],
+                  'status': item['status'],
+                  'date': item['due_date'],
+                },
+              )
+              .toList();
+
           _updateNextPaymentDate();
           isLoading = false;
         });
@@ -103,32 +113,40 @@ class _FeesPageState extends State<FeesPage> {
       });
 
       if (proofFile != null) {
-        formData.files.add(MapEntry(
-          "proof",
-          await MultipartFile.fromFile(proofFile.path, filename: "receipt.jpg"),
-        ));
+        formData.files.add(
+          MapEntry(
+            "proof",
+            await MultipartFile.fromFile(
+              proofFile.path,
+              filename: "receipt.jpg",
+            ),
+          ),
+        );
       }
 
       await _dio.post("/fees/pay", data: formData);
       await _fetchInstallments();
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Payment processed successfully!")),
       );
     } catch (e) {
       print("Payment error: \$e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: \${e.toString()}")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: \${e.toString()}")));
         setState(() => isLoading = false);
       }
     }
   }
 
-  void _showPaymentOptions(BuildContext context, Map<String, dynamic> installment) {
+  void _showPaymentOptions(
+    BuildContext context,
+    Map<String, dynamic> installment,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -163,10 +181,13 @@ class _FeesPageState extends State<FeesPage> {
             const SizedBox(height: 8),
             Text(
               "Amount: ${installment['amount']} IQD",
-              style: TextDesign.body.copyWith(color: AppColors.mutedText, fontWeight: FontWeight.bold),
+              style: TextDesign.body.copyWith(
+                color: AppColors.mutedText,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 32),
-            
+
             // FIB Option
             _buildPaymentOptionTile(
               context,
@@ -177,7 +198,7 @@ class _FeesPageState extends State<FeesPage> {
               onTap: () => _showMethodDetails(context, 'FIB', installment),
             ),
             const SizedBox(height: 16),
-            
+
             // Bank Option
             _buildPaymentOptionTile(
               context,
@@ -188,7 +209,7 @@ class _FeesPageState extends State<FeesPage> {
               onTap: () => _showMethodDetails(context, 'Bank', installment),
             ),
             const SizedBox(height: 16),
-            
+
             // Cash Option
             _buildPaymentOptionTile(
               context,
@@ -256,17 +277,25 @@ class _FeesPageState extends State<FeesPage> {
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios_rounded, size: 16, color: color.withOpacity(0.5)),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: color.withOpacity(0.5),
+            ),
           ],
         ),
       ),
     );
   }
 
-  void _showMethodDetails(BuildContext context, String method, Map<String, dynamic> installment) {
+  void _showMethodDetails(
+    BuildContext context,
+    String method,
+    Map<String, dynamic> installment,
+  ) {
     Navigator.pop(context); // Close selection modal
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -289,11 +318,15 @@ class _FeesPageState extends State<FeesPage> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             if (method == 'FIB' || method == 'Bank') ...[
               const Text(
                 "Please obtain the official account numbers of the university as listed below for students who wish to pay their tuition fees electronically:",
-                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -308,7 +341,11 @@ class _FeesPageState extends State<FeesPage> {
               const SizedBox(height: 24),
               const Text(
                 "Please upload the transfer receipt image below to verify your payment.",
-                style: TextStyle(color: Colors.grey, fontSize: 12, fontStyle: FontStyle.italic),
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
               const SizedBox(height: 24),
               _buildUploadButton(context, installment['id']),
@@ -339,7 +376,11 @@ class _FeesPageState extends State<FeesPage> {
             children: [
               Text(value, style: TextDesign.h3.copyWith(fontSize: 16)),
               IconButton(
-                icon: const Icon(Icons.copy_rounded, size: 18, color: AppColors.primary),
+                icon: const Icon(
+                  Icons.copy_rounded,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
                 onPressed: () {
                   // Simulate copy
                 },
@@ -366,7 +407,9 @@ class _FeesPageState extends State<FeesPage> {
         label: const Text("Upload Receipt Image"),
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
           side: const BorderSide(color: AppColors.primary),
         ),
       ),
@@ -398,68 +441,77 @@ class _FeesPageState extends State<FeesPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: isLoading 
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Total Debt Hero
-            _buildTotalDebtCard(context, currency),
-            const SizedBox(height: 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Total Debt Hero
+                  _buildTotalDebtCard(context, currency),
+                  const SizedBox(height: 32),
 
-            // Payment Method Info (Clickable)
-            InkWell(
-              onTap: () {
-                if (isLoading) return;
-                
-                // Find the first due installment to pay
-                final dueInstallment = installments.firstWhere(
-                  (i) => i['status'] == 'due',
-                  orElse: () => {},
-                );
-                
-                if (dueInstallment.isNotEmpty) {
-                  _showPaymentOptions(context, dueInstallment);
-                } else if (installments.isEmpty) {
-                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("No installment data found. Please contact support or try again later.")),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("All installments are already paid!")),
-                  );
-                }
-              },
-              borderRadius: BorderRadius.circular(24),
-              child: _buildInfoSection(context),
-            ),
-            const SizedBox(height: 32),
+                  // Payment Method Info (Clickable)
+                  InkWell(
+                    onTap: () {
+                      if (isLoading) return;
 
-            // Timeline Header
-            Text(
-              l10n?.translate('installment_timeline') ?? 'Payment Timeline',
-              style: TextDesign.h3.copyWith(
-                color: isDark ? Colors.white : Colors.black87,
+                      // Find the first due installment to pay
+                      final dueInstallment = installments.firstWhere(
+                        (i) => i['status'] == 'due',
+                        orElse: () => {},
+                      );
+
+                      if (dueInstallment.isNotEmpty) {
+                        _showPaymentOptions(context, dueInstallment);
+                      } else if (installments.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "No installment data found. Please contact support or try again later.",
+                            ),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("All installments are already paid!"),
+                          ),
+                        );
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(24),
+                    child: _buildInfoSection(context),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Timeline Header
+                  Text(
+                    l10n?.translate('installment_timeline') ??
+                        'Payment Timeline',
+                    style: TextDesign.h3.copyWith(
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Vertical Timeline
+                  ...List.generate(installments.length, (index) {
+                    return _buildTimelineItem(
+                      context,
+                      installments[index],
+                      index == installments.length - 1,
+                      currency,
+                    );
+                  }),
+
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-
-            // Vertical Timeline
-            ...List.generate(installments.length, (index) {
-              return _buildTimelineItem(
-                context,
-                installments[index],
-                index == installments.length - 1,
-                currency,
-              );
-            }),
-
-            const SizedBox(height: 40),
-          ],
-        ),
-      ),
     );
   }
 
@@ -523,8 +575,17 @@ class _FeesPageState extends State<FeesPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Paid", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                    Text("${_formatNumber(paidAmount)} $currency", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    Text(
+                      "Paid",
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    Text(
+                      "${_formatNumber(paidAmount)} $currency",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -534,8 +595,17 @@ class _FeesPageState extends State<FeesPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Remaining", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                    Text("${_formatNumber(remainingAmount)} $currency", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    Text(
+                      "Remaining",
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    Text(
+                      "${_formatNumber(remainingAmount)} $currency",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -558,8 +628,8 @@ class _FeesPageState extends State<FeesPage> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  nextPaymentDate == "All Paid" 
-                      ? "All installments paid!" 
+                  nextPaymentDate == "All Paid"
+                      ? "All installments paid!"
                       : "Next Payment: $nextPaymentDate",
                   style: TextDesign.body.copyWith(
                     color: Colors.white,
@@ -622,7 +692,10 @@ class _FeesPageState extends State<FeesPage> {
               ],
             ),
           ),
-          const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.mutedText),
+          const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: AppColors.mutedText,
+          ),
         ],
       ),
     );
@@ -681,7 +754,9 @@ class _FeesPageState extends State<FeesPage> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isPaid ? Colors.green.withOpacity(isDark ? 0.2 : 0.1) : Colors.grey.withOpacity(isDark ? 0.2 : 0.1),
+                  color: isPaid
+                      ? Colors.green.withOpacity(isDark ? 0.2 : 0.1)
+                      : Colors.grey.withOpacity(isDark ? 0.2 : 0.1),
                   borderRadius: BorderRadius.circular(15),
                   border: Border.all(
                     color: isPaid
@@ -749,4 +824,3 @@ class _FeesPageState extends State<FeesPage> {
     );
   }
 }
-

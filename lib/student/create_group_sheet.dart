@@ -21,7 +21,7 @@ class CreateGroupSheet extends StatefulWidget {
 class _CreateGroupSheetState extends State<CreateGroupSheet> {
   final TextEditingController _nameController = TextEditingController();
   final ChatService _chatService = ChatService();
-  
+
   List<ChatUser> _allUsers = [];
   final List<ChatUser> _selectedUsers = [];
   bool _isLoadingUsers = true;
@@ -38,8 +38,11 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
 
   Future<void> _loadUsers() async {
     final users = await _chatService.getAllUsers();
-    final currentUserEmail = Provider.of<UserProvider>(context, listen: false).email;
-    
+    final currentUserEmail = Provider.of<UserProvider>(
+      context,
+      listen: false,
+    ).email;
+
     if (mounted) {
       setState(() {
         _allUsers = users.where((u) => u.email != currentUserEmail).toList();
@@ -52,8 +55,12 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.image,
     );
-    
-    bool hasFile = result != null && (kIsWeb ? result.files.single.bytes != null : result.files.single.path != null);
+
+    bool hasFile =
+        result != null &&
+        (kIsWeb
+            ? result.files.single.bytes != null
+            : result.files.single.path != null);
 
     if (hasFile) {
       setState(() {
@@ -70,40 +77,52 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
   void _createGroup() async {
     final groupName = _nameController.text.trim();
     if (groupName.isEmpty) {
-       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a group name'), backgroundColor: Colors.red),
-       );
-       return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a group name'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
-    
+
     if (_selectedUsers.isEmpty) {
-       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select at least one member'), backgroundColor: Colors.red),
-       );
-       return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one member'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
 
     setState(() => _isCreating = true);
 
-    final currentUserEmail = Provider.of<UserProvider>(context, listen: false).email;
+    final currentUserEmail = Provider.of<UserProvider>(
+      context,
+      listen: false,
+    ).email;
     if (currentUserEmail != null) {
       final memberEmails = _selectedUsers.map((u) => u.email).toList();
       final groupId = await _chatService.createGroupChat(
-        groupName, 
-        currentUserEmail, 
-        memberEmails, 
+        groupName,
+        currentUserEmail,
+        memberEmails,
         imagePath: _selectedImagePath,
         bytes: _selectedImageBytes,
         fileName: _selectedImageName,
       );
-      
+
       if (mounted) {
         setState(() => _isCreating = false);
         if (groupId != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                AppLocalizations.of(context)?.translate('group_created_successfully') ?? 'Group created successfully!',
+                AppLocalizations.of(
+                      context,
+                    )?.translate('group_created_successfully') ??
+                    'Group created successfully!',
               ),
               backgroundColor: Colors.green,
             ),
@@ -111,7 +130,10 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
           Navigator.pop(context, true); // true indicates a refresh is needed
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to create group'), backgroundColor: Colors.red),
+            const SnackBar(
+              content: Text('Failed to create group'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
@@ -140,11 +162,17 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                AppLocalizations.of(context)?.translate('create_group') ?? 'Create Group',
-                style: TextDesign.h2.copyWith(color: Theme.of(context).textTheme.bodyLarge?.color),
+                AppLocalizations.of(context)?.translate('create_group') ??
+                    'Create Group',
+                style: TextDesign.h2.copyWith(
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
               ),
               IconButton(
-                icon: Icon(Icons.close_rounded, color: Theme.of(context).iconTheme.color),
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: Theme.of(context).iconTheme.color,
+                ),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -163,16 +191,22 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.1),
                       shape: BoxShape.circle,
-                      image: (_selectedImageBytes != null || _selectedImagePath != null)
+                      image:
+                          (_selectedImageBytes != null ||
+                              _selectedImagePath != null)
                           ? DecorationImage(
-                              image: kIsWeb 
-                                  ? MemoryImage(_selectedImageBytes!) as ImageProvider
-                                  : FileImage(File(_selectedImagePath!)) as ImageProvider,
+                              image: kIsWeb
+                                  ? MemoryImage(_selectedImageBytes!)
+                                        as ImageProvider
+                                  : FileImage(File(_selectedImagePath!))
+                                        as ImageProvider,
                               fit: BoxFit.cover,
                             )
                           : null,
                     ),
-                    child: (_selectedImageBytes == null && _selectedImagePath == null)
+                    child:
+                        (_selectedImageBytes == null &&
+                            _selectedImagePath == null)
                         ? const Icon(
                             Icons.groups_rounded,
                             size: 50,
@@ -202,7 +236,8 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
           ),
           const SizedBox(height: 12),
           Text(
-            AppLocalizations.of(context)?.translate('tap_to_change_photo') ?? 'Tap to change photo',
+            AppLocalizations.of(context)?.translate('tap_to_change_photo') ??
+                'Tap to change photo',
             textAlign: TextAlign.center,
             style: TextDesign.body.copyWith(
               color: AppColors.mutedText,
@@ -215,7 +250,9 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
           TextField(
             controller: _nameController,
             decoration: InputDecoration(
-              labelText: AppLocalizations.of(context)?.translate('group_name') ?? 'Group Name',
+              labelText:
+                  AppLocalizations.of(context)?.translate('group_name') ??
+                  'Group Name',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
               ),
@@ -226,8 +263,11 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
 
           // Members Selection
           Text(
-            AppLocalizations.of(context)?.translate('select_members') ?? 'Select Members',
-            style: TextDesign.h3.copyWith(color: Theme.of(context).textTheme.bodyLarge?.color),
+            AppLocalizations.of(context)?.translate('select_members') ??
+                'Select Members',
+            style: TextDesign.h3.copyWith(
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -260,8 +300,19 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
                             size: 20,
                           ),
                         ),
-                        title: Text(user.fullName, style: TextDesign.body.copyWith(color: Theme.of(context).textTheme.bodyLarge?.color)),
-                        subtitle: Text(user.email, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        title: Text(
+                          user.fullName,
+                          style: TextDesign.body.copyWith(
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                          ),
+                        ),
+                        subtitle: Text(
+                          user.email,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
                         contentPadding: EdgeInsets.zero,
                       );
                     },
@@ -285,8 +336,12 @@ class _CreateGroupSheetState extends State<CreateGroupSheet> {
                     shadowColor: AppColors.primary.withOpacity(0.4),
                   ),
                   child: Text(
-                    AppLocalizations.of(context)?.translate('create') ?? 'Create',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    AppLocalizations.of(context)?.translate('create') ??
+                        'Create',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
           SizedBox(height: MediaQuery.of(context).viewInsets.bottom),

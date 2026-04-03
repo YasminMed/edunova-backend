@@ -74,7 +74,13 @@ class _RanksPageState extends State<RanksPage>
               gradient = [const Color(0xFF81C784), const Color(0xFF2E7D32)];
             } else {
               // Cycle through some colors for others
-              final colors = [Colors.blue, Colors.purple, Colors.teal, Colors.cyan, Colors.pinkAccent];
+              final colors = [
+                Colors.blue,
+                Colors.purple,
+                Colors.teal,
+                Colors.cyan,
+                Colors.pinkAccent,
+              ];
               baseColor = colors[(rank - 4) % colors.length];
               gradient = [baseColor, baseColor.withOpacity(0.7)];
             }
@@ -94,7 +100,9 @@ class _RanksPageState extends State<RanksPage>
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = AppLocalizations.of(context)?.translate('retry') ?? "Connection error. Please try again later.";
+        _errorMessage =
+            AppLocalizations.of(context)?.translate('retry') ??
+            "Connection error. Please try again later.";
         _isLoading = false;
       });
     }
@@ -131,62 +139,70 @@ class _RanksPageState extends State<RanksPage>
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_errorMessage!, style: TextDesign.body),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _fetchLeaderboard,
-                        child: Text(l10n?.translate('retry') ?? "Retry"),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(_errorMessage!, style: TextDesign.body),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _fetchLeaderboard,
+                    child: Text(l10n?.translate('retry') ?? "Retry"),
                   ),
-                )
-              : _students.isEmpty
-                  ? Center(child: Text(l10n?.translate('no_ranking_data') ?? "No ranking data yet"))
-                  : Column(
-                      children: [
-                        if (_students.length >= 3) _buildPodium(context),
-                        const SizedBox(height: 24),
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(40),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, -5),
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(40),
-                              ),
-                              child: ListView.builder(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 24,
-                                ),
-                                itemCount: _students.length <= 3 ? 0 : _students.length - 3,
-                                itemBuilder: (context, index) {
-                                  final student = _students[index + 3];
-                                  return _buildRankingTile(context, student);
-                                },
-                              ),
-                            ),
-                          ),
+                ],
+              ),
+            )
+          : _students.isEmpty
+          ? Center(
+              child: Text(
+                l10n?.translate('no_ranking_data') ?? "No ranking data yet",
+              ),
+            )
+          : Column(
+              children: [
+                if (_students.length >= 3) _buildPodium(context),
+                const SizedBox(height: 24),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(40),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, -5),
                         ),
                       ],
                     ),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(40),
+                      ),
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 24,
+                        ),
+                        itemCount: _students.length <= 3
+                            ? 0
+                            : _students.length - 3,
+                        itemBuilder: (context, index) {
+                          final student = _students[index + 3];
+                          return _buildRankingTile(context, student);
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 

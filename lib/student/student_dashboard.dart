@@ -55,14 +55,19 @@ class _StudentDashboardState extends State<StudentDashboard> {
       if (mounted) {
         setState(() {
           _progressValue = (data['progress'] as num).toDouble() / 100.0;
-          _rankText = data['rank_text'] ?? (AppLocalizations.of(context)?.translate('rank_pending') ?? "Rank Pending");
+          _rankText =
+              data['rank_text'] ??
+              (AppLocalizations.of(context)?.translate('rank_pending') ??
+                  "Rank Pending");
           _totalMarks = data['total_academic_marks'] ?? 0;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _rankText = AppLocalizations.of(context)?.translate('score_pending') ?? "Score Pending";
+          _rankText =
+              AppLocalizations.of(context)?.translate('score_pending') ??
+              "Score Pending";
         });
       }
     }
@@ -100,13 +105,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
             child: Container(
               height: 72,
               decoration: BoxDecoration(
-                color: isDark 
+                color: isDark
                     ? const Color(0xFF1E293B).withOpacity(0.95) // Dark Slate
                     : Colors.white.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(36),
                 border: Border.all(
-                  color: isDark 
-                      ? Colors.white.withOpacity(0.05) 
+                  color: isDark
+                      ? Colors.white.withOpacity(0.05)
                       : Colors.black.withOpacity(0.03),
                   width: 1.5,
                 ),
@@ -173,7 +178,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
               colors: [
                 Theme.of(context).scaffoldBackgroundColor,
                 Theme.of(context).scaffoldBackgroundColor,
-                Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.3),
+                Theme.of(
+                  context,
+                ).scaffoldBackgroundColor.withValues(alpha: 0.3),
               ],
               stops: const [0.0, 0.7, 1.0],
             ).createShader(bounds);
@@ -436,13 +443,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isDark 
-              ? Colors.white.withOpacity(0.05) 
+          color: isDark
+              ? Colors.white.withOpacity(0.05)
               : const Color(0xFFFBFDFF),
           borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: isDark 
-                ? Colors.white.withOpacity(0.08) 
+            color: isDark
+                ? Colors.white.withOpacity(0.08)
                 : Colors.black.withOpacity(0.03),
             width: 1.5,
           ),
@@ -505,10 +512,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFFBFDFF),
+        color: isDark
+            ? Colors.white.withOpacity(0.05)
+            : const Color(0xFFFBFDFF),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.02),
+          color: isDark
+              ? Colors.white.withOpacity(0.08)
+              : Colors.black.withOpacity(0.02),
         ),
         boxShadow: [
           BoxShadow(
@@ -548,7 +559,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
@@ -564,7 +578,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.amber.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
@@ -572,7 +589,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.stars_rounded, color: Colors.amber, size: 12),
+                          const Icon(
+                            Icons.stars_rounded,
+                            color: Colors.amber,
+                            size: 12,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             "$_totalMarks",
@@ -623,7 +644,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   Widget _buildNavItem(IconData icon, int index) {
     final bool isSelected = _selectedIndex == index;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return GestureDetector(
       onTap: () => _onItemTapped(index),
       behavior: HitTestBehavior.opaque,
@@ -633,7 +654,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? Colors.white.withOpacity(0.08) : AppColors.primary.withOpacity(0.12))
+              ? (isDark
+                    ? Colors.white.withOpacity(0.08)
+                    : AppColors.primary.withOpacity(0.12))
               : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
         ),
@@ -642,8 +665,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
           children: [
             Icon(
               icon,
-              color: isSelected 
-                  ? (isDark ? Colors.white : AppColors.primary) 
+              color: isSelected
+                  ? (isDark ? Colors.white : AppColors.primary)
                   : (isDark ? Colors.white38 : AppColors.mutedText),
               size: 24,
             ),
@@ -731,19 +754,21 @@ class _DashboardGridItemState extends State<_DashboardGridItem>
         scale: _scaleAnimation,
         child: Container(
           decoration: BoxDecoration(
-            color: isDark 
-                ? Colors.white.withOpacity(0.05) 
+            color: isDark
+                ? Colors.white.withOpacity(0.05)
                 : const Color(0xFFFBFDFF).withOpacity(0.95),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: isDark 
-                  ? Colors.white.withOpacity(0.08) 
+              color: isDark
+                  ? Colors.white.withOpacity(0.08)
                   : Colors.white.withOpacity(0.4),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: isDark ? Colors.black26 : Colors.blueGrey.withOpacity(0.06),
+                color: isDark
+                    ? Colors.black26
+                    : Colors.blueGrey.withOpacity(0.06),
                 blurRadius: 15,
                 spreadRadius: 2,
                 offset: const Offset(0, 8),
@@ -768,7 +793,9 @@ class _DashboardGridItemState extends State<_DashboardGridItem>
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                   letterSpacing: 0.1,
-                  color: isDark ? Colors.white.withOpacity(0.9) : AppColors.primaryText,
+                  color: isDark
+                      ? Colors.white.withOpacity(0.9)
+                      : AppColors.primaryText,
                 ),
                 textAlign: TextAlign.center,
               ),

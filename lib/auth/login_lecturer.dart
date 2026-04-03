@@ -12,9 +12,7 @@ import 'department_stage_selection.dart';
 import '../providers/user_provider.dart';
 
 class LoginLecturerPage extends StatefulWidget {
-  const LoginLecturerPage({
-    super.key,
-  });
+  const LoginLecturerPage({super.key});
 
   @override
   State<LoginLecturerPage> createState() => _LoginLecturerPageState();
@@ -90,9 +88,11 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
         final errorMsg = e.toString().toLowerCase();
 
         setState(() {
-          if (errorMsg.contains("email") || errorMsg.contains("not registered")) {
+          if (errorMsg.contains("email") ||
+              errorMsg.contains("not registered")) {
             _emailError = e.toString();
-          } else if (errorMsg.contains("password") || errorMsg.contains("incorrect")) {
+          } else if (errorMsg.contains("password") ||
+              errorMsg.contains("incorrect")) {
             _passwordError = e.toString();
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -319,7 +319,8 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
 
                           const SizedBox(height: 32),
                           CustomButton(
-                            text: AppLocalizations.of(
+                            text:
+                                AppLocalizations.of(
                                   context,
                                 )?.translate('login') ??
                                 "Login",
@@ -347,10 +348,11 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const DepartmentStageSelectionPage(
-                                  role: 'lecturer',
-                                  isLogin: false,
-                                ),
+                                builder: (_) =>
+                                    const DepartmentStageSelectionPage(
+                                      role: 'lecturer',
+                                      isLogin: false,
+                                    ),
                               ),
                             );
                           },

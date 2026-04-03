@@ -70,9 +70,9 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
           department: widget.department,
           stage: widget.stage,
         );
-        
+
         if (!mounted) return;
-        
+
         debugPrint("Form valid, showing dialog");
         // Simulate successful signup
         showDialog(
@@ -104,7 +104,9 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    AppLocalizations.of(context)?.translate('account_created') ??
+                    AppLocalizations.of(
+                          context,
+                        )?.translate('account_created') ??
                         "Account Created!",
                     style: TextDesign.h2.copyWith(color: AppColors.primaryText),
                   ),
@@ -120,7 +122,9 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
                   const SizedBox(height: 24),
                   CustomButton(
                     text:
-                        AppLocalizations.of(context)?.translate('go_to_login') ??
+                        AppLocalizations.of(
+                          context,
+                        )?.translate('go_to_login') ??
                         "Go to Login",
                     onTap: () {
                       debugPrint("Navigating to login");
@@ -143,7 +147,8 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
         final errorMsg = e.toString().toLowerCase();
 
         setState(() {
-          if (errorMsg.contains("email") || errorMsg.contains("already exists")) {
+          if (errorMsg.contains("email") ||
+              errorMsg.contains("already exists")) {
             _emailError = e.toString();
           } else if (errorMsg.contains("password")) {
             _passwordError = e.toString();
@@ -230,17 +235,22 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
                 (value) {
                   final l10n = AppLocalizations.of(context);
                   if (value == null || value.isEmpty) {
-                    return l10n?.translate('enter_field')?.replaceFirst('{field}', label) ?? 'Please enter $label';
+                    return l10n
+                            ?.translate('enter_field')
+                            ?.replaceFirst('{field}', label) ??
+                        'Please enter $label';
                   }
                   if (!isPassword &&
                       label.toLowerCase().contains('email') &&
                       !RegExp(
                         r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
                       ).hasMatch(value)) {
-                    return l10n?.translate('error_email_valid') ?? 'Please enter a valid email';
+                    return l10n?.translate('error_email_valid') ??
+                        'Please enter a valid email';
                   }
                   if (isPassword && value.length < 8) {
-                    return l10n?.translate('error_password_length') ?? 'Password must be at least 8 characters';
+                    return l10n?.translate('error_password_length') ??
+                        'Password must be at least 8 characters';
                   }
                   return null;
                 },
@@ -335,7 +345,8 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
                             icon: Icons.person_outline_rounded,
                             errorText: _nameError,
                             onChanged: (_) {
-                              if (_nameError != null) setState(() => _nameError = null);
+                              if (_nameError != null)
+                                setState(() => _nameError = null);
                             },
                           ),
                           const SizedBox(height: 16),
@@ -349,11 +360,12 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
                             icon: Icons.email_outlined,
                             errorText: _emailError,
                             onChanged: (_) {
-                              if (_emailError != null) setState(() => _emailError = null);
+                              if (_emailError != null)
+                                setState(() => _emailError = null);
                             },
                           ),
                           const SizedBox(height: 16),
-                           _buildTextField(
+                          _buildTextField(
                             label:
                                 AppLocalizations.of(
                                   context,
@@ -364,7 +376,8 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
                             icon: Icons.lock_outline_rounded,
                             errorText: _passwordError,
                             onChanged: (_) {
-                              if (_passwordError != null) setState(() => _passwordError = null);
+                              if (_passwordError != null)
+                                setState(() => _passwordError = null);
                             },
                           ),
                           const SizedBox(height: 16),
@@ -379,15 +392,26 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
                             icon: Icons.lock_outline_rounded,
                             errorText: _confirmPasswordError,
                             onChanged: (_) {
-                              if (_confirmPasswordError != null) setState(() => _confirmPasswordError = null);
+                              if (_confirmPasswordError != null)
+                                setState(() => _confirmPasswordError = null);
                             },
                             validator: (value) {
                               final l10n = AppLocalizations.of(context);
                               if (value == null || value.isEmpty) {
-                                return l10n?.translate('enter_field')?.replaceFirst('{field}', l10n.translate('confirm_password') ?? 'Confirm Password') ?? 'Please confirm your password';
+                                return l10n
+                                        ?.translate('enter_field')
+                                        ?.replaceFirst(
+                                          '{field}',
+                                          l10n.translate('confirm_password') ??
+                                              'Confirm Password',
+                                        ) ??
+                                    'Please confirm your password';
                               }
                               if (value != _passwordController.text) {
-                                return l10n?.translate('error_password_match') ?? 'Passwords do not match';
+                                return l10n?.translate(
+                                      'error_password_match',
+                                    ) ??
+                                    'Passwords do not match';
                               }
                               return null;
                             },
@@ -461,7 +485,8 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
 
                           const SizedBox(height: 32),
                           CustomButton(
-                            text: AppLocalizations.of(
+                            text:
+                                AppLocalizations.of(
                                   context,
                                 )?.translate('signup') ??
                                 "Sign Up",
@@ -485,22 +510,22 @@ class _SignupStudentPageState extends State<SignupStudentPage> {
                                 text: TextSpan(
                                   text:
                                       AppLocalizations.of(
-                                            context,
-                                          )?.translate('already_have_account') ??
+                                        context,
+                                      )?.translate('already_have_account') ??
                                       "Already have an account? ",
                                   style: TextDesign.body.copyWith(
                                     color:
                                         Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? Colors.white70
-                                            : AppColors.mutedText,
+                                            Brightness.dark
+                                        ? Colors.white70
+                                        : AppColors.mutedText,
                                   ),
                                   children: [
                                     TextSpan(
                                       text:
                                           AppLocalizations.of(
-                                                context,
-                                              )?.translate('login') ??
+                                            context,
+                                          )?.translate('login') ??
                                           "Login",
                                       style: TextStyle(
                                         color: AppColors.primary,

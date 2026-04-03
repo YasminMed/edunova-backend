@@ -66,7 +66,10 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh_rounded, color: isDark ? Colors.white : Colors.black87),
+            icon: Icon(
+              Icons.refresh_rounded,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
             onPressed: () {
               setState(() => _isLoading = true);
               _fetchPosts();
@@ -75,113 +78,151 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 60),
-                      const SizedBox(height: 16),
-                      Text("Failed to load posts", style: TextDesign.h3),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 40),
-                        child: Text(_errorMessage!, textAlign: TextAlign.center, style: TextDesign.body),
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() => _isLoading = true);
-                          _fetchPosts();
-                        },
-                        child: const Text("Retry"),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    color: Colors.redAccent,
+                    size: 60,
                   ),
-                )
-              : _posts.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.post_add_rounded, color: Colors.grey[400], size: 80),
-                          const SizedBox(height: 16),
-                          Text("No posts yet", style: TextDesign.h3.copyWith(color: Colors.grey)),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _fetchPosts,
-                      color: AppColors.primary,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(20),
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: _posts.length,
-                        itemBuilder: (context, index) {
-                          final post = _posts[index];
-                          final String? imageUrl = post['image_url'];
-                          final fullImageUrl = imageUrl != null ? "${AuthService.baseUrl}$imageUrl" : null;
-                          final bool hasLiked = post['has_liked'] ?? false;
-                          
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 20),
-                            child: _buildPostCard(
-                              context,
-                              userName: post['author_name'] ?? "Lecturer",
-                              time: _formatTimestamp(post['created_at']),
-                              title: post['title'] ?? "No Title",
-                              description: post['description'] ?? "",
-                              image: fullImageUrl,
-                              likes: (post['likes_count'] ?? 0).toInt(),
-                              comments: (post['comments_count'] ?? 0).toInt(),
-                              hasLiked: hasLiked,
-                              postId: post['id'],
-                              onLike: () async {
-                                final userProvider = Provider.of<UserProvider>(context, listen: false);
-                                if (userProvider.email != null) {
-                                  // Optimistic UI update
-                                  setState(() {
-                                    post['has_liked'] = !hasLiked;
-                                    post['likes_count'] = (post['likes_count'] ?? 0) + (hasLiked ? -1 : 1);
-                                  });
-                                  try {
-                                    final result = await _postService.likePost(post['id'], userProvider.email!);
-                                    // Sync with backend truth
-                                    if (mounted) {
-                                      setState(() {
-                                        post['has_liked'] = result;
-                                      });
-                                    }
-                                  } catch (e) {
-                                    // Revert on fail
-                                    if (mounted) {
-                                      setState(() {
-                                        post['has_liked'] = hasLiked;
-                                        post['likes_count'] = (post['likes_count'] ?? 0) + (hasLiked ? 1 : -1);
-                                      });
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to update like")));
-                                    }
-                                  }
-                                }
-                              },
-                              onShare: () {
-                                if (!context.mounted) return;
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                                  shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                                  ),
-                                  builder: (context) => SharePostBottomSheet(post: post),
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
+                  const SizedBox(height: 16),
+                  Text("Failed to load posts", style: TextDesign.h3),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: Text(
+                      _errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: TextDesign.body,
                     ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() => _isLoading = true);
+                      _fetchPosts();
+                    },
+                    child: const Text("Retry"),
+                  ),
+                ],
+              ),
+            )
+          : _posts.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.post_add_rounded,
+                    color: Colors.grey[400],
+                    size: 80,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "No posts yet",
+                    style: TextDesign.h3.copyWith(color: Colors.grey),
+                  ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _fetchPosts,
+              color: AppColors.primary,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(20),
+                physics: const BouncingScrollPhysics(),
+                itemCount: _posts.length,
+                itemBuilder: (context, index) {
+                  final post = _posts[index];
+                  final String? imageUrl = post['image_url'];
+                  final fullImageUrl = imageUrl != null
+                      ? "${AuthService.baseUrl}$imageUrl"
+                      : null;
+                  final bool hasLiked = post['has_liked'] ?? false;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: _buildPostCard(
+                      context,
+                      userName: post['author_name'] ?? "Lecturer",
+                      time: _formatTimestamp(post['created_at']),
+                      title: post['title'] ?? "No Title",
+                      description: post['description'] ?? "",
+                      image: fullImageUrl,
+                      likes: (post['likes_count'] ?? 0).toInt(),
+                      comments: (post['comments_count'] ?? 0).toInt(),
+                      hasLiked: hasLiked,
+                      postId: post['id'],
+                      onLike: () async {
+                        final userProvider = Provider.of<UserProvider>(
+                          context,
+                          listen: false,
+                        );
+                        if (userProvider.email != null) {
+                          // Optimistic UI update
+                          setState(() {
+                            post['has_liked'] = !hasLiked;
+                            post['likes_count'] =
+                                (post['likes_count'] ?? 0) +
+                                (hasLiked ? -1 : 1);
+                          });
+                          try {
+                            final result = await _postService.likePost(
+                              post['id'],
+                              userProvider.email!,
+                            );
+                            // Sync with backend truth
+                            if (mounted) {
+                              setState(() {
+                                post['has_liked'] = result;
+                              });
+                            }
+                          } catch (e) {
+                            // Revert on fail
+                            if (mounted) {
+                              setState(() {
+                                post['has_liked'] = hasLiked;
+                                post['likes_count'] =
+                                    (post['likes_count'] ?? 0) +
+                                    (hasLiked ? 1 : -1);
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Failed to update like"),
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      },
+                      onShare: () {
+                        if (!context.mounted) return;
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).scaffoldBackgroundColor,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(20),
+                            ),
+                          ),
+                          builder: (context) =>
+                              SharePostBottomSheet(post: post),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
     );
   }
 
@@ -330,7 +371,9 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
             child: Row(
               children: [
                 _buildInteractionBtn(
-                  hasLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  hasLiked
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
                   likes.toString(),
                   hasLiked ? Colors.redAccent : Colors.grey[600]!,
                   onTap: onLike,
@@ -357,7 +400,12 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
     );
   }
 
-  Widget _buildInteractionBtn(IconData icon, String label, Color color, {VoidCallback? onTap}) {
+  Widget _buildInteractionBtn(
+    IconData icon,
+    String label,
+    Color color, {
+    VoidCallback? onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       child: Row(
@@ -391,8 +439,12 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
           return Container(
             height: MediaQuery.of(context).size.height * 0.75,
             decoration: BoxDecoration(
-              color: isDark ? Theme.of(context).scaffoldBackgroundColor : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              color: isDark
+                  ? Theme.of(context).scaffoldBackgroundColor
+                  : Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
             ),
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -428,7 +480,10 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                         );
                       }
                       return ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
                         itemCount: comments.length,
                         itemBuilder: (context, index) {
                           final c = comments[index];
@@ -439,37 +494,54 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                               children: [
                                 CircleAvatar(
                                   radius: 18,
-                                  backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
-                                  child: const Icon(Icons.person, color: AppColors.secondary),
+                                  backgroundColor: AppColors.secondary
+                                      .withValues(alpha: 0.1),
+                                  child: const Icon(
+                                    Icons.person,
+                                    color: AppColors.secondary,
+                                  ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: isDark ? Colors.grey[800] : Colors.grey[100],
+                                      color: isDark
+                                          ? Colors.grey[800]
+                                          : Colors.grey[100],
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
                                             Text(
                                               c['user_name'] ?? "User",
-                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                              ),
                                             ),
                                             const Spacer(),
                                             Text(
                                               _formatTimestamp(c['created_at']),
-                                              style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                                              style: TextStyle(
+                                                color: Colors.grey[500],
+                                                fontSize: 11,
+                                              ),
                                             ),
                                           ],
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           c['content'] ?? "",
-                                          style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black87,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -494,19 +566,25 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                           decoration: InputDecoration(
                             hintText: "Add a comment...",
                             filled: true,
-                            fillColor: isDark ? Colors.grey[800] : Colors.grey[200],
+                            fillColor: isDark
+                                ? Colors.grey[800]
+                                : Colors.grey[200],
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(25),
                               borderSide: BorderSide.none,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 10,
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       IconButton(
                         onPressed: () async {
-                          if (commentController.text.isNotEmpty && userProvider.email != null) {
+                          if (commentController.text.isNotEmpty &&
+                              userProvider.email != null) {
                             try {
                               await _postService.addComment(
                                 postId,
@@ -518,13 +596,18 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                             } catch (e) {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text("Failed to post comment")),
+                                  const SnackBar(
+                                    content: Text("Failed to post comment"),
+                                  ),
                                 );
                               }
                             }
                           }
                         },
-                        icon: const Icon(Icons.send_rounded, color: AppColors.primary),
+                        icon: const Icon(
+                          Icons.send_rounded,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ],
                   ),

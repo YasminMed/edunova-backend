@@ -60,7 +60,7 @@ class _MarksPageState extends State<MarksPage> {
       } else if (e.type == DioExceptionType.connectionError) {
         message = "No internet connection or server unreachable";
       }
-      
+
       setState(() {
         _errorMessage = message;
         _isLoading = false;
@@ -100,61 +100,61 @@ class _MarksPageState extends State<MarksPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_errorMessage!, style: TextDesign.body),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _isLoading = true;
-                            _errorMessage = null;
-                          });
-                          _fetchMarks();
-                        },
-                        child: const Text("Retry"),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(_errorMessage!, style: TextDesign.body),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _isLoading = true;
+                        _errorMessage = null;
+                      });
+                      _fetchMarks();
+                    },
+                    child: const Text("Retry"),
                   ),
-                )
-              : CustomScrollView(
-                  slivers: [
-                    // Hero Section: Final Mark
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: _buildFinalMarkHero(context),
-                      ),
-                    ),
-
-                    // Subjects List Header
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-                        child: Text(
-                          l10n?.translate('subjects') ?? 'Subjects',
-                          style: TextDesign.h3.copyWith(
-                            color: isDark ? Colors.white : AppColors.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Subjects List
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final subject = _marksData!['subjects'][index];
-                          return _buildSubjectCard(context, subject);
-                        }, childCount: _marksData!['subjects'].length),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 40)),
-                  ],
+                ],
+              ),
+            )
+          : CustomScrollView(
+              slivers: [
+                // Hero Section: Final Mark
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: _buildFinalMarkHero(context),
+                  ),
                 ),
+
+                // Subjects List Header
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                    child: Text(
+                      l10n?.translate('subjects') ?? 'Subjects',
+                      style: TextDesign.h3.copyWith(
+                        color: isDark ? Colors.white : AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Subjects List
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final subject = _marksData!['subjects'][index];
+                      return _buildSubjectCard(context, subject);
+                    }, childCount: _marksData!['subjects'].length),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              ],
+            ),
     );
   }
 
@@ -259,17 +259,17 @@ class _MarksPageState extends State<MarksPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
     final String iconType = subject['icon_type'] ?? 'math';
-    final Color subjectColor = iconType == 'math' 
-        ? Colors.blue 
-        : iconType == 'science' 
-            ? Colors.green 
-            : Colors.purple;
-    
-    final IconData icon = iconType == 'math' 
-        ? Icons.calculate_rounded 
-        : iconType == 'science' 
-            ? Icons.science_rounded 
-            : Icons.code_rounded;
+    final Color subjectColor = iconType == 'math'
+        ? Colors.blue
+        : iconType == 'science'
+        ? Colors.green
+        : Colors.purple;
+
+    final IconData icon = iconType == 'math'
+        ? Icons.calculate_rounded
+        : iconType == 'science'
+        ? Icons.science_rounded
+        : Icons.code_rounded;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),

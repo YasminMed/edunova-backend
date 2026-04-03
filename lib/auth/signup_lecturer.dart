@@ -96,7 +96,9 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    AppLocalizations.of(context)?.translate('account_created') ??
+                    AppLocalizations.of(
+                          context,
+                        )?.translate('account_created') ??
                         "Account Created!",
                     style: TextDesign.h2.copyWith(color: AppColors.primaryText),
                   ),
@@ -112,7 +114,9 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
                   const SizedBox(height: 24),
                   CustomButton(
                     text:
-                        AppLocalizations.of(context)?.translate('go_to_login') ??
+                        AppLocalizations.of(
+                          context,
+                        )?.translate('go_to_login') ??
                         "Go to Login",
                     onTap: () {
                       debugPrint("Navigating to login");
@@ -135,7 +139,8 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
         final errorMsg = e.toString().toLowerCase();
 
         setState(() {
-          if (errorMsg.contains("email") || errorMsg.contains("already exists")) {
+          if (errorMsg.contains("email") ||
+              errorMsg.contains("already exists")) {
             _emailError = e.toString();
           } else if (errorMsg.contains("password")) {
             _passwordError = e.toString();
@@ -336,7 +341,8 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
                             icon: Icons.person_outline_rounded,
                             errorText: _nameError,
                             onChanged: (_) {
-                              if (_nameError != null) setState(() => _nameError = null);
+                              if (_nameError != null)
+                                setState(() => _nameError = null);
                             },
                           ),
                           const SizedBox(height: 16),
@@ -350,7 +356,8 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
                             icon: Icons.email_outlined,
                             errorText: _emailError,
                             onChanged: (_) {
-                              if (_emailError != null) setState(() => _emailError = null);
+                              if (_emailError != null)
+                                setState(() => _emailError = null);
                             },
                           ),
                           const SizedBox(height: 16),
@@ -365,7 +372,8 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
                             icon: Icons.lock_outline_rounded,
                             errorText: _passwordError,
                             onChanged: (_) {
-                              if (_passwordError != null) setState(() => _passwordError = null);
+                              if (_passwordError != null)
+                                setState(() => _passwordError = null);
                             },
                           ),
                           const SizedBox(height: 16),
@@ -380,16 +388,17 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
                             icon: Icons.lock_outline_rounded,
                             errorText: _confirmPasswordError,
                             onChanged: (_) {
-                              if (_confirmPasswordError != null) setState(() => _confirmPasswordError = null);
+                              if (_confirmPasswordError != null)
+                                setState(() => _confirmPasswordError = null);
                             },
                             validator: (value) {
-                               if (value == null || value.isEmpty) {
-                                 return 'Please confirm your password';
-                               }
-                               if (value != _passwordController.text) {
-                                 return 'Passwords do not match';
-                               }
-                               return null;
+                              if (value == null || value.isEmpty) {
+                                return 'Please confirm your password';
+                              }
+                              if (value != _passwordController.text) {
+                                return 'Passwords do not match';
+                              }
+                              return null;
                             },
                           ),
                           const SizedBox(height: 16),
@@ -461,7 +470,8 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
 
                           const SizedBox(height: 32),
                           CustomButton(
-                            text: AppLocalizations.of(
+                            text:
+                                AppLocalizations.of(
                                   context,
                                 )?.translate('signup') ??
                                 "Sign Up",
@@ -485,22 +495,22 @@ class _SignupLecturerPageState extends State<SignupLecturerPage> {
                                 text: TextSpan(
                                   text:
                                       AppLocalizations.of(
-                                            context,
-                                          )?.translate('already_have_account') ??
+                                        context,
+                                      )?.translate('already_have_account') ??
                                       "Already have an account? ",
                                   style: TextDesign.body.copyWith(
                                     color:
                                         Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? Colors.white70
-                                            : AppColors.mutedText,
+                                            Brightness.dark
+                                        ? Colors.white70
+                                        : AppColors.mutedText,
                                   ),
                                   children: [
                                     TextSpan(
                                       text:
                                           AppLocalizations.of(
-                                                context,
-                                              )?.translate('login') ??
+                                            context,
+                                          )?.translate('login') ??
                                           "Login",
                                       style: TextStyle(
                                         color: AppColors.secondary,

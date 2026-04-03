@@ -81,7 +81,9 @@ class _ChangePasswordLecturerPageState
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    AppLocalizations.of(context)?.translate('password_changed') ??
+                    AppLocalizations.of(
+                          context,
+                        )?.translate('password_changed') ??
                         "Your password has been changed.",
                     textAlign: TextAlign.center,
                     style: TextDesign.body,
@@ -116,7 +118,10 @@ class _ChangePasswordLecturerPageState
             _oldPassError = "Incorrect previous password";
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+              SnackBar(
+                content: Text(e.toString()),
+                backgroundColor: Colors.red,
+              ),
             );
           }
         });

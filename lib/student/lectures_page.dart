@@ -38,8 +38,14 @@ class _LecturesPageState extends State<LecturesPage> {
             'id': c['id'],
             'subject': c['name'],
             'code': c['code'] ?? 'CODE123',
-            'description': c['description'] ?? (AppLocalizations.of(context)?.translate('no_description') ?? 'No description available.'),
-            'professor': c['lecturer_name'] ?? (AppLocalizations.of(context)?.translate('lecturer') ?? 'Lecturer'),
+            'description':
+                c['description'] ??
+                (AppLocalizations.of(context)?.translate('no_description') ??
+                    'No description available.'),
+            'professor':
+                c['lecturer_name'] ??
+                (AppLocalizations.of(context)?.translate('lecturer') ??
+                    'Lecturer'),
             'progress': 0.0,
             'gradient': _getGradientColors(c['id']),
           };
@@ -75,10 +81,15 @@ class _LecturesPageState extends State<LecturesPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : _lectures.isEmpty
-          ? Center(child: Text(l10n?.translate('no_courses_yet') ?? "No courses available yet."))
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _lectures.isEmpty
+          ? Center(
+              child: Text(
+                l10n?.translate('no_courses_yet') ??
+                    "No courses available yet.",
+              ),
+            )
           : GridView.builder(
               padding: const EdgeInsets.all(20),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -118,15 +129,14 @@ class _LecturesPageState extends State<LecturesPage> {
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: gradient.map((c) => c.withOpacity(isDark ? 0.2 : 0.3)).toList(),
+                colors: gradient
+                    .map((c) => c.withOpacity(isDark ? 0.2 : 0.3))
+                    .toList(),
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: mainColor.withOpacity(0.4),
-                width: 1.5,
-              ),
+              border: Border.all(color: mainColor.withOpacity(0.4), width: 1.5),
               boxShadow: [
                 BoxShadow(
                   color: mainColor.withOpacity(isDark ? 0.05 : 0.1),
@@ -140,7 +150,7 @@ class _LecturesPageState extends State<LecturesPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   Container(
+                  Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: mainColor.withOpacity(0.12),
@@ -167,7 +177,9 @@ class _LecturesPageState extends State<LecturesPage> {
                   Text(
                     lecture['code'],
                     style: TextStyle(
-                      color: isDark ? Colors.white54 : AppColors.primaryText.withOpacity(0.6),
+                      color: isDark
+                          ? Colors.white54
+                          : AppColors.primaryText.withOpacity(0.6),
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
@@ -176,13 +188,21 @@ class _LecturesPageState extends State<LecturesPage> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Icon(Icons.person, size: 12, color: isDark ? Colors.white54 : AppColors.primaryText.withOpacity(0.5)),
+                      Icon(
+                        Icons.person,
+                        size: 12,
+                        color: isDark
+                            ? Colors.white54
+                            : AppColors.primaryText.withOpacity(0.5),
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           lecture['professor'],
                           style: TextStyle(
-                            color: isDark ? Colors.white70 : AppColors.primaryText.withOpacity(0.7),
+                            color: isDark
+                                ? Colors.white70
+                                : AppColors.primaryText.withOpacity(0.7),
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
@@ -203,13 +223,20 @@ class _LecturesPageState extends State<LecturesPage> {
 
   IconData _getIconForCourse(String name) {
     name = name.toLowerCase();
-    if (name.contains('math') || name.contains('calc')) return Icons.functions_rounded;
-    if (name.contains('coding') || name.contains('program') || name.contains('se')) return Icons.code_rounded;
-    if (name.contains('design') || name.contains('art')) return Icons.palette_rounded;
+    if (name.contains('math') || name.contains('calc'))
+      return Icons.functions_rounded;
+    if (name.contains('coding') ||
+        name.contains('program') ||
+        name.contains('se'))
+      return Icons.code_rounded;
+    if (name.contains('design') || name.contains('art'))
+      return Icons.palette_rounded;
     if (name.contains('phys')) return Icons.science_rounded;
-    if (name.contains('it') || name.contains('soft')) return Icons.computer_rounded;
+    if (name.contains('it') || name.contains('soft'))
+      return Icons.computer_rounded;
     return Icons.menu_book_rounded;
   }
+
   List<Color> _getGradientColors(int seed) {
     final List<List<Color>> gradients = [
       [const Color(0xFFE3F2FD), const Color(0xFF64B5F6)], // Blue

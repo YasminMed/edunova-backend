@@ -14,7 +14,7 @@ class ManagedSubjectViewModel extends BaseViewModel {
     "Exams",
     "Attendance",
   ];
-  
+
   DateTime _selectedAttendanceDate = DateTime.now();
   DateTime get selectedAttendanceDate => _selectedAttendanceDate;
 
@@ -37,7 +37,12 @@ class ManagedSubjectViewModel extends BaseViewModel {
   int get selectedFilterIndex => _selectedFilterIndex;
   List<String> get filters => _filters;
 
-  void setFilterIndex(int index, int courseId, {String? department, String? stage}) {
+  void setFilterIndex(
+    int index,
+    int courseId, {
+    String? department,
+    String? stage,
+  }) {
     _selectedFilterIndex = index;
     if (index == 0) {
       loadResources(courseId, _filters[index]);
@@ -57,7 +62,10 @@ class ManagedSubjectViewModel extends BaseViewModel {
   Future<void> loadResources(int courseId, String category) async {
     setBusy(true);
     try {
-      _resources = await _materialService.getResources(courseId, category: category);
+      _resources = await _materialService.getResources(
+        courseId,
+        category: category,
+      );
     } catch (e) {
       debugPrint("Error loading resources: $e");
     } finally {
@@ -271,7 +279,10 @@ class ManagedSubjectViewModel extends BaseViewModel {
 
   Future<void> loadAllStudents({String? department, String? stage}) async {
     try {
-      _allStudents = await _materialService.getAllStudents(department: department, stage: stage);
+      _allStudents = await _materialService.getAllStudents(
+        department: department,
+        stage: stage,
+      );
       notifyListeners();
     } catch (e) {
       debugPrint("Error loading students: $e");
@@ -289,12 +300,15 @@ class ManagedSubjectViewModel extends BaseViewModel {
   Future<void> submitAttendance(BuildContext context, int courseId) async {
     setBusy(true);
     try {
-      List<Map<String, dynamic>> records = attendanceMap.entries.map((e) => {
-        "student_id": e.key,
-        "status": e.value,
-      }).toList();
-      
-      await _materialService.submitBatchAttendance(courseId, records, date: _selectedAttendanceDate);
+      List<Map<String, dynamic>> records = attendanceMap.entries
+          .map((e) => {"student_id": e.key, "status": e.value})
+          .toList();
+
+      await _materialService.submitBatchAttendance(
+        courseId,
+        records,
+        date: _selectedAttendanceDate,
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Attendance Submitted Successfully"),
@@ -308,7 +322,11 @@ class ManagedSubjectViewModel extends BaseViewModel {
     }
   }
 
-  Future<void> loadAttendance(int courseId, {String? department, String? stage}) async {
+  Future<void> loadAttendance(
+    int courseId, {
+    String? department,
+    String? stage,
+  }) async {
     setBusy(true);
     try {
       // We can also fetch existing attendance for today if we wanted to

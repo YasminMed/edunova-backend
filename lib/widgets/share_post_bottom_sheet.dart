@@ -54,15 +54,23 @@ class _SharePostBottomSheetState extends State<SharePostBottomSheet> {
 
     final content = "Check out this post: ${widget.post['title']}";
     try {
-      await _chatService.sendChatMessage(session.sessionId, userProvider.email!, content);
+      await _chatService.sendChatMessage(
+        session.sessionId,
+        userProvider.email!,
+        content,
+      );
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Shared successfully!")));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Shared successfully!")));
       }
     } catch (e) {
-       if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to share post")));
-       }
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Failed to share post")));
+      }
     }
   }
 
@@ -72,15 +80,23 @@ class _SharePostBottomSheetState extends State<SharePostBottomSheet> {
 
     final content = "Check out this post: ${widget.post['title']}";
     try {
-      await _chatService.sendGroupMessage(group.id, userProvider.email!, content);
+      await _chatService.sendGroupMessage(
+        group.id,
+        userProvider.email!,
+        content,
+      );
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Shared successfully!")));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Shared successfully!")));
       }
     } catch (e) {
-       if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to share post")));
-       }
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Failed to share post")));
+      }
     }
   }
 
@@ -89,7 +105,9 @@ class _SharePostBottomSheetState extends State<SharePostBottomSheet> {
     if (_isLoading) {
       return const SizedBox(
         height: 200,
-        child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
       );
     }
 
@@ -97,7 +115,12 @@ class _SharePostBottomSheetState extends State<SharePostBottomSheet> {
       return Container(
         height: 200,
         padding: const EdgeInsets.all(20),
-        child: Center(child: Text("No chats or groups available to share to.", style: TextDesign.h3)),
+        child: Center(
+          child: Text(
+            "No chats or groups available to share to.",
+            style: TextDesign.h3,
+          ),
+        ),
       );
     }
 
@@ -118,33 +141,66 @@ class _SharePostBottomSheetState extends State<SharePostBottomSheet> {
               children: [
                 if (_recentChats.isNotEmpty) ...[
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    child: Text("Recent Chats", style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.bold)),
-                  ),
-                  ..._recentChats.map((chat) => ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
-                      child: const Icon(Icons.person, color: AppColors.secondary),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
                     ),
-                    title: Text(chat.otherUser.fullName),
-                    trailing: const Icon(Icons.send_rounded, color: AppColors.primary),
-                    onTap: () => _shareToSession(chat),
-                  )),
+                    child: Text(
+                      "Recent Chats",
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  ..._recentChats.map(
+                    (chat) => ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: AppColors.secondary.withValues(
+                          alpha: 0.1,
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          color: AppColors.secondary,
+                        ),
+                      ),
+                      title: Text(chat.otherUser.fullName),
+                      trailing: const Icon(
+                        Icons.send_rounded,
+                        color: AppColors.primary,
+                      ),
+                      onTap: () => _shareToSession(chat),
+                    ),
+                  ),
                 ],
                 if (_groups.isNotEmpty) ...[
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    child: Text("Groups", style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.bold)),
-                  ),
-                  ..._groups.map((group) => ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.teal.withValues(alpha: 0.1),
-                      child: const Icon(Icons.group, color: Colors.teal),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
                     ),
-                    title: Text(group.name),
-                    trailing: const Icon(Icons.send_rounded, color: AppColors.primary),
-                    onTap: () => _shareToGroup(group),
-                  )),
+                    child: Text(
+                      "Groups",
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  ..._groups.map(
+                    (group) => ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.teal.withValues(alpha: 0.1),
+                        child: const Icon(Icons.group, color: Colors.teal),
+                      ),
+                      title: Text(group.name),
+                      trailing: const Icon(
+                        Icons.send_rounded,
+                        color: AppColors.primary,
+                      ),
+                      onTap: () => _shareToGroup(group),
+                    ),
+                  ),
                 ],
               ],
             ),

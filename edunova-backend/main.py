@@ -2728,8 +2728,7 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
     ).count()
     
     att_this_week = db.query(models.Attendance).filter(
-        models.Attendance.student_id == student.id,
-        models.Attendance.date >= week_start
+        models.Attendance.student_id == student.id
     ).all()
     
     att_present = len([att for att in att_this_week if att.status.lower() == "attended"])
@@ -2750,9 +2749,7 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
     ).count()
 
     prev_att_week = db.query(models.Attendance).filter(
-        models.Attendance.student_id == student.id,
-        models.Attendance.date >= last_week_start,
-        models.Attendance.date < week_start
+        models.Attendance.student_id == student.id
     ).all()
 
     prev_att_present = len([att for att in prev_att_week if att.status.lower() == "attended"])

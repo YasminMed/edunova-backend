@@ -69,11 +69,15 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
           builder: (context) {
             final isWin = status == 'won';
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               title: Row(
                 children: [
                   Icon(
-                    isWin ? Icons.emoji_events_rounded : Icons.sentiment_dissatisfied_rounded,
+                    isWin
+                        ? Icons.emoji_events_rounded
+                        : Icons.sentiment_dissatisfied_rounded,
                     color: isWin ? Colors.amber : Colors.red,
                     size: 32,
                   ),
@@ -87,7 +91,7 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
                 ],
               ),
               content: Text(
-                isWin 
+                isWin
                     ? "Congratulations! You completed all tasks for last week's challenge. You've earned a challenge medal."
                     : "You didn't complete all tasks for last week's challenge. Don't worry, new challenges are now available!",
                 style: const TextStyle(fontSize: 15),
@@ -95,7 +99,10 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text("Got it", style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    "Got it",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             );
@@ -109,7 +116,7 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -127,7 +134,9 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
     final totalMarks = _status['total_marks'] ?? 0;
 
     // Overall progress for the big card (just a simple average or count)
-    double overallProgress = (quizCurr + assignCurr + (attRate >= attTarget ? 1 : 0)) / (quizTarget + assignTarget + 1);
+    double overallProgress =
+        (quizCurr + assignCurr + (attRate >= attTarget ? 1 : 0)) /
+        (quizTarget + assignTarget + 1);
 
     return Scaffold(
       appBar: AppBar(
@@ -217,7 +226,10 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
                     const SizedBox(height: 8),
                     Text(
                       "Complete all tasks this week to earn 2 bonus academic marks!",
-                      style: const TextStyle(color: Colors.white70, fontSize: 14),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     Row(

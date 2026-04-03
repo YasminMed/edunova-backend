@@ -181,8 +181,10 @@ class _WelcomePageState extends State<WelcomePage>
 
                 return FadeTransition(
                   opacity: fadeAnimation,
-                  child:
-                      SlideTransition(position: offsetAnimation, child: child),
+                  child: SlideTransition(
+                    position: offsetAnimation,
+                    child: child,
+                  ),
                 );
               },
               transitionDuration: const Duration(milliseconds: 1200),

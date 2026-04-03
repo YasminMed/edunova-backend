@@ -32,9 +32,7 @@ class _ForgotPasswordLecturerPageState
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        await _authService.sendOtp(
-          _emailController.text.trim(),
-        );
+        await _authService.sendOtp(_emailController.text.trim());
         if (!mounted) return;
         Navigator.push(
           context,
@@ -185,7 +183,8 @@ class _ForgotPasswordLecturerPageState
                           ),
                           const SizedBox(height: 32),
                           CustomButton(
-                            text: AppLocalizations.of(
+                            text:
+                                AppLocalizations.of(
                                   context,
                                 )?.translate('send_code') ??
                                 "Send Code",

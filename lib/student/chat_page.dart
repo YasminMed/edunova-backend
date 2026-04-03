@@ -27,7 +27,8 @@ class _ChatPageState extends State<ChatPage>
 
   final ChatService _chatService = ChatService();
   final List<Map<String, dynamic>> _allChats = [];
-  final List<Map<String, dynamic>> _allGroups = []; // Keeping groups mock for now
+  final List<Map<String, dynamic>> _allGroups =
+      []; // Keeping groups mock for now
 
   @override
   void initState() {
@@ -45,7 +46,9 @@ class _ChatPageState extends State<ChatPage>
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     if (userProvider.email == null) return;
 
-    final sessions = await _chatService.getUserChatSessions(userProvider.email!);
+    final sessions = await _chatService.getUserChatSessions(
+      userProvider.email!,
+    );
     final groups = await _chatService.getUserGroupChats(userProvider.email!);
 
     if (!mounted) return;
@@ -65,7 +68,7 @@ class _ChatPageState extends State<ChatPage>
           'avatarColor': Colors.blueAccent,
         });
       }
-      
+
       _allGroups.clear();
       for (var g in groups) {
         _allGroups.add({
@@ -73,14 +76,16 @@ class _ChatPageState extends State<ChatPage>
           'name': g.name,
           'photo_url': g.photoUrl,
           'admin_id': g.adminId,
-          'message': g.latestMessage.isEmpty ? 'Group created' : g.latestMessage,
+          'message': g.latestMessage.isEmpty
+              ? 'Group created'
+              : g.latestMessage,
           'time': _formatTime(g.latestMessageTime),
           'unread': false,
           'unreadCount': 0,
           'avatarColor': Colors.green, // default color
         });
       }
-      
+
       _isLoading = false;
     });
   }
@@ -113,7 +118,8 @@ class _ChatPageState extends State<ChatPage>
         builder: (context, setDialogState) {
           return AlertDialog(
             title: Text(
-              AppLocalizations.of(context)?.translate('add_friend') ?? 'Add Friend',
+              AppLocalizations.of(context)?.translate('add_friend') ??
+                  'Add Friend',
               style: TextDesign.h3,
             ),
             content: SizedBox(
@@ -124,14 +130,22 @@ class _ChatPageState extends State<ChatPage>
                   TextField(
                     onChanged: (value) => searchQuery = value,
                     decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)?.translate('enter_email') ?? 'Enter email or username',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      hintText:
+                          AppLocalizations.of(
+                            context,
+                          )?.translate('enter_email') ??
+                          'Enter email or username',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.search),
                         onPressed: () async {
                           if (searchQuery.isEmpty) return;
                           setDialogState(() => isSearching = true);
-                          final results = await _chatService.searchUsers(searchQuery);
+                          final results = await _chatService.searchUsers(
+                            searchQuery,
+                          );
                           setDialogState(() {
                             searchResults = results;
                             isSearching = false;
@@ -155,9 +169,17 @@ class _ChatPageState extends State<ChatPage>
                             title: Text(user.fullName),
                             subtitle: Text(user.email),
                             onTap: () async {
-                              final currentUserEmail = Provider.of<UserProvider>(context, listen: false).email;
+                              final currentUserEmail =
+                                  Provider.of<UserProvider>(
+                                    context,
+                                    listen: false,
+                                  ).email;
                               if (currentUserEmail != null) {
-                                final session = await _chatService.startChatSession(currentUserEmail, user.id);
+                                final session = await _chatService
+                                    .startChatSession(
+                                      currentUserEmail,
+                                      user.id,
+                                    );
                                 if (session != null && mounted) {
                                   Navigator.pop(context); // close dialog
                                   Navigator.push(
@@ -232,7 +254,9 @@ class _ChatPageState extends State<ChatPage>
                 controller: _searchController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)?.translate('search_chats') ?? 'Search...',
+                  hintText:
+                      AppLocalizations.of(context)?.translate('search_chats') ??
+                      'Search...',
                   border: InputBorder.none,
                   hintStyle: TextStyle(color: Colors.grey[400]),
                 ),
@@ -242,7 +266,8 @@ class _ChatPageState extends State<ChatPage>
                 ),
               )
             : Text(
-                AppLocalizations.of(context)?.translate('messages') ?? 'Messages',
+                AppLocalizations.of(context)?.translate('messages') ??
+                    'Messages',
                 style: TextDesign.h2.copyWith(
                   color: Theme.of(context).textTheme.bodyLarge?.color,
                 ),
@@ -282,7 +307,10 @@ class _ChatPageState extends State<ChatPage>
                   PopupMenuItem<String>(
                     value: 'mark_read',
                     child: Text(
-                      AppLocalizations.of(context)?.translate('mark_all_read') ?? 'Mark all as read',
+                      AppLocalizations.of(
+                            context,
+                          )?.translate('mark_all_read') ??
+                          'Mark all as read',
                     ),
                   ),
                 ];
@@ -297,17 +325,22 @@ class _ChatPageState extends State<ChatPage>
           indicatorWeight: 3,
           labelStyle: TextDesign.h3.copyWith(fontSize: 16),
           tabs: [
-            Tab(text: AppLocalizations.of(context)?.translate('chats') ?? 'Chats'),
-            Tab(text: AppLocalizations.of(context)?.translate('groups') ?? 'Groups'),
+            Tab(
+              text: AppLocalizations.of(context)?.translate('chats') ?? 'Chats',
+            ),
+            Tab(
+              text:
+                  AppLocalizations.of(context)?.translate('groups') ?? 'Groups',
+            ),
           ],
         ),
       ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator()) 
-        : TabBarView(
-            controller: _tabController,
-            children: [_buildChatsList(), _buildGroupsList()],
-          ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : TabBarView(
+              controller: _tabController,
+              children: [_buildChatsList(), _buildGroupsList()],
+            ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 80),
         child: FloatingActionButton(
@@ -320,7 +353,9 @@ class _ChatPageState extends State<ChatPage>
           },
           backgroundColor: AppColors.primary,
           child: Icon(
-            _tabController.index == 0 ? Icons.person_add_rounded : Icons.group_add_rounded,
+            _tabController.index == 0
+                ? Icons.person_add_rounded
+                : Icons.group_add_rounded,
             color: Colors.white,
           ),
         ),
@@ -330,7 +365,9 @@ class _ChatPageState extends State<ChatPage>
 
   Widget _buildChatsList() {
     if (_allChats.isEmpty) {
-      return const Center(child: Text("No chats yet. Click the + button to start one!"));
+      return const Center(
+        child: Text("No chats yet. Click the + button to start one!"),
+      );
     }
     final filteredChats = _allChats.where((chat) {
       final name = chat['name'].toString().toLowerCase();
@@ -362,7 +399,9 @@ class _ChatPageState extends State<ChatPage>
 
   Widget _buildGroupsList() {
     if (_allGroups.isEmpty) {
-      return const Center(child: Text("No groups yet. Click the + button to create one!"));
+      return const Center(
+        child: Text("No groups yet. Click the + button to create one!"),
+      );
     }
     final filteredGroups = _allGroups.where((group) {
       final name = group['name'].toString().toLowerCase();
@@ -378,7 +417,8 @@ class _ChatPageState extends State<ChatPage>
         return _buildChatTile(
           context: context,
           sessionId: group['group_id'],
-          otherUserEmail: "", // Group doesn't have otherUserEmail in this context
+          otherUserEmail:
+              "", // Group doesn't have otherUserEmail in this context
           name: group['name'],
           message: group['message'],
           time: group['time'],
@@ -407,7 +447,7 @@ class _ChatPageState extends State<ChatPage>
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleColor = isDark ? Colors.white : AppColors.primaryText;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: InkWell(
@@ -445,14 +485,16 @@ class _ChatPageState extends State<ChatPage>
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isDark 
-                ? Colors.white.withOpacity(0.04) 
+            color: isDark
+                ? Colors.white.withOpacity(0.04)
                 : const Color(0xFFFBFDFF),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: unread 
-                  ? AppColors.primary.withOpacity(0.2) 
-                  : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.02)),
+              color: unread
+                  ? AppColors.primary.withOpacity(0.2)
+                  : (isDark
+                        ? Colors.white.withOpacity(0.05)
+                        : Colors.black.withOpacity(0.02)),
               width: 1.5,
             ),
             boxShadow: [
@@ -468,25 +510,29 @@ class _ChatPageState extends State<ChatPage>
               // Avatar Section
               Stack(
                 children: [
-                   Container(
+                  Container(
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
                       color: avatarColor.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(18),
-                      image: photoUrl != null 
+                      image: photoUrl != null
                           ? DecorationImage(
-                              image: NetworkImage("${ChatService.baseUrl}$photoUrl"),
+                              image: NetworkImage(
+                                "${ChatService.baseUrl}$photoUrl",
+                              ),
                               fit: BoxFit.cover,
                             )
                           : null,
                     ),
-                    child: photoUrl == null 
+                    child: photoUrl == null
                         ? Icon(
-                            isGroup ? Icons.groups_rounded : Icons.person_rounded,
+                            isGroup
+                                ? Icons.groups_rounded
+                                : Icons.person_rounded,
                             color: avatarColor,
                             size: 28,
-                          ) 
+                          )
                         : null,
                   ),
                   if (unread)
@@ -500,7 +546,9 @@ class _ChatPageState extends State<ChatPage>
                           color: Colors.green,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                            color: isDark
+                                ? const Color(0xFF1E293B)
+                                : Colors.white,
                             width: 2,
                           ),
                         ),
@@ -522,7 +570,9 @@ class _ChatPageState extends State<ChatPage>
                             name,
                             style: TextDesign.h3.copyWith(
                               fontSize: 16,
-                              fontWeight: unread ? FontWeight.w900 : FontWeight.w700,
+                              fontWeight: unread
+                                  ? FontWeight.w900
+                                  : FontWeight.w700,
                               color: titleColor,
                             ),
                             maxLines: 1,
@@ -533,8 +583,12 @@ class _ChatPageState extends State<ChatPage>
                           time,
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: unread ? FontWeight.w800 : FontWeight.w500,
-                            color: unread ? AppColors.primary : AppColors.mutedText,
+                            fontWeight: unread
+                                ? FontWeight.w800
+                                : FontWeight.w500,
+                            color: unread
+                                ? AppColors.primary
+                                : AppColors.mutedText,
                           ),
                         ),
                       ],
@@ -547,10 +601,12 @@ class _ChatPageState extends State<ChatPage>
                             message,
                             style: TextDesign.body.copyWith(
                               fontSize: 14,
-                              color: unread 
-                                  ? titleColor.withOpacity(0.9) 
+                              color: unread
+                                  ? titleColor.withOpacity(0.9)
                                   : AppColors.mutedText,
-                              fontWeight: unread ? FontWeight.w600 : FontWeight.normal,
+                              fontWeight: unread
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -558,7 +614,10 @@ class _ChatPageState extends State<ChatPage>
                         ),
                         if (unreadCount > 0)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.primary,
                               borderRadius: BorderRadius.circular(10),

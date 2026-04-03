@@ -52,16 +52,11 @@ class _VerificationCodeStudentPageState
     if (otp.length == 4) {
       setState(() => _isLoading = true);
       try {
-        await _authService.verifyOtp(
-          widget.email,
-          otp,
-        );
+        await _authService.verifyOtp(widget.email, otp);
         if (!mounted) return;
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const ChangePasswordStudentPage(),
-          ),
+          MaterialPageRoute(builder: (_) => const ChangePasswordStudentPage()),
         );
       } catch (e) {
         if (!mounted) return;
@@ -179,10 +174,11 @@ class _VerificationCodeStudentPageState
                         ),
                         const SizedBox(height: 32),
                         CustomButton(
-                          text: AppLocalizations.of(
-                                    context,
-                                  )?.translate('verify') ??
-                                  "Verify",
+                          text:
+                              AppLocalizations.of(
+                                context,
+                              )?.translate('verify') ??
+                              "Verify",
                           isLoading: _isLoading,
                           onTap: () {
                             _handleVerify();

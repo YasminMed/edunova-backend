@@ -8,7 +8,7 @@ class UserProvider extends ChangeNotifier {
   String? _department;
   String? _stage;
   String? _photoUrl;
-  
+
   String? get fullName => _fullName;
   String? get email => _email;
   String? get role => _role;
@@ -16,18 +16,28 @@ class UserProvider extends ChangeNotifier {
   String? get stage => _stage;
   String? get photoUrl => _photoUrl;
 
-  bool get isProfileComplete => 
-      _department != null && _department!.isNotEmpty && 
-      _stage != null && _stage!.isNotEmpty;
+  bool get isProfileComplete =>
+      _department != null &&
+      _department!.isNotEmpty &&
+      _stage != null &&
+      _stage!.isNotEmpty;
 
-  Future<void> setUser(String fullName, String email, String role, {String? department, String? stage, String? photoUrl, bool persist = true}) async {
+  Future<void> setUser(
+    String fullName,
+    String email,
+    String role, {
+    String? department,
+    String? stage,
+    String? photoUrl,
+    bool persist = true,
+  }) async {
     _fullName = fullName;
     _email = email;
     _role = role;
     _department = department;
     _stage = stage;
     _photoUrl = photoUrl;
-    
+
     if (persist) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('fullName', fullName);
@@ -37,7 +47,7 @@ class UserProvider extends ChangeNotifier {
       if (stage != null) await prefs.setString('stage', stage);
       if (photoUrl != null) await prefs.setString('photoUrl', photoUrl);
     }
-    
+
     notifyListeners();
   }
 
@@ -59,10 +69,10 @@ class UserProvider extends ChangeNotifier {
     _department = null;
     _stage = null;
     _photoUrl = null;
-    
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
-    
+
     notifyListeners();
   }
 }

@@ -341,7 +341,8 @@ class AppLocalizations {
       'app_features': 'App Features',
       'online': 'Online',
       'chatbot_hint': 'Ask a question...',
-      'chatbot_welcome': 'Hi! I am your AI Study Assistant. Ask me anything about your lectures or studies.',
+      'chatbot_welcome':
+          'Hi! I am your AI Study Assistant. Ask me anything about your lectures or studies.',
       'listening': 'Listening...',
       'settings_page': 'Settings',
       'general': 'General',
@@ -350,11 +351,11 @@ class AppLocalizations {
       'notifications_muted': 'Notifications Muted',
       'notifications_unmuted': 'Notifications Unmuted',
       'about_app': 'About App',
-      'about_app_description': 'EduNova is a comprehensive educational platform designed to streamline the academic experience for both students and lecturers, fostering a collaborative and engaging environment.',
+      'about_app_description':
+          'EduNova is a comprehensive educational platform designed to streamline the academic experience for both students and lecturers, fostering a collaborative and engaging environment.',
       'contact_us': 'Contact Us',
       'version': 'Version',
-
-},
+    },
     'ar': {
       'reset_password_subtitle': 'أنشئ كلمة مرور جديدة لحسابك',
       'success': '!نجاح',
@@ -675,7 +676,8 @@ class AppLocalizations {
       'app_features': 'ميزات التطبيق',
       'online': 'متصل',
       'chatbot_hint': 'اسأل سؤالاً...',
-      'chatbot_welcome': 'مرحباً! أنا مساعدك الدراسي الذكي. اسألني أي شيء عن محاضراتك أو دراستك.',
+      'chatbot_welcome':
+          'مرحباً! أنا مساعدك الدراسي الذكي. اسألني أي شيء عن محاضراتك أو دراستك.',
       'listening': 'جاري الاستماع...',
       'settings_page': 'الإعدادات',
       'general': 'عام',
@@ -684,11 +686,11 @@ class AppLocalizations {
       'notifications_muted': 'تم كتم الإشعارات',
       'notifications_unmuted': 'تم تفعيل الإشعارات',
       'about_app': 'عن التطبيق',
-      'about_app_description': 'إديونوفا هي منصة تعليمية شاملة مصممة لتبسيط التجربة الأكاديمية لكل من الطلاب والمحاضرين، مما يعزز بيئة تعاونية وجذابة.',
+      'about_app_description':
+          'إديونوفا هي منصة تعليمية شاملة مصممة لتبسيط التجربة الأكاديمية لكل من الطلاب والمحاضرين، مما يعزز بيئة تعاونية وجذابة.',
       'contact_us': 'اتصل بنا',
       'version': 'الإصدار',
-
-},
+    },
     'ckb': {
       'reset_password_subtitle': 'وشەی نهێنی نوێ بۆ هەژمارەکەت دروست بکە',
       'success': '!سەرکەوتوو بوو',
@@ -1018,7 +1020,8 @@ class AppLocalizations {
       'app_features': 'تایبەتمەندییەکانی بەرنامە',
       'online': 'سەرهێڵ',
       'chatbot_hint': 'پرسیارێک بکە...',
-      'chatbot_welcome': 'سڵاو! من یاریدەدەری زیرەکی خوێندنی تۆم. هەر شتێک دەربارەی وانەکانت یان خوێندنەکەت لێم بپرسە.',
+      'chatbot_welcome':
+          'سڵاو! من یاریدەدەری زیرەکی خوێندنی تۆم. هەر شتێک دەربارەی وانەکانت یان خوێندنەکەت لێم بپرسە.',
       'listening': 'گوێ دەگرێت...',
       'settings_page': 'ڕێکخستنەکان',
       'general': 'گشتی',
@@ -1027,11 +1030,11 @@ class AppLocalizations {
       'notifications_muted': 'ئاگادارکەرەوەکان بێدەنگ کران',
       'notifications_unmuted': 'ئاگادارکەرەوەکان چالاک کران',
       'about_app': 'دەربارەی بەرنامە',
-      'about_app_description': 'ئیدیۆنۆڤا سەکۆیەکی پەروەردەیی گشتگیرە کە دروستکراوە بۆ ئاسانکردنی ئەزموونی ئەکادیمی بۆ هەردوو قوتابیان و مامۆستایان، لەگەڵ ڕەخساندنی ژینگەیەکی یارمەتیدەر.',
+      'about_app_description':
+          'ئیدیۆنۆڤا سەکۆیەکی پەروەردەیی گشتگیرە کە دروستکراوە بۆ ئاسانکردنی ئەزموونی ئەکادیمی بۆ هەردوو قوتابیان و مامۆستایان، لەگەڵ ڕەخساندنی ژینگەیەکی یارمەتیدەر.',
       'contact_us': 'پەیوەندیمان پێوە بکە',
       'version': 'وەشان',
-
-},
+    },
   };
 
   String translate(String key) {

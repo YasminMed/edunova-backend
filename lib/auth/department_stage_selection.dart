@@ -79,16 +79,21 @@ class _DepartmentStageSelectionPageState
       } else {
         // For lecturer, department and stage might be comma-separated strings
         if (userProvider.department != null) {
-          selectedDepartments.addAll(userProvider.department!.split(', ').map((e) => e.trim()));
+          selectedDepartments.addAll(
+            userProvider.department!.split(', ').map((e) => e.trim()),
+          );
         }
         if (userProvider.stage != null) {
-          selectedStages.addAll(userProvider.stage!.split(', ').map((e) => e.trim()));
+          selectedStages.addAll(
+            userProvider.stage!.split(', ').map((e) => e.trim()),
+          );
         }
       }
     }
   }
 
-  void _handleContinue() async { // Made async
+  void _handleContinue() async {
+    // Made async
     if (widget.role == 'student') {
       if (selectedDepartment == null || selectedStage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -122,15 +127,16 @@ class _DepartmentStageSelectionPageState
           // Navigate to Dashboard
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(
-              builder: (_) => const StudentDashboard(),
-            ),
+            MaterialPageRoute(builder: (_) => const StudentDashboard()),
             (route) => false,
           );
         } catch (e) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString()), backgroundColor: Colors.redAccent),
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: Colors.redAccent,
+            ),
           );
         } finally {
           if (mounted) setState(() => _isLoading = false);
@@ -150,7 +156,9 @@ class _DepartmentStageSelectionPageState
       // Lecturer
       if (selectedDepartments.isEmpty || selectedStages.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please select at least one department and stage")),
+          const SnackBar(
+            content: Text("Please select at least one department and stage"),
+          ),
         );
         return;
       }
@@ -183,15 +191,16 @@ class _DepartmentStageSelectionPageState
           // Navigate to Dashboard
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(
-              builder: (_) => const LecturerMainNavigation(),
-            ),
+            MaterialPageRoute(builder: (_) => const LecturerMainNavigation()),
             (route) => false,
           );
         } catch (e) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString()), backgroundColor: Colors.redAccent),
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: Colors.redAccent,
+            ),
           );
         } finally {
           if (mounted) setState(() => _isLoading = false);
@@ -214,7 +223,9 @@ class _DepartmentStageSelectionPageState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = widget.role == 'student' ? AppColors.primary : AppColors.secondary;
+    final primaryColor = widget.role == 'student'
+        ? AppColors.primary
+        : AppColors.secondary;
 
     return Scaffold(
       body: Stack(
@@ -235,7 +246,9 @@ class _DepartmentStageSelectionPageState
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    widget.role == 'student' ? "Student Profile" : "Lecturer Profile",
+                    widget.role == 'student'
+                        ? "Student Profile"
+                        : "Lecturer Profile",
                     style: TextDesign.h1.copyWith(
                       fontSize: 32,
                       color: isDark ? Colors.white : AppColors.primaryText,
@@ -244,8 +257,8 @@ class _DepartmentStageSelectionPageState
                   const SizedBox(height: 8),
                   Text(
                     widget.role == 'student'
-                      ? "Choose your department and current stage"
-                      : "Select the departments and stages you teach",
+                        ? "Choose your department and current stage"
+                        : "Select the departments and stages you teach",
                     style: TextDesign.body.copyWith(
                       color: isDark ? Colors.white70 : AppColors.mutedText,
                     ),
@@ -256,11 +269,18 @@ class _DepartmentStageSelectionPageState
                   _buildSectionTitle("Department", isDark),
                   const SizedBox(height: 16),
                   if (widget.role == 'student')
-                    _buildStudentDropdown(departments, selectedDepartment, (val) {
+                    _buildStudentDropdown(departments, selectedDepartment, (
+                      val,
+                    ) {
                       setState(() => selectedDepartment = val);
                     }, isDark)
                   else
-                    _buildLecturerChips(departments, selectedDepartments, isDark, primaryColor),
+                    _buildLecturerChips(
+                      departments,
+                      selectedDepartments,
+                      isDark,
+                      primaryColor,
+                    ),
 
                   const SizedBox(height: 32),
 
@@ -272,13 +292,19 @@ class _DepartmentStageSelectionPageState
                       setState(() => selectedStage = val);
                     }, isDark)
                   else
-                    _buildLecturerChips(stages, selectedStages, isDark, primaryColor),
+                    _buildLecturerChips(
+                      stages,
+                      selectedStages,
+                      isDark,
+                      primaryColor,
+                    ),
 
                   const SizedBox(height: 48),
                   CustomButton(
                     text: widget.isUpdateProfile
                         ? "Save Profile"
-                        : AppLocalizations.of(context)?.translate('continue') ?? "Continue",
+                        : AppLocalizations.of(context)?.translate('continue') ??
+                              "Continue",
                     isLoading: _isLoading,
                     onTap: _handleContinue,
                     color: primaryColor,
@@ -301,7 +327,12 @@ class _DepartmentStageSelectionPageState
     );
   }
 
-  Widget _buildStudentDropdown(List<String> items, String? selected, ValueChanged<String?> onChanged, bool isDark) {
+  Widget _buildStudentDropdown(
+    List<String> items,
+    String? selected,
+    ValueChanged<String?> onChanged,
+    bool isDark,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -316,7 +347,10 @@ class _DepartmentStageSelectionPageState
           value: selected,
           isExpanded: true,
           dropdownColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.primary),
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: AppColors.primary,
+          ),
           items: items.map((String value) {
             return DropdownMenuItem<String>(
               value: value,
@@ -332,7 +366,12 @@ class _DepartmentStageSelectionPageState
     );
   }
 
-  Widget _buildLecturerChips(List<String> items, Set<String> selection, bool isDark, Color color) {
+  Widget _buildLecturerChips(
+    List<String> items,
+    Set<String> selection,
+    bool isDark,
+    Color color,
+  ) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -342,7 +381,9 @@ class _DepartmentStageSelectionPageState
           label: Text(
             item,
             style: TextStyle(
-              color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+              color: isSelected
+                  ? Colors.white
+                  : (isDark ? Colors.white70 : Colors.black87),
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -362,7 +403,9 @@ class _DepartmentStageSelectionPageState
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: isSelected ? color : (isDark ? Colors.white24 : Colors.grey.shade300),
+              color: isSelected
+                  ? color
+                  : (isDark ? Colors.white24 : Colors.grey.shade300),
             ),
           ),
         );

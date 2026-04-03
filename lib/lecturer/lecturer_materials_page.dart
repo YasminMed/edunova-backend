@@ -72,75 +72,89 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                   child: viewModel.isBusy
                       ? const Center(child: CircularProgressIndicator())
                       : viewModel.errorMessage != null
-                          ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(40),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 64),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      "Failed to load courses",
-                                      style: TextDesign.h3,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      viewModel.errorMessage!,
-                                      textAlign: TextAlign.center,
-                                      style: TextDesign.body.copyWith(color: Colors.redAccent[100]),
-                                    ),
-                                    const SizedBox(height: 24),
-                                    ElevatedButton(
-                                      onPressed: viewModel.loadSubjects,
-                                      child: const Text("Retry"),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : viewModel.subjects.isEmpty
-                              ? ListView(
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(40),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-                                Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.library_books_rounded,
-                                        size: 64,
-                                        color: Colors.grey[300],
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        l10n?.translate('no_courses_yet') ?? "No courses created yet.",
-                                        style: TextStyle(color: Colors.grey[500]),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        l10n?.translate('pull_to_refresh_hint') ?? "Pull down to refresh",
-                                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
-                                      ),
-                                    ],
+                                const Icon(
+                                  Icons.error_outline_rounded,
+                                  color: Colors.redAccent,
+                                  size: 64,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  "Failed to load courses",
+                                  style: TextDesign.h3,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  viewModel.errorMessage!,
+                                  textAlign: TextAlign.center,
+                                  style: TextDesign.body.copyWith(
+                                    color: Colors.redAccent[100],
                                   ),
                                 ),
+                                const SizedBox(height: 24),
+                                ElevatedButton(
+                                  onPressed: viewModel.loadSubjects,
+                                  child: const Text("Retry"),
+                                ),
                               ],
-                            )
-                          : GridView.builder(
-                              padding: const EdgeInsets.all(20),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            ),
+                          ),
+                        )
+                      : viewModel.subjects.isEmpty
+                      ? ListView(
+                          children: [
+                            SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.2,
+                            ),
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.library_books_rounded,
+                                    size: 64,
+                                    color: Colors.grey[300],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    l10n?.translate('no_courses_yet') ??
+                                        "No courses created yet.",
+                                    style: TextStyle(color: Colors.grey[500]),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    l10n?.translate('pull_to_refresh_hint') ??
+                                        "Pull down to refresh",
+                                    style: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      : GridView.builder(
+                          padding: const EdgeInsets.all(20),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 15,
                                 mainAxisSpacing: 15,
                                 childAspectRatio: 1.15, // Shorter cards
                               ),
-                              itemCount: viewModel.subjects.length,
-                              itemBuilder: (context, index) {
-                                final subject = viewModel.subjects[index];
-                                return _buildSubjectCard(context, subject, isDark);
-                              },
-                            ),
+                          itemCount: viewModel.subjects.length,
+                          itemBuilder: (context, index) {
+                            final subject = viewModel.subjects[index];
+                            return _buildSubjectCard(context, subject, isDark);
+                          },
+                        ),
                 ),
               ),
             ],
@@ -169,10 +183,22 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
     final codeController = TextEditingController();
     final descriptionController = TextEditingController();
     File? selectedImage;
-    
+
     // Parse allowed departments and stages from user profile
-    final List<String> allowedDepts = userProvider.department?.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList() ?? ["Software Engineering"];
-    final List<String> allowedStages = userProvider.stage?.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList() ?? ["First Stage"];
+    final List<String> allowedDepts =
+        userProvider.department
+            ?.split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList() ??
+        ["Software Engineering"];
+    final List<String> allowedStages =
+        userProvider.stage
+            ?.split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList() ??
+        ["First Stage"];
 
     String selectedDept = allowedDepts.first;
     String selectedStage = allowedStages.first;
@@ -183,7 +209,9 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           Future<void> pickImage() async {
-            final result = await FilePicker.platform.pickFiles(type: FileType.image);
+            final result = await FilePicker.platform.pickFiles(
+              type: FileType.image,
+            );
             if (result != null) {
               setDialogState(() {
                 selectedImage = File(result.files.single.path!);
@@ -224,7 +252,10 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                               Text(
                                 l10n?.translate('select_course_image') ??
                                     "Select Course Image",
-                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
                               ),
                             ],
                           )
@@ -280,8 +311,13 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                     child: DropdownButton<String>(
                       value: selectedDept,
                       isExpanded: true,
-                      onChanged: (val) => setDialogState(() => selectedDept = val!),
-                      items: allowedDepts.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                      onChanged: (val) =>
+                          setDialogState(() => selectedDept = val!),
+                      items: allowedDepts
+                          .map(
+                            (d) => DropdownMenuItem(value: d, child: Text(d)),
+                          )
+                          .toList(),
                     ),
                   ),
                 ),
@@ -301,8 +337,13 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                     child: DropdownButton<String>(
                       value: selectedStage,
                       isExpanded: true,
-                      onChanged: (val) => setDialogState(() => selectedStage = val!),
-                      items: allowedStages.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                      onChanged: (val) =>
+                          setDialogState(() => selectedStage = val!),
+                      items: allowedStages
+                          .map(
+                            (s) => DropdownMenuItem(value: s, child: Text(s)),
+                          )
+                          .toList(),
                     ),
                   ),
                 ),
@@ -312,9 +353,10 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
 
           return AlertDialog(
             title: Text(
-              currentStep == 0 
-                ? (l10n?.translate('create_new_course') ?? "Create New Course")
-                : (l10n?.translate('target_audience') ?? "Target Audience"),
+              currentStep == 0
+                  ? (l10n?.translate('create_new_course') ??
+                        "Create New Course")
+                  : (l10n?.translate('target_audience') ?? "Target Audience"),
             ),
             content: SingleChildScrollView(
               child: currentStep == 0 ? buildStep0() : buildStep1(),
@@ -336,7 +378,8 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                 ),
                 onPressed: () async {
                   if (currentStep == 0) {
-                    if (nameController.text.isNotEmpty && codeController.text.isNotEmpty) {
+                    if (nameController.text.isNotEmpty &&
+                        codeController.text.isNotEmpty) {
                       setDialogState(() => currentStep = 1);
                     }
                   } else {
@@ -360,9 +403,9 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                   }
                 },
                 child: Text(
-                  currentStep == 0 
-                    ? (l10n?.translate('continue') ?? "Continue")
-                    : (l10n?.translate('create') ?? "Create"),
+                  currentStep == 0
+                      ? (l10n?.translate('continue') ?? "Continue")
+                      : (l10n?.translate('create') ?? "Create"),
                   style: const TextStyle(color: Colors.white),
                 ),
               ),
@@ -372,7 +415,6 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
       ),
     );
   }
-
 
   Widget _buildSubjectCard(
     BuildContext context,
@@ -411,10 +453,7 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: color.withOpacity(0.4),
-                width: 1.5,
-              ),
+              border: Border.all(color: color.withOpacity(0.4), width: 1.5),
               boxShadow: [
                 BoxShadow(
                   color: color.withOpacity(isDark ? 0.05 : 0.1),
@@ -534,7 +573,9 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
       builder: (diagContext) => AlertDialog(
         title: const Text("Delete Course"),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        content: Text("Are you sure you want to delete \"${subject['name']}\"? This action cannot be undone."),
+        content: Text(
+          "Are you sure you want to delete \"${subject['name']}\"? This action cannot be undone.",
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(diagContext),
@@ -544,7 +585,9 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () {
               final viewModel = context.read<LecturerMaterialsViewModel>();
@@ -563,12 +606,18 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
 
   IconData _getSubjectIcon(String name) {
     final lowerName = name.toLowerCase();
-    if (lowerName.contains('math') || lowerName.contains('calc')) return Icons.functions_rounded;
-    if (lowerName.contains('coding') || lowerName.contains('program') || lowerName.contains('se')) return Icons.code_rounded;
-    if (lowerName.contains('design') || lowerName.contains('art')) return Icons.palette_rounded;
+    if (lowerName.contains('math') || lowerName.contains('calc'))
+      return Icons.functions_rounded;
+    if (lowerName.contains('coding') ||
+        lowerName.contains('program') ||
+        lowerName.contains('se'))
+      return Icons.code_rounded;
+    if (lowerName.contains('design') || lowerName.contains('art'))
+      return Icons.palette_rounded;
     if (lowerName.contains('phys')) return Icons.science_rounded;
     if (lowerName.contains('chem')) return Icons.biotech_rounded;
-    if (lowerName.contains('english') || lowerName.contains('arabic')) return Icons.language_rounded;
+    if (lowerName.contains('english') || lowerName.contains('arabic'))
+      return Icons.language_rounded;
     return Icons.menu_book_rounded;
   }
 

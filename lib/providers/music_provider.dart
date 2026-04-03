@@ -97,16 +97,18 @@ class MusicProvider extends ChangeNotifier {
     try {
       await _player.stop();
       if (track['bytes'] != null) {
-        await _player.setAudioSource(MyAudioSource(track['bytes'] as Uint8List));
+        await _player.setAudioSource(
+          MyAudioSource(track['bytes'] as Uint8List),
+        );
       } else if (track['asset'] != null) {
         await _player.setAsset(track['asset']);
       } else if (track['filePath'] != null) {
         await _player.setFilePath(track['filePath']);
       }
-      
+
       // Ensure looping is on
       await _player.setLoopMode(LoopMode.one);
-      
+
       _currentTrack = track['id'];
       await _player.play();
       notifyListeners();
@@ -129,11 +131,18 @@ class MusicProvider extends ChangeNotifier {
         .replaceAll('_', ' ')
         .replaceAll('-', ' ')
         .split(' ')
-        .map((str) => str.isEmpty ? '' : '${str[0].toUpperCase()}${str.substring(1)}')
+        .map(
+          (str) =>
+              str.isEmpty ? '' : '${str[0].toUpperCase()}${str.substring(1)}',
+        )
         .join(' ');
   }
 
-  Future<void> addCustomTrack({required String name, String? filePath, Uint8List? bytes}) async {
+  Future<void> addCustomTrack({
+    required String name,
+    String? filePath,
+    Uint8List? bytes,
+  }) async {
     final newTrack = {
       'id': 'custom_${DateTime.now().millisecondsSinceEpoch}',
       'title': name,
@@ -156,25 +165,29 @@ class MusicProvider extends ChangeNotifier {
       // Only save custom tracks
       final customTracks = _library
           .where((t) => t['id'].toString().startsWith('custom_'))
-          .map((t) => {
-                'id': t['id'],
-                'title': t['title'],
-                'iconName': 'audiotrack',
-                'colorValue': (t['color'] as Color).value,
-                'filePath': t['filePath'],
-              })
+          .map(
+            (t) => {
+              'id': t['id'],
+              'title': t['title'],
+              'iconName': 'audiotrack',
+              'colorValue': (t['color'] as Color).value,
+              'filePath': t['filePath'],
+            },
+          )
           .toList();
-      
+
       await prefs.setString('custom_music_tracks', jsonEncode(customTracks));
     } catch (e) {
-      debugPrint("Could not save custom tracks to SharedPreferences (likely Web quota exceeded): $e");
+      debugPrint(
+        "Could not save custom tracks to SharedPreferences (likely Web quota exceeded): $e",
+      );
     }
   }
 
   Future<void> _loadCustomTracks() async {
     final prefs = await SharedPreferences.getInstance();
     final customTracksJson = prefs.getString('custom_music_tracks');
-    
+
     if (customTracksJson != null) {
       final List<dynamic> decoded = jsonDecode(customTracksJson);
       for (var item in decoded) {

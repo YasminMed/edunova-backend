@@ -31,7 +31,7 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isMuted = false;
-  
+
   final ChatService _chatService = ChatService();
   List<ChatMessage> _messages = [];
   Timer? _pollingTimer;
@@ -56,11 +56,11 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
   void _loadMessages({bool isPolling = false}) async {
     final msgs = await _chatService.getGroupMessages(widget.groupId);
     if (!mounted) return;
-    
+
     setState(() {
       _messages = msgs;
     });
-    
+
     if (!isPolling) {
       _scrollToBottom();
     }
@@ -80,29 +80,33 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
 
   void _sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
-    
+
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     if (userProvider.email == null) return;
-    
+
     final content = _messageController.text.trim();
     _messageController.clear();
-    
+
     // Optimistic UI
     final tempMsg = ChatMessage(
       id: 0,
-      senderId: -1, 
+      senderId: -1,
       senderName: 'Me',
       senderEmail: userProvider.email,
       content: content,
       createdAt: DateTime.now().toIso8601String(),
-      isRead: false
+      isRead: false,
     );
     setState(() {
       _messages.add(tempMsg);
     });
     _scrollToBottom();
 
-    await _chatService.sendGroupMessage(widget.groupId, userProvider.email!, content);
+    await _chatService.sendGroupMessage(
+      widget.groupId,
+      userProvider.email!,
+      content,
+    );
     _loadMessages();
   }
 
@@ -114,8 +118,14 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
       SnackBar(
         content: Text(
           _isMuted
-              ? AppLocalizations.of(context)?.translate('notifications_muted') ?? 'Notifications Muted'
-              : AppLocalizations.of(context)?.translate('notifications_unmuted') ?? 'Notifications Unmuted',
+              ? AppLocalizations.of(
+                      context,
+                    )?.translate('notifications_muted') ??
+                    'Notifications Muted'
+              : AppLocalizations.of(
+                      context,
+                    )?.translate('notifications_unmuted') ??
+                    'Notifications Unmuted',
         ),
         duration: const Duration(seconds: 2),
         backgroundColor: AppColors.primary,
@@ -143,7 +153,7 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -163,9 +173,15 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
             CircleAvatar(
               backgroundColor: AppColors.primary.withOpacity(0.2),
               radius: 18,
-              backgroundImage: widget.photoUrl != null ? _getGroupImage() : null,
+              backgroundImage: widget.photoUrl != null
+                  ? _getGroupImage()
+                  : null,
               child: widget.photoUrl == null
-                  ? const Icon(Icons.groups_rounded, color: AppColors.primary, size: 20)
+                  ? const Icon(
+                      Icons.groups_rounded,
+                      color: AppColors.primary,
+                      size: 20,
+                    )
                   : null,
             ),
             const SizedBox(width: 10),
@@ -196,7 +212,9 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
         actions: [
           IconButton(
             icon: Icon(
-              _isMuted ? Icons.notifications_off_rounded : Icons.notifications_active_rounded,
+              _isMuted
+                  ? Icons.notifications_off_rounded
+                  : Icons.notifications_active_rounded,
               color: _isMuted ? Colors.grey : AppColors.primary,
             ),
             onPressed: _toggleMute,
@@ -216,7 +234,7 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
                 ),
               ).then((shouldReload) {
                 if (shouldReload == true) {
-                  // If the user modified info (like group name or photo), 
+                  // If the user modified info (like group name or photo),
                   // we might want to reload or pop back to ChatPage to refresh.
                   // For now let's just pop and let ChatPage reload on resume.
                   Navigator.pop(context, true);
@@ -235,17 +253,21 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                
-                bool senderIsMe = message.senderId == -1 || 
-                    (userProvider.email != null && message.senderEmail == userProvider.email);
-                
+
+                bool senderIsMe =
+                    message.senderId == -1 ||
+                    (userProvider.email != null &&
+                        message.senderEmail == userProvider.email);
+
                 String displayName = message.senderName;
                 if (message.senderId == widget.adminId) {
                   displayName = "$displayName (Owner)";
                 }
-                
+
                 return Align(
-                  alignment: senderIsMe ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: senderIsMe
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     constraints: BoxConstraints(
@@ -262,8 +284,12 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(16),
                         topRight: const Radius.circular(16),
-                        bottomLeft: senderIsMe ? const Radius.circular(16) : Radius.zero,
-                        bottomRight: senderIsMe ? Radius.zero : const Radius.circular(16),
+                        bottomLeft: senderIsMe
+                            ? const Radius.circular(16)
+                            : Radius.zero,
+                        bottomRight: senderIsMe
+                            ? Radius.zero
+                            : const Radius.circular(16),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -276,7 +302,7 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (!senderIsMe) 
+                        if (!senderIsMe)
                           Text(
                             displayName,
                             style: TextStyle(
@@ -289,7 +315,9 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
                         Text(
                           message.content,
                           style: TextDesign.body.copyWith(
-                            color: senderIsMe ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color,
+                            color: senderIsMe
+                                ? Colors.white
+                                : Theme.of(context).textTheme.bodyLarge?.color,
                             height: 1.4,
                           ),
                         ),
@@ -300,7 +328,9 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
                             Text(
                               _formatTime(message.createdAt),
                               style: TextStyle(
-                                color: senderIsMe ? Colors.white70 : Colors.black45,
+                                color: senderIsMe
+                                    ? Colors.white70
+                                    : Colors.black45,
                                 fontSize: 10,
                               ),
                             ),
@@ -344,7 +374,9 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
               child: TextField(
                 controller: _messageController,
                 decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)?.translate('type_message') ?? 'Type a message...',
+                  hintText:
+                      AppLocalizations.of(context)?.translate('type_message') ??
+                      'Type a message...',
                   border: InputBorder.none,
                   hintStyle: const TextStyle(color: AppColors.mutedText),
                 ),

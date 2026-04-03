@@ -16,7 +16,8 @@ class AddMaterialDialog extends StatefulWidget {
     File? file,
     Uint8List? fileBytes,
     String? fileName,
-  }) onUpload;
+  })
+  onUpload;
 
   const AddMaterialDialog({
     super.key,
@@ -53,7 +54,7 @@ class _AddMaterialDialogState extends State<AddMaterialDialog> {
         setState(() {
           _selectedPlatformFile = result.files.first;
         });
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -70,9 +71,9 @@ class _AddMaterialDialogState extends State<AddMaterialDialog> {
     } catch (e) {
       debugPrint("DEBUG: Error picking file: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error selecting file: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error selecting file: $e")));
       }
     }
   }
@@ -81,9 +82,9 @@ class _AddMaterialDialogState extends State<AddMaterialDialog> {
     final title = _titleController.text.trim();
     final category = widget.forcedCategory ?? _selectedCategory;
     if (category == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select a category")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please select a category")));
       return;
     }
 
@@ -94,9 +95,9 @@ class _AddMaterialDialogState extends State<AddMaterialDialog> {
       return;
     }
     if (_selectedPlatformFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please upload a file")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please upload a file")));
       return;
     }
 
@@ -115,9 +116,9 @@ class _AddMaterialDialogState extends State<AddMaterialDialog> {
     } catch (e) {
       if (mounted) {
         setState(() => _isUploading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Upload failed: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Upload failed: $e")));
       }
     }
   }
@@ -125,7 +126,7 @@ class _AddMaterialDialogState extends State<AddMaterialDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    
+
     return AlertDialog(
       title: Text(
         (l10n?.translate('add_material_to') ?? "Add Material to {subject}")
@@ -139,7 +140,11 @@ class _AddMaterialDialogState extends State<AddMaterialDialog> {
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
-                labelText: l10n?.translate('material_title') ?? (widget.forcedCategory == 'PDFs' ? "PDF Title" : "Material Title"),
+                labelText:
+                    l10n?.translate('material_title') ??
+                    (widget.forcedCategory == 'PDFs'
+                        ? "PDF Title"
+                        : "Material Title"),
               ),
             ),
             if (widget.forcedCategory == null) ...[
@@ -161,12 +166,18 @@ class _AddMaterialDialogState extends State<AddMaterialDialog> {
               child: ElevatedButton.icon(
                 onPressed: _isUploading ? null : _pickFile,
                 icon: const Icon(Icons.upload_file_rounded),
-                label: Text(_selectedPlatformFile != null
-                    ? _selectedPlatformFile!.name
-                    : (l10n?.translate('upload_file') ?? "Upload File")),
+                label: Text(
+                  _selectedPlatformFile != null
+                      ? _selectedPlatformFile!.name
+                      : (l10n?.translate('upload_file') ?? "Upload File"),
+                ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _selectedPlatformFile != null ? Colors.blueAccent.withOpacity(0.1) : null,
-                  foregroundColor: _selectedPlatformFile != null ? Colors.blueAccent : null,
+                  backgroundColor: _selectedPlatformFile != null
+                      ? Colors.blueAccent.withOpacity(0.1)
+                      : null,
+                  foregroundColor: _selectedPlatformFile != null
+                      ? Colors.blueAccent
+                      : null,
                 ),
               ),
             ),
@@ -175,7 +186,11 @@ class _AddMaterialDialogState extends State<AddMaterialDialog> {
                 padding: const EdgeInsets.only(top: 8, left: 4),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle_rounded, color: Colors.green, size: 16),
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      color: Colors.green,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

@@ -44,13 +44,13 @@ class _LecturerMainNavigationState extends State<LecturerMainNavigation> {
             child: Container(
               height: 72,
               decoration: BoxDecoration(
-                color: isDark 
+                color: isDark
                     ? const Color(0xFF1E293B).withOpacity(0.95) // Dark Slate
                     : Colors.white.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(36),
                 border: Border.all(
-                  color: isDark 
-                      ? Colors.white.withOpacity(0.05) 
+                  color: isDark
+                      ? Colors.white.withOpacity(0.05)
                       : Colors.black.withOpacity(0.03),
                   width: 1.5,
                 ),
@@ -109,7 +109,7 @@ class _LecturerMainNavigationState extends State<LecturerMainNavigation> {
   Widget _buildNavItem(IconData icon, int index) {
     final bool isSelected = _selectedIndex == index;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return GestureDetector(
       onTap: () => _onItemTapped(index),
       behavior: HitTestBehavior.opaque,
@@ -119,7 +119,9 @@ class _LecturerMainNavigationState extends State<LecturerMainNavigation> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? Colors.white.withOpacity(0.08) : AppColors.secondary.withOpacity(0.12))
+              ? (isDark
+                    ? Colors.white.withOpacity(0.08)
+                    : AppColors.secondary.withOpacity(0.12))
               : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
         ),
@@ -128,8 +130,8 @@ class _LecturerMainNavigationState extends State<LecturerMainNavigation> {
           children: [
             Icon(
               icon,
-              color: isSelected 
-                  ? (isDark ? Colors.white : AppColors.secondary) 
+              color: isSelected
+                  ? (isDark ? Colors.white : AppColors.secondary)
                   : (isDark ? Colors.white38 : AppColors.mutedText),
               size: 24,
             ),

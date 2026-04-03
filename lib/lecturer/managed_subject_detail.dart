@@ -147,12 +147,12 @@ class ManagedSubjectDetailPage extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(right: 12),
             child: GestureDetector(
-            onTap: () => viewModel.setFilterIndex(
-              index, 
-              subject['id'], 
-              department: subject['department'], 
-              stage: subject['stage']
-            ),
+              onTap: () => viewModel.setFilterIndex(
+                index,
+                subject['id'],
+                department: subject['department'],
+                stage: subject['stage'],
+              ),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -245,264 +245,291 @@ class ManagedSubjectDetailPage extends StatelessWidget {
     return SliverPadding(
       padding: const EdgeInsets.only(bottom: 100),
       sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            if (index == resources.length) {
-              return _buildAddButton(context, categoryName, color, viewModel);
-            }
+        delegate: SliverChildBuilderDelegate((context, index) {
+          if (index == resources.length) {
+            return _buildAddButton(context, categoryName, color, viewModel);
+          }
 
-            final resource = resources[index];
-            final isPDF = viewModel.selectedFilterIndex == 0;
-            final isAssignment = viewModel.selectedFilterIndex == 1;
-            final isQuiz = viewModel.selectedFilterIndex == 2;
+          final resource = resources[index];
+          final isPDF = viewModel.selectedFilterIndex == 0;
+          final isAssignment = viewModel.selectedFilterIndex == 1;
+          final isQuiz = viewModel.selectedFilterIndex == 2;
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 20),
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withOpacity(isDark ? 0.05 : 0.08),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+          return Container(
+            margin: const EdgeInsets.only(bottom: 20),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(isDark ? 0.05 : 0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withOpacity(0.05)
+                    : Colors.black.withOpacity(0.01),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            color.withOpacity(0.15),
+                            color.withOpacity(0.05),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Icon(icon, color: color, size: 28),
+                    ),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            resource['title'],
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 17,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.primaryText,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          if (resource['file_url'] != null)
+                            Text(
+                              "File: ${resource['file_url'].split('/').last}",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: color.withOpacity(0.8),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          const SizedBox(height: 2),
+                          Text(
+                            resource['created_at'] != null
+                                ? "Uploaded on ${resource['created_at'].toString().split('T')[0]}"
+                                : "Shared recently",
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white54 : Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_sweep_rounded,
+                        color: Colors.redAccent,
+                        size: 26,
+                      ),
+                      onPressed: () {},
+                    ),
+                  ],
+                ),
+                if ((isAssignment || isQuiz) &&
+                    resource['content'] != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.black.withOpacity(0.2)
+                          : Colors.grey[50],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: color.withOpacity(0.1)),
+                    ),
+                    child: Text(
+                      resource['content'],
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: isDark ? Colors.white70 : AppColors.bodyText,
+                      ),
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
-                border: Border.all(
-                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.01),
-                  width: 1,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                if (!isPDF && resource['total_submissions'] != null) ...[
+                  const SizedBox(height: 20),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${resource['total_submissions']} Submissions",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isDark
+                                  ? Colors.white70
+                                  : AppColors.primaryText,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "Tracking active students",
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
                       Container(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: resource['total_submissions'] == 0
+                              ? Colors.grey.withOpacity(0.1)
+                              : (resource['ungraded_submissions'] ?? 0) > 0
+                              ? Colors.orange.withOpacity(0.15)
+                              : Colors.green.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: resource['total_submissions'] == 0
+                                ? Colors.grey.withOpacity(0.2)
+                                : (resource['ungraded_submissions'] ?? 0) > 0
+                                ? Colors.orange.withOpacity(0.3)
+                                : Colors.green.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Text(
+                          resource['total_submissions'] == 0
+                              ? "No Submissions"
+                              : (resource['ungraded_submissions'] ?? 0) > 0
+                              ? "${resource['ungraded_submissions']} PENDING"
+                              : "GRADED",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                            color: resource['total_submissions'] == 0
+                                ? (isDark ? Colors.grey[400] : Colors.grey[600])
+                                : (resource['ungraded_submissions'] ?? 0) > 0
+                                ? Colors.orange[900]
+                                : Colors.green[800],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else if (isPDF) ...[
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Material Engagement",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark
+                              ? Colors.white70
+                              : AppColors.primaryText,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
                               color.withOpacity(0.15),
                               color.withOpacity(0.05),
                             ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
                           ),
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        child: Icon(icon, color: color, size: 28),
-                      ),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            Text(
-                              resource['title'],
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 17,
-                                color: isDark ? Colors.white : AppColors.primaryText,
-                              ),
+                            Icon(
+                              Icons.insights_rounded,
+                              size: 16,
+                              color: color,
                             ),
-                            const SizedBox(height: 4),
-                            if (resource['file_url'] != null)
-                              Text(
-                                "File: ${resource['file_url'].split('/').last}",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: color.withOpacity(0.8),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            const SizedBox(height: 2),
+                            const SizedBox(width: 8),
                             Text(
-                              resource['created_at'] != null 
-                                ? "Uploaded on ${resource['created_at'].toString().split('T')[0]}"
-                                : "Shared recently",
+                              "${resource['views'] ?? 0} Views",
                               style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white54 : Colors.grey[500],
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                                color: color,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.delete_sweep_rounded,
-                          color: Colors.redAccent,
-                          size: 26,
-                        ),
-                        onPressed: () {},
                       ),
                     ],
                   ),
-                  if ((isAssignment || isQuiz) && resource['content'] != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.black.withOpacity(0.2) : Colors.grey[50],
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: color.withOpacity(0.1)),
-                      ),
-                      child: Text(
-                        resource['content'],
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.5,
-                          color: isDark ? Colors.white70 : AppColors.bodyText,
-                        ),
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                  if (!isPDF && resource['total_submissions'] != null) ...[
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "${resource['total_submissions']} Submissions",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: isDark ? Colors.white70 : AppColors.primaryText,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              "Tracking active students",
-                              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                            ),
-                          ],
-                        ),
-                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: resource['total_submissions'] == 0
-                                ? Colors.grey.withOpacity(0.1)
-                                : (resource['ungraded_submissions'] ?? 0) > 0
-                                    ? Colors.orange.withOpacity(0.15)
-                                    : Colors.green.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                               color: resource['total_submissions'] == 0
-                                  ? Colors.grey.withOpacity(0.2)
-                                  : (resource['ungraded_submissions'] ?? 0) > 0
-                                      ? Colors.orange.withOpacity(0.3)
-                                      : Colors.green.withOpacity(0.3),
-                            ),
-                          ),
-                          child: Text(
-                            resource['total_submissions'] == 0
-                                ? "No Submissions"
-                                : (resource['ungraded_submissions'] ?? 0) > 0
-                                    ? "${resource['ungraded_submissions']} PENDING"
-                                    : "GRADED",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
-                              color: resource['total_submissions'] == 0
-                                  ? (isDark ? Colors.grey[400] : Colors.grey[600])
-                                  : (resource['ungraded_submissions'] ?? 0) > 0
-                                      ? Colors.orange[900]
-                                      : Colors.green[800],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ] else if (isPDF) ...[
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Material Engagement",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isDark ? Colors.white70 : AppColors.primaryText,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [color.withOpacity(0.15), color.withOpacity(0.05)],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.insights_rounded, size: 16, color: color),
-                              const SizedBox(width: 8),
-                              Text(
-                                "${resource['views'] ?? 0} Views",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w900,
-                                  color: color,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  if (!isPDF) ...[
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: color,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: () {
-                          // Navigate to review submissions page
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AssignmentReviewPage(
-                                assignment: resource,
-                                viewModel: viewModel,
-                                color: color,
-                                isQuiz: isQuiz,
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.analytics_rounded, size: 20),
-                        label: const Text(
-                          "View Submissions",
-                          style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
-              ),
-            );
-          },
-          childCount: resources.length + 1,
-        ),
+                if (!isPDF) ...[
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: color,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () {
+                        // Navigate to review submissions page
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AssignmentReviewPage(
+                              assignment: resource,
+                              viewModel: viewModel,
+                              color: color,
+                              isQuiz: isQuiz,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.analytics_rounded, size: 20),
+                      label: const Text(
+                        "View Submissions",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }, childCount: resources.length + 1),
       ),
     );
   }
@@ -518,21 +545,30 @@ class ManagedSubjectDetailPage extends StatelessWidget {
       child: Center(
         child: InkWell(
           onTap: () {
-          if (categoryName == "Assignments") {
-            _showAddAssignmentDialog(context, viewModel, subject['id']);
-          } else if (categoryName == "Quizzes") {
-            _showAddQuizDialog(context, viewModel, subject['id']);
-          } else if (categoryName == "PDFs") {
-            _showAddMaterialDialog(context, viewModel, subject['id'], forcedCategory: 'PDFs');
-          } else {
-            _showAddMaterialDialog(context, viewModel, subject['id']);
-          }
+            if (categoryName == "Assignments") {
+              _showAddAssignmentDialog(context, viewModel, subject['id']);
+            } else if (categoryName == "Quizzes") {
+              _showAddQuizDialog(context, viewModel, subject['id']);
+            } else if (categoryName == "PDFs") {
+              _showAddMaterialDialog(
+                context,
+                viewModel,
+                subject['id'],
+                forcedCategory: 'PDFs',
+              );
+            } else {
+              _showAddMaterialDialog(context, viewModel, subject['id']);
+            }
           },
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
             decoration: BoxDecoration(
-              border: Border.all(color: color.withOpacity(0.5), width: 2, style: BorderStyle.solid),
+              border: Border.all(
+                color: color.withOpacity(0.5),
+                width: 2,
+                style: BorderStyle.solid,
+              ),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -541,7 +577,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                 Icon(Icons.add_rounded, color: color),
                 const SizedBox(width: 8),
                 Text(
-                  "Add ${categoryName.endsWith('s') ? categoryName.substring(0, categoryName.length -1) : categoryName}",
+                  "Add ${categoryName.endsWith('s') ? categoryName.substring(0, categoryName.length - 1) : categoryName}",
                   style: TextStyle(
                     color: color,
                     fontWeight: FontWeight.bold,
@@ -563,7 +599,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
   ) {
     final titleController = TextEditingController();
     final contentController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -578,7 +614,9 @@ class ManagedSubjectDetailPage extends StatelessWidget {
             const SizedBox(height: 12),
             TextField(
               controller: contentController,
-              decoration: const InputDecoration(labelText: "Quiz Content/Questions"),
+              decoration: const InputDecoration(
+                labelText: "Quiz Content/Questions",
+              ),
               maxLines: 4,
             ),
             const SizedBox(height: 12),
@@ -612,7 +650,8 @@ class ManagedSubjectDetailPage extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () async {
-              if (titleController.text.isNotEmpty && contentController.text.isNotEmpty) {
+              if (titleController.text.isNotEmpty &&
+                  contentController.text.isNotEmpty) {
                 await viewModel.addQuiz(
                   courseId: courseId,
                   title: titleController.text,
@@ -636,7 +675,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
   ) {
     final titleController = TextEditingController();
     final contentController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -651,7 +690,9 @@ class ManagedSubjectDetailPage extends StatelessWidget {
             const SizedBox(height: 12),
             TextField(
               controller: contentController,
-              decoration: const InputDecoration(labelText: "Assignment Content"),
+              decoration: const InputDecoration(
+                labelText: "Assignment Content",
+              ),
               maxLines: 4,
             ),
             const SizedBox(height: 12),
@@ -659,7 +700,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
               builder: (context, setState) {
                 return ListTile(
                   title: Text(
-                     "Deadline: ${viewModel.assignmentDeadline.toString().split(' ')[0]}",
+                    "Deadline: ${viewModel.assignmentDeadline.toString().split(' ')[0]}",
                   ),
                   trailing: const Icon(Icons.calendar_today_rounded),
                   onTap: () async {
@@ -685,7 +726,8 @@ class ManagedSubjectDetailPage extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () async {
-              if (titleController.text.isNotEmpty && contentController.text.isNotEmpty) {
+              if (titleController.text.isNotEmpty &&
+                  contentController.text.isNotEmpty) {
                 await viewModel.addAssignment(
                   courseId: courseId,
                   title: titleController.text,
@@ -701,8 +743,6 @@ class ManagedSubjectDetailPage extends StatelessWidget {
       ),
     );
   }
-
-
 
   Widget _buildAttendanceView(
     BuildContext context,
@@ -757,7 +797,8 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () => viewModel.submitAttendance(context, subject['id']),
+                    onPressed: () =>
+                        viewModel.submitAttendance(context, subject['id']),
                     child: const Text(
                       "Submit",
                       style: TextStyle(color: Colors.white, fontSize: 16),
@@ -814,11 +855,32 @@ class ManagedSubjectDetailPage extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: _attendanceOption("Attended", Colors.green, viewModel, studentId)),
+                  Expanded(
+                    child: _attendanceOption(
+                      "Attended",
+                      Colors.green,
+                      viewModel,
+                      studentId,
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Expanded(child: _attendanceOption("Late", Colors.orange, viewModel, studentId)),
+                  Expanded(
+                    child: _attendanceOption(
+                      "Late",
+                      Colors.orange,
+                      viewModel,
+                      studentId,
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Expanded(child: _attendanceOption("Absent", Colors.red, viewModel, studentId)),
+                  Expanded(
+                    child: _attendanceOption(
+                      "Absent",
+                      Colors.red,
+                      viewModel,
+                      studentId,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -828,11 +890,16 @@ class ManagedSubjectDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _attendanceOption(String label, Color color, ManagedSubjectViewModel viewModel, int studentId) {
+  Widget _attendanceOption(
+    String label,
+    Color color,
+    ManagedSubjectViewModel viewModel,
+    int studentId,
+  ) {
     return Consumer<ManagedSubjectViewModel>(
       builder: (context, vm, child) {
         final currentSelection = vm.attendanceMap[studentId] == label;
-        
+
         return GestureDetector(
           onTap: () => vm.updateAttendanceStatus(studentId, label),
           child: AnimatedContainer(
@@ -857,7 +924,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
             ),
           ),
         );
-      }
+      },
     );
   }
 
@@ -874,16 +941,23 @@ class ManagedSubjectDetailPage extends StatelessWidget {
         subjectColor: subject['color'],
         forcedCategory: forcedCategory,
         categories: viewModel.filters.take(4).toList(),
-        onUpload: ({required title, required category, file, fileBytes, fileName}) async {
-          await viewModel.addMaterial(
-            courseId: courseId,
-            title: title,
-            category: category,
-            file: file,
-            fileBytes: fileBytes,
-            fileName: fileName,
-          );
-        },
+        onUpload:
+            ({
+              required title,
+              required category,
+              file,
+              fileBytes,
+              fileName,
+            }) async {
+              await viewModel.addMaterial(
+                courseId: courseId,
+                title: title,
+                category: category,
+                file: file,
+                fileBytes: fileBytes,
+                fileName: fileName,
+              );
+            },
       ),
     );
   }
@@ -901,14 +975,17 @@ class ManagedSubjectDetailPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(20),
             child: ElevatedButton.icon(
-              onPressed: () => _showAddExamMarkDialog(context, viewModel, subject['id']),
+              onPressed: () =>
+                  _showAddExamMarkDialog(context, viewModel, subject['id']),
               icon: const Icon(Icons.add),
               label: const Text("Add Exam Mark"),
               style: ElevatedButton.styleFrom(
                 backgroundColor: color,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
@@ -925,7 +1002,10 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                     color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.02),
+                        blurRadius: 8,
+                      ),
                     ],
                   ),
                   child: Row(
@@ -934,7 +1014,10 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                         backgroundColor: color.withOpacity(0.1),
                         child: Text(
                           mark['student_name']?[0] ?? "U",
-                          style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: color,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -944,18 +1027,24 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                           children: [
                             Text(
                               mark['student_name'] ?? "Unknown Student",
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             Text(
                               "${mark['exam_type']} - Mark: ${mark['mark']}%",
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.edit_outlined, size: 20),
-                        onPressed: () => _showEditExamMarkDialog(context, viewModel, mark),
+                        onPressed: () =>
+                            _showEditExamMarkDialog(context, viewModel, mark),
                       ),
                     ],
                   ),
@@ -1001,10 +1090,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                 value: selectedExamType,
                 decoration: const InputDecoration(labelText: "Exam Type"),
                 items: ["Midterm Exam", "Final Exam"].map((t) {
-                  return DropdownMenuItem<String>(
-                    value: t,
-                    child: Text(t),
-                  );
+                  return DropdownMenuItem<String>(value: t, child: Text(t));
                 }).toList(),
                 onChanged: (val) => setState(() => selectedExamType = val!),
               ),
@@ -1023,7 +1109,8 @@ class ManagedSubjectDetailPage extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () async {
-                if (selectedStudentId != null && markController.text.isNotEmpty) {
+                if (selectedStudentId != null &&
+                    markController.text.isNotEmpty) {
                   await viewModel.addExamMark(
                     courseId: courseId,
                     studentId: selectedStudentId!,
@@ -1046,7 +1133,9 @@ class ManagedSubjectDetailPage extends StatelessWidget {
     ManagedSubjectViewModel viewModel,
     Map<String, dynamic> markData,
   ) {
-    final markController = TextEditingController(text: markData['mark'].toString());
+    final markController = TextEditingController(
+      text: markData['mark'].toString(),
+    );
 
     showDialog(
       context: context,

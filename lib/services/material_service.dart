@@ -5,18 +5,23 @@ import 'auth_service.dart';
 import 'package:path/path.dart' as p;
 
 class MaterialService {
-  final Dio _dio = Dio(BaseOptions(
-    baseUrl: AuthService.baseUrl,
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
-  ));
+  final Dio _dio = Dio(
+    BaseOptions(
+      baseUrl: AuthService.baseUrl,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+    ),
+  );
 
   Future<List<dynamic>> getCourses({String? email, String? role}) async {
     try {
-      final response = await _dio.get("/courses", queryParameters: {
-        if (email != null) "email": email,
-        if (role != null) "role": role,
-      });
+      final response = await _dio.get(
+        "/courses",
+        queryParameters: {
+          if (email != null) "email": email,
+          if (role != null) "role": role,
+        },
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -72,7 +77,9 @@ class MaterialService {
     try {
       final response = await _dio.get(
         "/courses/$courseId/resources",
-        queryParameters: category != null ? {"category": category.toLowerCase()} : null,
+        queryParameters: category != null
+            ? {"category": category.toLowerCase()}
+            : null,
       );
       return response.data;
     } on DioException catch (e) {
@@ -93,7 +100,10 @@ class MaterialService {
       if (fileBytes != null && fileName != null) {
         filePart = MultipartFile.fromBytes(fileBytes, filename: fileName);
       } else if (file != null) {
-        filePart = await MultipartFile.fromFile(file.path, filename: p.basename(file.path));
+        filePart = await MultipartFile.fromFile(
+          file.path,
+          filename: p.basename(file.path),
+        );
       } else {
         throw "No file data provided";
       }
@@ -109,11 +119,16 @@ class MaterialService {
     }
   }
 
-  Future<List<dynamic>> getAttendance(int courseId, {String? studentEmail}) async {
+  Future<List<dynamic>> getAttendance(
+    int courseId, {
+    String? studentEmail,
+  }) async {
     try {
       final response = await _dio.get(
         "/courses/$courseId/attendance",
-        queryParameters: studentEmail != null ? {"student_email": studentEmail} : null,
+        queryParameters: studentEmail != null
+            ? {"student_email": studentEmail}
+            : null,
       );
       return response.data;
     } on DioException catch (e) {
@@ -121,7 +136,10 @@ class MaterialService {
     }
   }
 
-  Future<void> submitAttendance(int courseId, List<Map<String, String>> records) async {
+  Future<void> submitAttendance(
+    int courseId,
+    List<Map<String, String>> records,
+  ) async {
     try {
       await _dio.post("/courses/$courseId/attendance", data: records);
     } on DioException catch (e) {
@@ -147,15 +165,24 @@ class MaterialService {
         "category": "assignment",
         if (deadline != null) "deadline": deadline.toIso8601String(),
       };
-      
+
       if (fileBytes != null && fileName != null) {
-        dataMap["file"] = MultipartFile.fromBytes(fileBytes, filename: fileName);
+        dataMap["file"] = MultipartFile.fromBytes(
+          fileBytes,
+          filename: fileName,
+        );
       } else if (file != null) {
-        dataMap["file"] = await MultipartFile.fromFile(file.path, filename: p.basename(file.path));
+        dataMap["file"] = await MultipartFile.fromFile(
+          file.path,
+          filename: p.basename(file.path),
+        );
       }
 
       final formData = FormData.fromMap(dataMap);
-      final response = await _dio.post("/courses/$courseId/assignments", data: formData);
+      final response = await _dio.post(
+        "/courses/$courseId/assignments",
+        data: formData,
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -164,7 +191,9 @@ class MaterialService {
 
   Future<List<dynamic>> getAssignments(int courseId) async {
     try {
-      final response = await _dio.get("/courses/$courseId/assignments?category=assignment");
+      final response = await _dio.get(
+        "/courses/$courseId/assignments?category=assignment",
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -180,19 +209,26 @@ class MaterialService {
     String? fileName,
   }) async {
     try {
-      final Map<String, dynamic> dataMap = {
-        "student_email": studentEmail,
-      };
+      final Map<String, dynamic> dataMap = {"student_email": studentEmail};
       if (solutionText != null) dataMap["solution_text"] = solutionText;
-      
+
       if (fileBytes != null && fileName != null) {
-        dataMap["file"] = MultipartFile.fromBytes(fileBytes, filename: fileName);
+        dataMap["file"] = MultipartFile.fromBytes(
+          fileBytes,
+          filename: fileName,
+        );
       } else if (file != null) {
-        dataMap["file"] = await MultipartFile.fromFile(file.path, filename: p.basename(file.path));
+        dataMap["file"] = await MultipartFile.fromFile(
+          file.path,
+          filename: p.basename(file.path),
+        );
       }
 
       final formData = FormData.fromMap(dataMap);
-      final response = await _dio.post("/assignments/$assignmentId/submissions", data: formData);
+      final response = await _dio.post(
+        "/assignments/$assignmentId/submissions",
+        data: formData,
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -208,7 +244,10 @@ class MaterialService {
     }
   }
 
-  Future<Map<String, dynamic>?> getMySubmission(int assignmentId, String studentEmail) async {
+  Future<Map<String, dynamic>?> getMySubmission(
+    int assignmentId,
+    String studentEmail,
+  ) async {
     try {
       final response = await _dio.get(
         "/assignments/$assignmentId/my-submission",
@@ -254,10 +293,10 @@ class MaterialService {
 
   Future<void> addComment(int postId, String email, String content) async {
     try {
-      await _dio.post("/posts/$postId/comments", data: {
-        "user_email": email,
-        "content": content,
-      });
+      await _dio.post(
+        "/posts/$postId/comments",
+        data: {"user_email": email, "content": content},
+      );
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -287,15 +326,24 @@ class MaterialService {
         "content": content,
         if (deadline != null) "deadline": deadline.toIso8601String(),
       };
-      
+
       if (fileBytes != null && fileName != null) {
-        dataMap["file"] = MultipartFile.fromBytes(fileBytes, filename: fileName);
+        dataMap["file"] = MultipartFile.fromBytes(
+          fileBytes,
+          filename: fileName,
+        );
       } else if (file != null) {
-        dataMap["file"] = await MultipartFile.fromFile(file.path, filename: p.basename(file.path));
+        dataMap["file"] = await MultipartFile.fromFile(
+          file.path,
+          filename: p.basename(file.path),
+        );
       }
 
       final formData = FormData.fromMap(dataMap);
-      final response = await _dio.post("/courses/$courseId/quizzes", data: formData);
+      final response = await _dio.post(
+        "/courses/$courseId/quizzes",
+        data: formData,
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -320,19 +368,26 @@ class MaterialService {
     String? fileName,
   }) async {
     try {
-      final Map<String, dynamic> dataMap = {
-        "student_email": studentEmail,
-      };
+      final Map<String, dynamic> dataMap = {"student_email": studentEmail};
       if (solutionText != null) dataMap["solution_text"] = solutionText;
-      
+
       if (fileBytes != null && fileName != null) {
-        dataMap["file"] = MultipartFile.fromBytes(fileBytes, filename: fileName);
+        dataMap["file"] = MultipartFile.fromBytes(
+          fileBytes,
+          filename: fileName,
+        );
       } else if (file != null) {
-        dataMap["file"] = await MultipartFile.fromFile(file.path, filename: p.basename(file.path));
+        dataMap["file"] = await MultipartFile.fromFile(
+          file.path,
+          filename: p.basename(file.path),
+        );
       }
 
       final formData = FormData.fromMap(dataMap);
-      final response = await _dio.post("/quizzes/$quizId/submissions", data: formData);
+      final response = await _dio.post(
+        "/quizzes/$quizId/submissions",
+        data: formData,
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -348,7 +403,10 @@ class MaterialService {
     }
   }
 
-  Future<Map<String, dynamic>?> getMyQuizSubmission(int quizId, String studentEmail) async {
+  Future<Map<String, dynamic>?> getMyQuizSubmission(
+    int quizId,
+    String studentEmail,
+  ) async {
     try {
       final response = await _dio.get(
         "/quizzes/$quizId/my-submission",
@@ -377,12 +435,18 @@ class MaterialService {
 
   // --- Exams & Attendance Batch Methods ---
 
-  Future<List<dynamic>> getAllStudents({String? department, String? stage}) async {
+  Future<List<dynamic>> getAllStudents({
+    String? department,
+    String? stage,
+  }) async {
     try {
-      final response = await _dio.get("/users/students", queryParameters: {
-        if (department != null) "department": department,
-        if (stage != null) "stage": stage,
-      });
+      final response = await _dio.get(
+        "/users/students",
+        queryParameters: {
+          if (department != null) "department": department,
+          if (stage != null) "stage": stage,
+        },
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -398,59 +462,74 @@ class MaterialService {
     }
   }
 
-  Future<void> saveExamMark(int courseId, int studentId, String examType, String mark) async {
+  Future<void> saveExamMark(
+    int courseId,
+    int studentId,
+    String examType,
+    String mark,
+  ) async {
     try {
       await _dio.post(
         "/courses/$courseId/exam_marks",
-        data: {
-          "student_id": studentId,
-          "exam_type": examType,
-          "mark": mark,
-        },
-      );
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-  
-  Future<void> updateExamMark(int markId, String mark) async {
-    try {
-      await _dio.put(
-        "/exam_marks/$markId",
-        data: {"mark": mark},
+        data: {"student_id": studentId, "exam_type": examType, "mark": mark},
       );
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  Future<List<dynamic>> getMyExamMarks(int courseId, String studentEmail) async {
+  Future<void> updateExamMark(int markId, String mark) async {
     try {
-      final response = await _dio.get("/courses/$courseId/my_exam_marks?student_email=$studentEmail");
+      await _dio.put("/exam_marks/$markId", data: {"mark": mark});
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<dynamic>> getMyExamMarks(
+    int courseId,
+    String studentEmail,
+  ) async {
+    try {
+      final response = await _dio.get(
+        "/courses/$courseId/my_exam_marks?student_email=$studentEmail",
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  Future<void> submitBatchAttendance(int courseId, List<Map<String, dynamic>> records, {DateTime? date}) async {
+  Future<void> submitBatchAttendance(
+    int courseId,
+    List<Map<String, dynamic>> records, {
+    DateTime? date,
+  }) async {
     try {
       await _dio.post(
         "/courses/$courseId/attendance/batch",
         data: records,
-        queryParameters: date != null ? {"date_str": date.toIso8601String()} : null,
+        queryParameters: date != null
+            ? {"date_str": date.toIso8601String()}
+            : null,
       );
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  Future<List<dynamic>> getTeachingStaff({String? department, String? stage}) async {
+  Future<List<dynamic>> getTeachingStaff({
+    String? department,
+    String? stage,
+  }) async {
     try {
-      final response = await _dio.get("/users/lecturers", queryParameters: {
-        if (department != null) "department": department,
-        if (stage != null) "stage": stage,
-      });
+      final response = await _dio.get(
+        "/users/lecturers",
+        queryParameters: {
+          if (department != null) "department": department,
+          if (stage != null) "stage": stage,
+        },
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -468,7 +547,9 @@ class MaterialService {
 
   Future<Map<String, dynamic>> getWeeklyChallengeStatus(String email) async {
     try {
-      final response = await _dio.get("/student/weekly-challenge-status/$email");
+      final response = await _dio.get(
+        "/student/weekly-challenge-status/$email",
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -493,7 +574,11 @@ class MaterialService {
     }
   }
 
-  Future<Map<String, dynamic>> fetchStudentAnalysis(String lecturerEmail, {String? department, String? stage}) async {
+  Future<Map<String, dynamic>> fetchStudentAnalysis(
+    String lecturerEmail, {
+    String? department,
+    String? stage,
+  }) async {
     try {
       final response = await _dio.get(
         "/lecturer/student-analysis",

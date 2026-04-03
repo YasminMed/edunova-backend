@@ -12,7 +12,8 @@ class LecturerChatbotPage extends StatefulWidget {
   State<LecturerChatbotPage> createState() => _LecturerChatbotPageState();
 }
 
-class _LecturerChatbotPageState extends State<LecturerChatbotPage> with AutomaticKeepAliveClientMixin {
+class _LecturerChatbotPageState extends State<LecturerChatbotPage>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
   final TextEditingController _textController = TextEditingController();
@@ -53,7 +54,7 @@ class _LecturerChatbotPageState extends State<LecturerChatbotPage> with Automati
 
   void _handleSubmitted(String text) async {
     if (text.trim().isEmpty) return;
-    
+
     _textController.clear();
     setState(() {
       _messages.add({'isUser': true, 'text': text, 'time': DateTime.now()});
@@ -111,23 +112,38 @@ class _LecturerChatbotPageState extends State<LecturerChatbotPage> with Automati
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        AppLocalizations.of(context)?.translate('lecturer_ai') ??
+                        AppLocalizations.of(
+                              context,
+                            )?.translate('lecturer_ai') ??
                             "Lecturer AI",
-                        style: TextDesign.h2.copyWith(color: AppColors.secondary),
+                        style: TextDesign.h2.copyWith(
+                          color: AppColors.secondary,
+                        ),
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 0,
+                      ),
                       decoration: BoxDecoration(
                         color: Theme.of(context).cardColor.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+                        border: Border.all(
+                          color: AppColors.secondary.withOpacity(0.3),
+                        ),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: _selectedModel,
-                          icon: const Icon(Icons.arrow_drop_down, color: AppColors.secondary),
-                          style: TextDesign.body.copyWith(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 12),
+                          icon: const Icon(
+                            Icons.arrow_drop_down,
+                            color: AppColors.secondary,
+                          ),
+                          style: TextDesign.body.copyWith(
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                            fontSize: 12,
+                          ),
                           onChanged: (String? newValue) {
                             if (newValue != null) {
                               setState(() {
@@ -136,9 +152,18 @@ class _LecturerChatbotPageState extends State<LecturerChatbotPage> with Automati
                             }
                           },
                           items: const [
-                            DropdownMenuItem(value: 'groq', child: Text("Groq (DeepSeek API)")),
-                            DropdownMenuItem(value: 'gemini', child: Text("Google Gemini")),
-                            DropdownMenuItem(value: 'deepseek', child: Text("DeepSeek Official")),
+                            DropdownMenuItem(
+                              value: 'groq',
+                              child: Text("Groq (DeepSeek API)"),
+                            ),
+                            DropdownMenuItem(
+                              value: 'gemini',
+                              child: Text("Google Gemini"),
+                            ),
+                            DropdownMenuItem(
+                              value: 'deepseek',
+                              child: Text("DeepSeek Official"),
+                            ),
                           ],
                         ),
                       ),

@@ -75,7 +75,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
@@ -91,7 +94,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       ),
     );
   }
-  
+
   void _showEditEmailDialog() {
     final userProvider = context.read<UserProvider>();
     final TextEditingController emailController = TextEditingController(
@@ -130,18 +133,20 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   email: emailController.text.trim(),
                   role: userProvider.role!,
                 );
-                
+
                 if (!mounted) return;
                 Navigator.pop(context);
-                
+
                 // Since email changed, user should re-login or at least we update the provider
                 // User said: "cannot loggin with old email because it will be replaced with the new one"
                 // It's safer to logout and force re-login with new email.
                 _logoutWithReloginMessage();
-
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
@@ -257,10 +262,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   email: userProvider.email!,
                   role: userProvider.role!,
                 );
-                
+
                 if (!mounted) return;
                 userProvider.clearUser();
-                
+
                 // Navigate to Welcome Page and remove all previous routes
                 Navigator.pushAndRemoveUntil(
                   context,
@@ -280,7 +285,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
@@ -319,12 +327,19 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         type: FileType.image,
       );
 
-      bool hasFile = result != null && (kIsWeb ? result.files.single.bytes != null : result.files.single.path != null);
+      bool hasFile =
+          result != null &&
+          (kIsWeb
+              ? result.files.single.bytes != null
+              : result.files.single.path != null);
 
       if (hasFile) {
         // Show loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Uploading photo...'), duration: Duration(seconds: 2)),
+          const SnackBar(
+            content: Text('Uploading photo...'),
+            duration: Duration(seconds: 2),
+          ),
         );
 
         final newPhotoUrl = await _authService.updateProfilePhoto(
@@ -347,7 +362,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)?.translate('photo_updated') ?? 'Photo updated successfully'),
+            content: Text(
+              AppLocalizations.of(context)?.translate('photo_updated') ??
+                  'Photo updated successfully',
+            ),
             backgroundColor: AppColors.primary,
           ),
         );
@@ -391,7 +409,11 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         : null,
                     backgroundColor: Colors.grey[300],
                     child: userProvider.photoUrl == null
-                        ? const Icon(Icons.person, size: 60, color: Colors.white)
+                        ? const Icon(
+                            Icons.person,
+                            size: 60,
+                            color: Colors.white,
+                          )
                         : null,
                   ),
                 ),

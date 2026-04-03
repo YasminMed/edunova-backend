@@ -32,7 +32,9 @@ class _LecturerReportsPageState extends State<LecturerReportsPage> {
     if (userProvider.email == null) return;
 
     try {
-      final data = await _materialService.fetchFacultyReports(userProvider.email!);
+      final data = await _materialService.fetchFacultyReports(
+        userProvider.email!,
+      );
       setState(() {
         _reportData = data;
         _isLoading = false;
@@ -55,12 +57,13 @@ class _LecturerReportsPageState extends State<LecturerReportsPage> {
 
     try {
       final directory = await getApplicationDocumentsDirectory();
-      final fileName = "Faculty_Report_${DateTime.now().millisecondsSinceEpoch}.pdf";
+      final fileName =
+          "Faculty_Report_${DateTime.now().millisecondsSinceEpoch}.pdf";
       final filePath = "${directory.path}/$fileName";
-      
+
       final savedPath = await _materialService.downloadFacultyReport(
-        userProvider.email!, 
-        filePath
+        userProvider.email!,
+        filePath,
       );
 
       if (savedPath != null && mounted) {
@@ -101,7 +104,7 @@ class _LecturerReportsPageState extends State<LecturerReportsPage> {
         elevation: 0,
         iconTheme: IconThemeData(color: textColor),
       ),
-      body: _isLoading 
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _fetchReportData,
@@ -284,18 +287,18 @@ class _LecturerReportsPageState extends State<LecturerReportsPage> {
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           const SizedBox(height: 16),
-          _isDownloading 
-            ? const CircularProgressIndicator()
-            : TextButton(
-                onPressed: _downloadReport,
-                child: const Text(
-                  "Download Report",
-                  style: TextStyle(
-                    color: AppColors.secondary,
-                    fontWeight: FontWeight.bold,
+          _isDownloading
+              ? const CircularProgressIndicator()
+              : TextButton(
+                  onPressed: _downloadReport,
+                  child: const Text(
+                    "Download Report",
+                    style: TextStyle(
+                      color: AppColors.secondary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
         ],
       ),
     );

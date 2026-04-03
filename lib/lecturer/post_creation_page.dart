@@ -22,13 +22,13 @@ class _PostCreationPageState extends State<PostCreationPage> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   final PostService _postService = PostService();
-  
+
   String _activeTab = "New"; // "New" or "Posted"
   File? _selectedImage;
   Uint8List? _selectedImageBytes;
   String? _selectedImageName;
   bool _isUploading = false;
-  
+
   List<dynamic> _myPosts = [];
   bool _isLoadingHistory = false;
 
@@ -49,9 +49,9 @@ class _PostCreationPageState extends State<PostCreationPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingHistory = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error loading posts: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error loading posts: $e")));
       }
     }
   }
@@ -67,9 +67,9 @@ class _PostCreationPageState extends State<PostCreationPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Delete failed: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Delete failed: $e")));
       }
     }
   }
@@ -78,8 +78,12 @@ class _PostCreationPageState extends State<PostCreationPage> {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.image,
     );
-    
-    bool hasFile = result != null && (kIsWeb ? result.files.single.bytes != null : result.files.single.path != null);
+
+    bool hasFile =
+        result != null &&
+        (kIsWeb
+            ? result.files.single.bytes != null
+            : result.files.single.path != null);
 
     if (hasFile) {
       setState(() {
@@ -115,9 +119,9 @@ class _PostCreationPageState extends State<PostCreationPage> {
         children: [
           _buildTabFilter(isDark),
           Expanded(
-            child: _activeTab == "New" 
-              ? _buildNewPostSection(isDark) 
-              : _buildPostedHistorySection(isDark),
+            child: _activeTab == "New"
+                ? _buildNewPostSection(isDark)
+                : _buildPostedHistorySection(isDark),
           ),
         ],
       ),
@@ -159,7 +163,9 @@ class _PostCreationPageState extends State<PostCreationPage> {
           child: Text(
             title,
             style: TextStyle(
-              color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black54),
+              color: isSelected
+                  ? Colors.white
+                  : (isDark ? Colors.white70 : Colors.black54),
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -175,7 +181,8 @@ class _PostCreationPageState extends State<PostCreationPage> {
         children: [
           _buildInputCard(isDark),
           const SizedBox(height: 24),
-          if (_selectedImage != null || _selectedImageBytes != null) _buildImagePreview(),
+          if (_selectedImage != null || _selectedImageBytes != null)
+            _buildImagePreview(),
           const SizedBox(height: 24),
           _buildMediaSection(isDark),
           const SizedBox(height: 40),
@@ -191,19 +198,19 @@ class _PostCreationPageState extends State<PostCreationPage> {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          child: kIsWeb 
-            ? Image.memory(
-                _selectedImageBytes!,
-                width: double.infinity,
-                height: 200,
-                fit: BoxFit.cover,
-              )
-            : Image.file(
-                _selectedImage!,
-                width: double.infinity,
-                height: 200,
-                fit: BoxFit.cover,
-              ),
+          child: kIsWeb
+              ? Image.memory(
+                  _selectedImageBytes!,
+                  width: double.infinity,
+                  height: 200,
+                  fit: BoxFit.cover,
+                )
+              : Image.file(
+                  _selectedImage!,
+                  width: double.infinity,
+                  height: 200,
+                  fit: BoxFit.cover,
+                ),
         ),
         Positioned(
           top: 10,
@@ -216,7 +223,10 @@ class _PostCreationPageState extends State<PostCreationPage> {
             }),
             child: Container(
               padding: const EdgeInsets.all(5),
-              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
               child: const Icon(Icons.close, color: Colors.white, size: 20),
             ),
           ),
@@ -227,7 +237,9 @@ class _PostCreationPageState extends State<PostCreationPage> {
 
   Widget _buildPostedHistorySection(bool isDark) {
     if (_isLoadingHistory) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
     if (_myPosts.isEmpty) {
       return Center(
@@ -236,7 +248,10 @@ class _PostCreationPageState extends State<PostCreationPage> {
           children: [
             Icon(Icons.history_rounded, size: 80, color: Colors.grey[400]),
             const SizedBox(height: 16),
-            Text("No posts yet", style: TextDesign.h3.copyWith(color: Colors.grey)),
+            Text(
+              "No posts yet",
+              style: TextDesign.h3.copyWith(color: Colors.grey),
+            ),
           ],
         ),
       );
@@ -249,8 +264,10 @@ class _PostCreationPageState extends State<PostCreationPage> {
         itemBuilder: (context, index) {
           final post = _myPosts[index];
           final String? imageUrl = post['image_url'];
-          final fullImageUrl = imageUrl != null ? "${AuthService.baseUrl}$imageUrl" : null;
-          
+          final fullImageUrl = imageUrl != null
+              ? "${AuthService.baseUrl}$imageUrl"
+              : null;
+
           return Container(
             margin: const EdgeInsets.only(bottom: 20),
             padding: const EdgeInsets.all(16),
@@ -264,8 +281,13 @@ class _PostCreationPageState extends State<PostCreationPage> {
                 Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
-                      child: const Icon(Icons.person, color: AppColors.secondary),
+                      backgroundColor: AppColors.secondary.withValues(
+                        alpha: 0.1,
+                      ),
+                      child: const Icon(
+                        Icons.person,
+                        color: AppColors.secondary,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -273,18 +295,34 @@ class _PostCreationPageState extends State<PostCreationPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            post['author_email'] == Provider.of<UserProvider>(context, listen: false).email
+                            post['author_email'] ==
+                                    Provider.of<UserProvider>(
+                                      context,
+                                      listen: false,
+                                    ).email
                                 ? "You"
                                 : (post['author_name'] ?? "Lecturer"),
-                            style: TextDesign.body.copyWith(fontWeight: FontWeight.bold),
+                            style: TextDesign.body.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                          Text(_formatTimestamp(post['created_at']), style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text(
+                            _formatTimestamp(post['created_at']),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    if (post['author_email'] == Provider.of<UserProvider>(context, listen: false).email)
+                    if (post['author_email'] ==
+                        Provider.of<UserProvider>(context, listen: false).email)
                       IconButton(
-                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                        icon: const Icon(
+                          Icons.delete_outline_rounded,
+                          color: Colors.redAccent,
+                        ),
                         onPressed: () => _showDeleteDialog(post['id']),
                       ),
                   ],
@@ -297,7 +335,12 @@ class _PostCreationPageState extends State<PostCreationPage> {
                   const SizedBox(height: 12),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(15),
-                    child: Image.network(fullImageUrl, height: 150, width: double.infinity, fit: BoxFit.cover),
+                    child: Image.network(
+                      fullImageUrl,
+                      height: 150,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -306,13 +349,23 @@ class _PostCreationPageState extends State<PostCreationPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildStatItem(
-                      post['has_liked'] == true ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      post['has_liked'] == true
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
                       "${post['likes_count'] ?? 0} Likes",
-                      color: post['has_liked'] == true ? Colors.redAccent : Colors.grey,
+                      color: post['has_liked'] == true
+                          ? Colors.redAccent
+                          : Colors.grey,
                       onTap: () async {
-                        final userProvider = Provider.of<UserProvider>(context, listen: false);
+                        final userProvider = Provider.of<UserProvider>(
+                          context,
+                          listen: false,
+                        );
                         if (userProvider.email != null) {
-                          await _postService.likePost(post['id'], userProvider.email!);
+                          await _postService.likePost(
+                            post['id'],
+                            userProvider.email!,
+                          );
                           _fetchMyPosts();
                         }
                       },
@@ -320,22 +373,28 @@ class _PostCreationPageState extends State<PostCreationPage> {
                     _buildStatItem(
                       Icons.chat_bubble_outline_rounded,
                       "${post['comments_count'] ?? 0} Comments",
-                      onTap: () => _showCommentsBottomSheet(context, post['id']),
+                      onTap: () =>
+                          _showCommentsBottomSheet(context, post['id']),
                     ),
                     _buildStatItem(
-                      Icons.share_outlined, 
+                      Icons.share_outlined,
                       "Share",
                       onTap: () {
                         showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
-                          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).scaffoldBackgroundColor,
                           shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(20),
+                            ),
                           ),
-                          builder: (context) => SharePostBottomSheet(post: post),
+                          builder: (context) =>
+                              SharePostBottomSheet(post: post),
                         );
-                      }
+                      },
                     ),
                   ],
                 ),
@@ -364,7 +423,12 @@ class _PostCreationPageState extends State<PostCreationPage> {
     }
   }
 
-  Widget _buildStatItem(IconData icon, String label, {Color color = Colors.grey, VoidCallback? onTap}) {
+  Widget _buildStatItem(
+    IconData icon,
+    String label, {
+    Color color = Colors.grey,
+    VoidCallback? onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -395,8 +459,12 @@ class _PostCreationPageState extends State<PostCreationPage> {
           return Container(
             height: MediaQuery.of(context).size.height * 0.75,
             decoration: BoxDecoration(
-              color: isDark ? Theme.of(context).scaffoldBackgroundColor : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              color: isDark
+                  ? Theme.of(context).scaffoldBackgroundColor
+                  : Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
             ),
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -432,7 +500,10 @@ class _PostCreationPageState extends State<PostCreationPage> {
                         );
                       }
                       return ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
                         itemCount: comments.length,
                         itemBuilder: (context, index) {
                           final c = comments[index];
@@ -443,37 +514,54 @@ class _PostCreationPageState extends State<PostCreationPage> {
                               children: [
                                 CircleAvatar(
                                   radius: 18,
-                                  backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
-                                  child: const Icon(Icons.person, color: AppColors.secondary),
+                                  backgroundColor: AppColors.secondary
+                                      .withValues(alpha: 0.1),
+                                  child: const Icon(
+                                    Icons.person,
+                                    color: AppColors.secondary,
+                                  ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: isDark ? Colors.grey[800] : Colors.grey[100],
+                                      color: isDark
+                                          ? Colors.grey[800]
+                                          : Colors.grey[100],
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
                                             Text(
                                               c['user_name'] ?? "User",
-                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                              ),
                                             ),
                                             const Spacer(),
                                             Text(
                                               _formatTimestamp(c['created_at']),
-                                              style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                                              style: TextStyle(
+                                                color: Colors.grey[500],
+                                                fontSize: 11,
+                                              ),
                                             ),
                                           ],
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           c['content'] ?? "",
-                                          style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black87,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -498,19 +586,25 @@ class _PostCreationPageState extends State<PostCreationPage> {
                           decoration: InputDecoration(
                             hintText: "Add a comment...",
                             filled: true,
-                            fillColor: isDark ? Colors.grey[800] : Colors.grey[200],
+                            fillColor: isDark
+                                ? Colors.grey[800]
+                                : Colors.grey[200],
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(25),
                               borderSide: BorderSide.none,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 10,
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       IconButton(
                         onPressed: () async {
-                          if (commentController.text.isNotEmpty && userProvider.email != null) {
+                          if (commentController.text.isNotEmpty &&
+                              userProvider.email != null) {
                             try {
                               await _postService.addComment(
                                 postId,
@@ -522,13 +616,18 @@ class _PostCreationPageState extends State<PostCreationPage> {
                             } catch (e) {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text("Failed to post comment")),
+                                  const SnackBar(
+                                    content: Text("Failed to post comment"),
+                                  ),
                                 );
                               }
                             }
                           }
                         },
-                        icon: const Icon(Icons.send_rounded, color: AppColors.primary),
+                        icon: const Icon(
+                          Icons.send_rounded,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ],
                   ),
@@ -546,15 +645,23 @@ class _PostCreationPageState extends State<PostCreationPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Delete Post?"),
-        content: const Text("Are you sure you want to delete this post? This action cannot be undone."),
+        content: const Text(
+          "Are you sure you want to delete this post? This action cannot be undone.",
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _deletePost(postId);
-            }, 
-            child: const Text("Delete", style: TextStyle(color: Colors.redAccent))
+            },
+            child: const Text(
+              "Delete",
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
@@ -596,17 +703,23 @@ class _PostCreationPageState extends State<PostCreationPage> {
     return Row(
       children: [
         _buildMediaButton(
-          Icons.image_rounded, 
-          _selectedImage != null ? "Image Selected" : "Add Image", 
+          Icons.image_rounded,
+          _selectedImage != null ? "Image Selected" : "Add Image",
           Colors.blue,
           _pickImage,
-          (_selectedImage != null || _selectedImageBytes != null)
+          (_selectedImage != null || _selectedImageBytes != null),
         ),
       ],
     );
   }
 
-  Widget _buildMediaButton(IconData icon, String label, Color color, VoidCallback onTap, bool isSelected) {
+  Widget _buildMediaButton(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+    bool isSelected,
+  ) {
     return Expanded(
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
@@ -615,11 +728,13 @@ class _PostCreationPageState extends State<PostCreationPage> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 20),
             decoration: BoxDecoration(
-              color: isSelected ? color.withValues(alpha: 0.2) : color.withValues(alpha: 0.1),
+              color: isSelected
+                  ? color.withValues(alpha: 0.2)
+                  : color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isSelected ? color : color.withValues(alpha: 0.3), 
-                width: isSelected ? 2 : 1
+                color: isSelected ? color : color.withValues(alpha: 0.3),
+                width: isSelected ? 2 : 1,
               ),
             ),
             child: Column(
@@ -628,7 +743,11 @@ class _PostCreationPageState extends State<PostCreationPage> {
                 const SizedBox(height: 8),
                 Text(
                   label,
-                  style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -652,54 +771,64 @@ class _PostCreationPageState extends State<PostCreationPage> {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        onPressed: _isUploading ? null : () async {
-          if (_titleController.text.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Please enter a title")),
-            );
-            return;
-          }
+        onPressed: _isUploading
+            ? null
+            : () async {
+                if (_titleController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Please enter a title")),
+                  );
+                  return;
+                }
 
-          setState(() => _isUploading = true);
-          
-          try {
-            await _postService.createPost(
-              title: _titleController.text.trim(),
-              description: _descController.text.trim(),
-              image: _selectedImage,
-              bytes: _selectedImageBytes,
-              fileName: _selectedImageName,
-            );
-            
-            if (mounted) {
-              _titleController.clear();
-              _descController.clear();
-              setState(() {
-                _selectedImage = null;
-                _selectedImageBytes = null;
-                _selectedImageName = null;
-                _activeTab = "Posted";
-              });
-              _fetchMyPosts();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Post Shared Successfully!")),
-              );
-            }
-          } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Error: $e"), backgroundColor: Colors.redAccent),
-              );
-            }
-          } finally {
-            if (mounted) setState(() => _isUploading = false);
-          }
-        },
+                setState(() => _isUploading = true);
+
+                try {
+                  await _postService.createPost(
+                    title: _titleController.text.trim(),
+                    description: _descController.text.trim(),
+                    image: _selectedImage,
+                    bytes: _selectedImageBytes,
+                    fileName: _selectedImageName,
+                  );
+
+                  if (mounted) {
+                    _titleController.clear();
+                    _descController.clear();
+                    setState(() {
+                      _selectedImage = null;
+                      _selectedImageBytes = null;
+                      _selectedImageName = null;
+                      _activeTab = "Posted";
+                    });
+                    _fetchMyPosts();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Post Shared Successfully!"),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Error: $e"),
+                        backgroundColor: Colors.redAccent,
+                      ),
+                    );
+                  }
+                } finally {
+                  if (mounted) setState(() => _isUploading = false);
+                }
+              },
         child: _isUploading
             ? const SizedBox(
                 height: 24,
                 width: 24,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
               )
             : const Text(
                 "Post Update",

@@ -32,7 +32,7 @@ class _MedalsPageState extends State<MedalsPage> {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final email = userProvider.email;
       if (email == null) return;
-      
+
       final data = await _materialService.getStudentMedals(email);
       if (mounted) {
         setState(() {
@@ -52,22 +52,33 @@ class _MedalsPageState extends State<MedalsPage> {
 
   IconData _getIconFromString(String iconName) {
     switch (iconName) {
-      case 'assignment_ind_rounded': return Icons.assignment_ind_rounded;
-      case 'emoji_events_rounded': return Icons.emoji_events_rounded;
-      case 'stars_rounded': return Icons.stars_rounded;
-      case 'military_tech_rounded': return Icons.military_tech_rounded;
-      case 'wb_sunny_rounded': return Icons.wb_sunny_rounded;
-      default: return Icons.stars;
+      case 'assignment_ind_rounded':
+        return Icons.assignment_ind_rounded;
+      case 'emoji_events_rounded':
+        return Icons.emoji_events_rounded;
+      case 'stars_rounded':
+        return Icons.stars_rounded;
+      case 'military_tech_rounded':
+        return Icons.military_tech_rounded;
+      case 'wb_sunny_rounded':
+        return Icons.wb_sunny_rounded;
+      default:
+        return Icons.stars;
     }
   }
 
   Color _getColorFromString(String colorStr) {
     switch (colorStr) {
-      case 'blue': return Colors.blue;
-      case 'orange': return Colors.orange;
-      case 'green': return Colors.green;
-      case 'amber': return Colors.amber;
-      default: return Colors.blue;
+      case 'blue':
+        return Colors.blue;
+      case 'orange':
+        return Colors.orange;
+      case 'green':
+        return Colors.green;
+      case 'amber':
+        return Colors.amber;
+      default:
+        return Colors.blue;
     }
   }
 
@@ -95,9 +106,9 @@ class _MedalsPageState extends State<MedalsPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : _errorMessage != null
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
           ? Center(child: Text(_errorMessage!))
           : CustomScrollView(
               slivers: [
@@ -112,14 +123,17 @@ class _MedalsPageState extends State<MedalsPage> {
                 // Medals List
                 if (_medals.isEmpty)
                   const SliverFillRemaining(
-                    child: Center(child: Text("Keep interacting to unlock medals!")),
+                    child: Center(
+                      child: Text("Keep interacting to unlock medals!"),
+                    ),
                   )
                 else
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
-                        (context, index) => _buildMedalTile(context, _medals[index]),
+                        (context, index) =>
+                            _buildMedalTile(context, _medals[index]),
                         childCount: _medals.length,
                       ),
                     ),
@@ -308,10 +322,16 @@ class _MedalsPageState extends State<MedalsPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _getColorFromString(medal['color'] ?? 'blue').withOpacity(0.1),
+              color: _getColorFromString(
+                medal['color'] ?? 'blue',
+              ).withOpacity(0.1),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(_getIconFromString(medal['icon']), color: _getColorFromString(medal['color'] ?? 'blue'), size: 30),
+            child: Icon(
+              _getIconFromString(medal['icon']),
+              color: _getColorFromString(medal['color'] ?? 'blue'),
+              size: 30,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(

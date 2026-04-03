@@ -23,7 +23,7 @@ class LecturerDashboard extends StatefulWidget {
 class _LecturerDashboardState extends State<LecturerDashboard> {
   final ScrollController _scrollController = ScrollController();
   final MaterialService _materialService = MaterialService();
-  
+
   int _materialsCount = 0;
   int _yearsExp = 0;
   bool _isLoading = true;
@@ -38,9 +38,11 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
   Future<void> _fetchStats() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     if (userProvider.email == null) return;
-    
+
     try {
-      final stats = await _materialService.fetchLecturerDashboardStats(userProvider.email!);
+      final stats = await _materialService.fetchLecturerDashboardStats(
+        userProvider.email!,
+      );
       if (mounted) {
         setState(() {
           _materialsCount = stats['materials'] ?? 0;
@@ -69,11 +71,14 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
           controller: controller,
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
-            labelText: l10n?.translate('years_exp_label') ?? "Years of Experience",
+            labelText:
+                l10n?.translate('years_exp_label') ?? "Years of Experience",
             hintText: () {
               final field = l10n?.translate('enter_field');
               final label = l10n?.translate('years_exp_label') ?? 'years';
-              return field != null ? field.replaceFirst('{field}', label) : "Enter number of years";
+              return field != null
+                  ? field.replaceFirst('{field}', label)
+                  : "Enter number of years";
             }(),
           ),
         ),
@@ -97,12 +102,20 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
 
     if (result != null && result != _yearsExp) {
       try {
-        await _materialService.updateLecturerExperience(userProvider.email!, result);
+        await _materialService.updateLecturerExperience(
+          userProvider.email!,
+          result,
+        );
         if (mounted) setState(() => _yearsExp = result);
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n?.translate('failed_to_update_experience') ?? "Failed to update experience")),
+            SnackBar(
+              content: Text(
+                l10n?.translate('failed_to_update_experience') ??
+                    "Failed to update experience",
+              ),
+            ),
           );
         }
       }
@@ -156,7 +169,7 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 3, 
+                  crossAxisCount: 3,
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
                   childAspectRatio: 1.05, // More compact
@@ -200,7 +213,9 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
                       color: Colors.purple,
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const TimetablePage()),
+                        MaterialPageRoute(
+                          builder: (_) => const TimetablePage(),
+                        ),
                       ),
                     ),
                     _buildDashboardCard(
@@ -233,19 +248,26 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
                   style: TextDesign.h2.copyWith(color: titleColor),
                 ),
                 const SizedBox(height: 16),
-                _isLoading 
-                  ? const Center(child: CircularProgressIndicator())
-                  : _activities.isEmpty
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _activities.isEmpty
                     ? Center(
                         child: Padding(
                           padding: const EdgeInsets.all(40),
                           child: Column(
                             children: [
-                              Icon(Icons.history_rounded, size: 48, color: titleColor.withOpacity(0.2)),
+                              Icon(
+                                Icons.history_rounded,
+                                size: 48,
+                                color: titleColor.withOpacity(0.2),
+                              ),
                               const SizedBox(height: 12),
                               Text(
-                                l10n?.translate('no_recent_activity') ?? "No recent activities found",
-                                style: TextStyle(color: titleColor.withOpacity(0.5)),
+                                l10n?.translate('no_recent_activity') ??
+                                    "No recent activities found",
+                                style: TextStyle(
+                                  color: titleColor.withOpacity(0.5),
+                                ),
                               ),
                             ],
                           ),
@@ -267,7 +289,9 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF1E3A8A).withOpacity(0.95), // Deep Professional Indigo
+            const Color(
+              0xFF1E3A8A,
+            ).withOpacity(0.95), // Deep Professional Indigo
             const Color(0xFF1E40AF),
           ],
           begin: Alignment.topLeft,
@@ -349,19 +373,21 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
       borderRadius: BorderRadius.circular(28),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark 
-              ? Colors.white.withOpacity(0.05) 
+          color: isDark
+              ? Colors.white.withOpacity(0.05)
               : const Color(0xFFFBFDFF).withOpacity(0.95), // Premium off-white
           borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: isDark 
-                ? Colors.white.withOpacity(0.08) 
+            color: isDark
+                ? Colors.white.withOpacity(0.08)
                 : Colors.white.withOpacity(0.4),
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: isDark ? Colors.black26 : Colors.blueGrey.withOpacity(0.06),
+              color: isDark
+                  ? Colors.black26
+                  : Colors.blueGrey.withOpacity(0.06),
               blurRadius: 15,
               spreadRadius: 2,
               offset: const Offset(0, 8),
@@ -386,7 +412,9 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
                 fontSize: 11, // Reduced from 13
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.1,
-                color: isDark ? Colors.white.withOpacity(0.9) : AppColors.primaryText,
+                color: isDark
+                    ? Colors.white.withOpacity(0.9)
+                    : AppColors.primaryText,
               ),
               textAlign: TextAlign.center,
             ),
@@ -435,12 +463,18 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
           color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.05),
           ),
         ),
         child: Column(
           children: [
-            Icon(Icons.history_rounded, size: 48, color: Colors.grey.withValues(alpha: 0.5)),
+            Icon(
+              Icons.history_rounded,
+              size: 48,
+              color: Colors.grey.withValues(alpha: 0.5),
+            ),
             const SizedBox(height: 16),
             Text(
               l10n?.translate('no_recent_activity') ?? "No recent activity",
@@ -467,7 +501,9 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
             color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.03),
+              color: isDark
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.black.withOpacity(0.03),
               width: 1.5,
             ),
             boxShadow: [
@@ -528,14 +564,17 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
     );
   }
 
-  String _getLocalizedActivityDesc(BuildContext context, Map<String, dynamic> activity) {
+  String _getLocalizedActivityDesc(
+    BuildContext context,
+    Map<String, dynamic> activity,
+  ) {
     final l10n = AppLocalizations.of(context);
     final type = activity['type'] ?? 'default';
     final desc = activity['desc'] ?? '';
-    
+
     String actionKey = 'activity_unknown';
     String englishAction = '';
-    
+
     switch (type) {
       case 'quiz_submitted':
         actionKey = 'activity_quiz_submitted';
@@ -554,11 +593,11 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
         englishAction = 'Viewed material';
         break;
     }
-    
+
     if (actionKey == 'activity_unknown') return desc;
-    
+
     final localizedAction = l10n?.translate(actionKey) ?? englishAction;
-    
+
     // Try to extract the name of the assignment/quiz/etc from the English desc
     // Format usually is "Action 'Name'" or "'Action 'Name'"
     String content = "";
@@ -578,7 +617,7 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
     } else if (desc.toLowerCase().startsWith(englishAction.toLowerCase())) {
       content = desc.substring(englishAction.length).trim();
     }
-    
+
     return content.isEmpty ? localizedAction : "$localizedAction $content";
   }
 }

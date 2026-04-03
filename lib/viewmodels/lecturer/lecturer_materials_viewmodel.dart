@@ -18,21 +18,29 @@ class LecturerMaterialsViewModel extends BaseViewModel {
   Future<void> loadSubjects({String? email, String? role}) async {
     setBusy(true);
     try {
-      final response = await _materialService.getCourses(email: email, role: role);
-      _subjects = response.map((s) {
-        final id = s['id'] as int;
-        return {
-          'id': id,
-          'name': s['name'] as String,
-          'code': s['code'] as String,
-          'department': s['department'] as String?,
-          'stage': s['stage'] as String?,
-          'students': s['students'] ?? 0,
-          'materials': s['materials'] ?? 0,
-          'image': s['image_url'] != null ? "${AuthService.baseUrl}${s['image_url']}" : null,
-          'color': _getCourseColor(id),
-        };
-      }).toList().cast<Map<String, dynamic>>();
+      final response = await _materialService.getCourses(
+        email: email,
+        role: role,
+      );
+      _subjects = response
+          .map((s) {
+            final id = s['id'] as int;
+            return {
+              'id': id,
+              'name': s['name'] as String,
+              'code': s['code'] as String,
+              'department': s['department'] as String?,
+              'stage': s['stage'] as String?,
+              'students': s['students'] ?? 0,
+              'materials': s['materials'] ?? 0,
+              'image': s['image_url'] != null
+                  ? "${AuthService.baseUrl}${s['image_url']}"
+                  : null,
+              'color': _getCourseColor(id),
+            };
+          })
+          .toList()
+          .cast<Map<String, dynamic>>();
       _errorMessage = null;
     } catch (e) {
       _errorMessage = e.toString();

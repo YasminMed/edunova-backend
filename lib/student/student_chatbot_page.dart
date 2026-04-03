@@ -12,7 +12,8 @@ class StudentChatbotPage extends StatefulWidget {
   State<StudentChatbotPage> createState() => _StudentChatbotPageState();
 }
 
-class _StudentChatbotPageState extends State<StudentChatbotPage> with AutomaticKeepAliveClientMixin {
+class _StudentChatbotPageState extends State<StudentChatbotPage>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
   final TextEditingController _textController = TextEditingController();
@@ -180,17 +181,28 @@ class _StudentChatbotPageState extends State<StudentChatbotPage> with AutomaticK
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Theme.of(context).cardColor.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.3),
+                        ),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: _selectedModel,
-                          icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
-                          style: TextDesign.body.copyWith(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 12),
+                          icon: const Icon(
+                            Icons.arrow_drop_down,
+                            color: AppColors.primary,
+                          ),
+                          style: TextDesign.body.copyWith(
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                            fontSize: 12,
+                          ),
                           onChanged: (String? newValue) {
                             if (newValue != null) {
                               setState(() {
@@ -199,9 +211,18 @@ class _StudentChatbotPageState extends State<StudentChatbotPage> with AutomaticK
                             }
                           },
                           items: const [
-                            DropdownMenuItem(value: 'groq', child: Text("Groq (DeepSeek API)")),
-                            DropdownMenuItem(value: 'gemini', child: Text("Google Gemini")),
-                            DropdownMenuItem(value: 'deepseek', child: Text("DeepSeek Official")),
+                            DropdownMenuItem(
+                              value: 'groq',
+                              child: Text("Groq (DeepSeek API)"),
+                            ),
+                            DropdownMenuItem(
+                              value: 'gemini',
+                              child: Text("Google Gemini"),
+                            ),
+                            DropdownMenuItem(
+                              value: 'deepseek',
+                              child: Text("DeepSeek Official"),
+                            ),
                           ],
                         ),
                       ),

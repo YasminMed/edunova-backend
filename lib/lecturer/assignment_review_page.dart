@@ -25,7 +25,10 @@ class _AssignmentReviewPageState extends State<AssignmentReviewPage> {
   @override
   void initState() {
     super.initState();
-    widget.viewModel.loadSubmissions(widget.assignment['id'], isQuiz: widget.isQuiz);
+    widget.viewModel.loadSubmissions(
+      widget.assignment['id'],
+      isQuiz: widget.isQuiz,
+    );
   }
 
   @override
@@ -34,10 +37,16 @@ class _AssignmentReviewPageState extends State<AssignmentReviewPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.assignment['title'], style: TextDesign.h3.copyWith(color: Colors.white)),
+        title: Text(
+          widget.assignment['title'],
+          style: TextDesign.h3.copyWith(color: Colors.white),
+        ),
         backgroundColor: widget.color,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -53,7 +62,11 @@ class _AssignmentReviewPageState extends State<AssignmentReviewPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.people_outline_rounded, size: 64, color: widget.color.withOpacity(0.3)),
+                  Icon(
+                    Icons.people_outline_rounded,
+                    size: 64,
+                    color: widget.color.withOpacity(0.3),
+                  ),
                   const SizedBox(height: 16),
                   const Text("No submissions yet."),
                 ],
@@ -74,7 +87,11 @@ class _AssignmentReviewPageState extends State<AssignmentReviewPage> {
     );
   }
 
-  Widget _buildSubmissionCard(BuildContext context, Map<String, dynamic> sub, bool isDark) {
+  Widget _buildSubmissionCard(
+    BuildContext context,
+    Map<String, dynamic> sub,
+    bool isDark,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -96,38 +113,58 @@ class _AssignmentReviewPageState extends State<AssignmentReviewPage> {
                 children: [
                   Text(
                     sub['student_name'],
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                   if (sub['submitted_at'] != null)
                     Text(
                       "Submitted: ${sub['submitted_at'].split('T')[0]} ${sub['submitted_at'].split('T')[1].substring(0, 5)}",
-                      style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : Colors.grey),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white54 : Colors.grey,
+                      ),
                     ),
                 ],
               ),
               const Spacer(),
               if (sub['is_graded'])
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     "Grade: ${sub['grade']}",
-                    style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 )
               else
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
                     "Ungraded",
-                    style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12),
+                    style: TextStyle(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
             ],
@@ -145,9 +182,19 @@ class _AssignmentReviewPageState extends State<AssignmentReviewPage> {
               },
               child: Row(
                 children: [
-                  Icon(Icons.attach_file_rounded, size: 16, color: widget.color),
+                  Icon(
+                    Icons.attach_file_rounded,
+                    size: 16,
+                    color: widget.color,
+                  ),
                   const SizedBox(width: 4),
-                  const Text("View Attachment", style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                  const Text(
+                    "View Attachment",
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -158,7 +205,9 @@ class _AssignmentReviewPageState extends State<AssignmentReviewPage> {
             child: ElevatedButton(
               onPressed: () => _showGradeDialog(context, sub),
               style: ElevatedButton.styleFrom(
-                backgroundColor: sub['is_graded'] ? widget.color.withOpacity(0.1) : widget.color,
+                backgroundColor: sub['is_graded']
+                    ? widget.color.withOpacity(0.1)
+                    : widget.color,
                 foregroundColor: sub['is_graded'] ? widget.color : Colors.white,
                 elevation: 0,
               ),
@@ -178,8 +227,14 @@ class _AssignmentReviewPageState extends State<AssignmentReviewPage> {
   }
 
   void _showGradeDialog(BuildContext context, Map<String, dynamic> sub) {
-    final gradeController = TextEditingController(text: sub['is_graded'] ? sub['grade'].toString() : "");
-    final noteController = TextEditingController(text: sub['is_graded'] && sub['lecturer_note'] != null ? sub['lecturer_note'].toString() : "");
+    final gradeController = TextEditingController(
+      text: sub['is_graded'] ? sub['grade'].toString() : "",
+    );
+    final noteController = TextEditingController(
+      text: sub['is_graded'] && sub['lecturer_note'] != null
+          ? sub['lecturer_note'].toString()
+          : "",
+    );
 
     showDialog(
       context: context,
@@ -190,7 +245,9 @@ class _AssignmentReviewPageState extends State<AssignmentReviewPage> {
           children: [
             TextField(
               controller: gradeController,
-              decoration: const InputDecoration(labelText: "Grade (e.g. A, 90/100)"),
+              decoration: const InputDecoration(
+                labelText: "Grade (e.g. A, 90/100)",
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -201,7 +258,10 @@ class _AssignmentReviewPageState extends State<AssignmentReviewPage> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
           ElevatedButton(
             onPressed: () async {
               if (gradeController.text.isNotEmpty) {

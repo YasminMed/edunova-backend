@@ -75,7 +75,10 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
@@ -130,15 +133,17 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
                   email: emailController.text.trim(),
                   role: 'lecturer',
                 );
-                
+
                 if (!mounted) return;
                 Navigator.pop(context);
-                
-                _logoutWithReloginMessage();
 
+                _logoutWithReloginMessage();
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
@@ -254,7 +259,7 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
                   email: userProvider.email!,
                   role: 'lecturer',
                 );
-                
+
                 if (!mounted) return;
                 userProvider.clearUser();
 
@@ -265,7 +270,10 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
@@ -304,12 +312,19 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
         type: FileType.image,
       );
 
-      bool hasFile = result != null && (kIsWeb ? result.files.single.bytes != null : result.files.single.path != null);
+      bool hasFile =
+          result != null &&
+          (kIsWeb
+              ? result.files.single.bytes != null
+              : result.files.single.path != null);
 
       if (hasFile) {
         // Show loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Uploading photo...'), duration: Duration(seconds: 2)),
+          const SnackBar(
+            content: Text('Uploading photo...'),
+            duration: Duration(seconds: 2),
+          ),
         );
 
         final newPhotoUrl = await _authService.updateProfilePhoto(
@@ -332,7 +347,10 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)?.translate('photo_updated') ?? 'Photo updated successfully'),
+            content: Text(
+              AppLocalizations.of(context)?.translate('photo_updated') ??
+                  'Photo updated successfully',
+            ),
             backgroundColor: AppColors.secondary,
           ),
         );
@@ -349,7 +367,7 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
     final name = userProvider.fullName ?? "Lecturer";
-    
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
@@ -378,7 +396,11 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
                         : null,
                     backgroundColor: Colors.grey[300],
                     child: userProvider.photoUrl == null
-                        ? const Icon(Icons.person, size: 60, color: Colors.white)
+                        ? const Icon(
+                            Icons.person,
+                            size: 60,
+                            color: Colors.white,
+                          )
                         : null,
                   ),
                 ),

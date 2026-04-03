@@ -52,16 +52,11 @@ class _VerificationCodeLecturerPageState
     if (otp.length == 4) {
       setState(() => _isLoading = true);
       try {
-        await _authService.verifyOtp(
-          widget.email,
-          otp,
-        );
+        await _authService.verifyOtp(widget.email, otp);
         if (!mounted) return;
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const ChangePasswordLecturerPage(),
-          ),
+          MaterialPageRoute(builder: (_) => const ChangePasswordLecturerPage()),
         );
       } catch (e) {
         if (!mounted) return;
@@ -179,7 +174,8 @@ class _VerificationCodeLecturerPageState
                         ),
                         const SizedBox(height: 32),
                         CustomButton(
-                          text: AppLocalizations.of(
+                          text:
+                              AppLocalizations.of(
                                 context,
                               )?.translate('verify') ??
                               "Verify",

@@ -4,19 +4,24 @@ import 'dart:typed_data';
 
 class AuthService {
   static const String baseUrl = "https://web-production-06d8c.up.railway.app";
-  final Dio _dio = Dio(BaseOptions(
-    baseUrl: baseUrl,
-    connectTimeout: const Duration(seconds: 15),
-    receiveTimeout: const Duration(seconds: 10),
-  ));
+  final Dio _dio = Dio(
+    BaseOptions(
+      baseUrl: baseUrl,
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 10),
+    ),
+  );
 
-  Future<Map<String, dynamic>> login(String email, String password, String role) async {
+  Future<Map<String, dynamic>> login(
+    String email,
+    String password,
+    String role,
+  ) async {
     try {
-      final response = await _dio.post("/auth/login", data: {
-        "email": email,
-        "password": password,
-        "role": role,
-      });
+      final response = await _dio.post(
+        "/auth/login",
+        data: {"email": email, "password": password, "role": role},
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -33,15 +38,18 @@ class AuthService {
     String gender = "Male",
   }) async {
     try {
-      final response = await _dio.post("/auth/signup", data: {
-        "fullName": fullName,
-        "email": email,
-        "password": password,
-        "gender": gender,
-        "role": role,
-        "department": department,
-        "stage": stage,
-      });
+      final response = await _dio.post(
+        "/auth/signup",
+        data: {
+          "fullName": fullName,
+          "email": email,
+          "password": password,
+          "gender": gender,
+          "role": role,
+          "department": department,
+          "stage": stage,
+        },
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -50,9 +58,10 @@ class AuthService {
 
   Future<Map<String, dynamic>> sendOtp(String email) async {
     try {
-      final response = await _dio.post("/auth/send-otp", data: {
-        "email": email,
-      });
+      final response = await _dio.post(
+        "/auth/send-otp",
+        data: {"email": email},
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -61,10 +70,10 @@ class AuthService {
 
   Future<Map<String, dynamic>> verifyOtp(String email, String otp) async {
     try {
-      final response = await _dio.post("/auth/verify-otp", data: {
-        "email": email,
-        "otp": otp,
-      });
+      final response = await _dio.post(
+        "/auth/verify-otp",
+        data: {"email": email, "otp": otp},
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -79,13 +88,16 @@ class AuthService {
     String? stage,
   }) async {
     try {
-      final response = await _dio.put("/auth/update-profile", data: {
-        "fullName": fullName,
-        "email": email,
-        "role": role,
-        "department": department,
-        "stage": stage,
-      });
+      final response = await _dio.put(
+        "/auth/update-profile",
+        data: {
+          "fullName": fullName,
+          "email": email,
+          "role": role,
+          "department": department,
+          "stage": stage,
+        },
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -100,13 +112,13 @@ class AuthService {
     String? fileName,
   }) async {
     try {
-      final Map<String, dynamic> data = {
-        'email': email,
-        'role': role,
-      };
+      final Map<String, dynamic> data = {'email': email, 'role': role};
 
       if (kIsWeb && bytes != null) {
-        data['file'] = MultipartFile.fromBytes(bytes, filename: fileName ?? 'profile.jpg');
+        data['file'] = MultipartFile.fromBytes(
+          bytes,
+          filename: fileName ?? 'profile.jpg',
+        );
       } else if (filePath != null) {
         data['file'] = await MultipartFile.fromFile(filePath);
       } else {
@@ -114,7 +126,10 @@ class AuthService {
       }
 
       final formData = FormData.fromMap(data);
-      final response = await _dio.post('/auth/update-profile-photo', data: formData);
+      final response = await _dio.post(
+        '/auth/update-profile-photo',
+        data: formData,
+      );
       return response.data['photoUrl'];
     } on DioException catch (e) {
       throw _handleError(e);
@@ -128,12 +143,15 @@ class AuthService {
     required String role,
   }) async {
     try {
-      final response = await _dio.post("/auth/change-password", data: {
-        "email": email,
-        "oldPassword": oldPassword,
-        "newPassword": newPassword,
-        "role": role,
-      });
+      final response = await _dio.post(
+        "/auth/change-password",
+        data: {
+          "email": email,
+          "oldPassword": oldPassword,
+          "newPassword": newPassword,
+          "role": role,
+        },
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -145,10 +163,10 @@ class AuthService {
     required String role,
   }) async {
     try {
-      final response = await _dio.delete("/auth/delete-account", data: {
-        "email": email,
-        "role": role,
-      });
+      final response = await _dio.delete(
+        "/auth/delete-account",
+        data: {"email": email, "role": role},
+      );
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);

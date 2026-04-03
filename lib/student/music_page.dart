@@ -17,7 +17,7 @@ class MusicPage extends StatefulWidget {
 class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late AnimationController _starController;
-  
+
   @override
   void initState() {
     super.initState();
@@ -52,7 +52,7 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
       type: FileType.audio,
       withData: true, // Crucial for Web since path is null
     );
-    
+
     if (result != null && result.files.isNotEmpty) {
       final file = result.files.single;
 
@@ -72,7 +72,9 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
             content: TextField(
               controller: nameController,
               decoration: InputDecoration(
-                hintText: AppLocalizations.of(ctx)?.translate('enter_music_name') ?? 'Enter music name',
+                hintText:
+                    AppLocalizations.of(ctx)?.translate('enter_music_name') ??
+                    'Enter music name',
               ),
               autofocus: true,
               style: TextStyle(color: isDark ? Colors.white : Colors.black87),
@@ -80,11 +82,15 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, null),
-                child: Text(AppLocalizations.of(ctx)?.translate('cancel') ?? 'Cancel'),
+                child: Text(
+                  AppLocalizations.of(ctx)?.translate('cancel') ?? 'Cancel',
+                ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, nameController.text.trim()),
-                child: Text(AppLocalizations.of(ctx)?.translate('add') ?? 'Add'),
+                child: Text(
+                  AppLocalizations.of(ctx)?.translate('add') ?? 'Add',
+                ),
               ),
             ],
           );
@@ -95,8 +101,8 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
 
       // Pass the name, the path (might be null on web), and the bytes (for web support)
       await musicProvider.addCustomTrack(
-        name: customName, 
-        filePath: file.path, 
+        name: customName,
+        filePath: file.path,
         bytes: file.bytes,
       );
     }
@@ -164,7 +170,12 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                 if (index < musicProvider.library.length) {
                   final item = musicProvider.library[index];
                   final isCurrent = musicProvider.currentTrack == item['id'];
-                  return _buildInteractiveMusicCard(context, item, isCurrent, musicProvider);
+                  return _buildInteractiveMusicCard(
+                    context,
+                    item,
+                    isCurrent,
+                    musicProvider,
+                  );
                 } else {
                   return _buildAddMusicCard(context, musicProvider);
                 }
@@ -176,10 +187,13 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildEnhancedPlayerCard(BuildContext context, MusicProvider provider) {
+  Widget _buildEnhancedPlayerCard(
+    BuildContext context,
+    MusicProvider provider,
+  ) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     final currentTrackData = provider.library.firstWhere(
       (t) => t['id'] == provider.currentTrack,
       orElse: () => provider.library.first,
@@ -243,9 +257,14 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                 children: [
                   // Now Playing Badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: (currentTrackData['color'] as Color).withValues(alpha: 0.2),
+                      color: (currentTrackData['color'] as Color).withValues(
+                        alpha: 0.2,
+                      ),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -264,7 +283,9 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: (currentTrackData['color'] as Color).withValues(alpha: 0.15),
+                      color: (currentTrackData['color'] as Color).withValues(
+                        alpha: 0.15,
+                      ),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -277,7 +298,9 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
 
                   // Track title
                   Text(
-                    provider.formatTitle(currentTrackData['title'] ?? currentTrackData['id']),
+                    provider.formatTitle(
+                      currentTrackData['title'] ?? currentTrackData['id'],
+                    ),
                     style: TextDesign.h2.copyWith(
                       color: isDark ? Colors.white : Colors.black87,
                       fontSize: 22,
@@ -294,17 +317,30 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                         SliderTheme(
                           data: SliderTheme.of(context).copyWith(
                             trackHeight: 4,
-                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                            activeTrackColor: currentTrackData['color'] as Color,
-                            inactiveTrackColor: (currentTrackData['color'] as Color).withValues(alpha: 0.2),
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 6,
+                            ),
+                            overlayShape: const RoundSliderOverlayShape(
+                              overlayRadius: 12,
+                            ),
+                            activeTrackColor:
+                                currentTrackData['color'] as Color,
+                            inactiveTrackColor:
+                                (currentTrackData['color'] as Color).withValues(
+                                  alpha: 0.2,
+                                ),
                             thumbColor: currentTrackData['color'] as Color,
                           ),
                           child: Slider(
-                            value: provider.position.inSeconds.toDouble().clamp(0, provider.duration.inSeconds.toDouble()),
+                            value: provider.position.inSeconds.toDouble().clamp(
+                              0,
+                              provider.duration.inSeconds.toDouble(),
+                            ),
                             max: provider.duration.inSeconds.toDouble(),
                             onChanged: (value) {
-                              provider.player.seek(Duration(seconds: value.toInt()));
+                              provider.player.seek(
+                                Duration(seconds: value.toInt()),
+                              );
                             },
                           ),
                         ),
@@ -317,14 +353,18 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                                 _formatDuration(provider.position),
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: isDark ? Colors.white54 : Colors.black45,
+                                  color: isDark
+                                      ? Colors.white54
+                                      : Colors.black45,
                                 ),
                               ),
                               Text(
                                 _formatDuration(provider.duration),
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: isDark ? Colors.white54 : Colors.black45,
+                                  color: isDark
+                                      ? Colors.white54
+                                      : Colors.black45,
                                 ),
                               ),
                             ],
@@ -354,13 +394,16 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                             gradient: LinearGradient(
                               colors: [
                                 currentTrackData['color'] as Color,
-                                (currentTrackData['color'] as Color).withValues(alpha: 0.7),
+                                (currentTrackData['color'] as Color).withValues(
+                                  alpha: 0.7,
+                                ),
                               ],
                             ),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: (currentTrackData['color'] as Color).withValues(alpha: 0.5),
+                                color: (currentTrackData['color'] as Color)
+                                    .withValues(alpha: 0.5),
                                 blurRadius: 20,
                                 offset: const Offset(0, 10),
                               ),
@@ -420,7 +463,9 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
             onTap: () => provider.togglePlay(item),
             child: Container(
               decoration: BoxDecoration(
-                color: isCurrent ? Colors.transparent : Theme.of(context).cardColor,
+                color: isCurrent
+                    ? Colors.transparent
+                    : Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(24),
                 gradient: isCurrent
                     ? LinearGradient(
@@ -467,18 +512,25 @@ class _MusicPageState extends State<MusicPage> with TickerProviderStateMixin {
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            item['icon'] as IconData, // Kept the item's original icon as requested
+                            item['icon']
+                                as IconData, // Kept the item's original icon as requested
                             color: cardColor,
                             size: 36,
                           ),
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          provider.formatTitle(l10n?.translate(item['id']) ?? item['title'] ?? item['id']),
+                          provider.formatTitle(
+                            l10n?.translate(item['id']) ??
+                                item['title'] ??
+                                item['id'],
+                          ),
                           style: TextDesign.h3.copyWith(
                             fontSize: 13,
                             color: isDark ? Colors.white : Colors.black87,
-                            fontWeight: isCurrent ? FontWeight.bold : FontWeight.w600,
+                            fontWeight: isCurrent
+                                ? FontWeight.bold
+                                : FontWeight.w600,
                           ),
                           textAlign: TextAlign.center,
                           maxLines: 2,
@@ -565,7 +617,9 @@ class DreamyBackgroundPainter extends CustomPainter {
       final starSize = random.nextDouble() * 2.0;
       final opacity = (math.sin(progress * 2 * math.pi + i) + 1) / 2;
 
-      paint.color = Colors.white.withValues(alpha: opacity * (isDark ? 0.4 : 0.6));
+      paint.color = Colors.white.withValues(
+        alpha: opacity * (isDark ? 0.4 : 0.6),
+      );
       canvas.drawCircle(Offset(x, y), starSize, paint);
     }
 

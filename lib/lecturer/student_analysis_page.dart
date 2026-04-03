@@ -34,11 +34,17 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
   void _initFilters() {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     if (userProvider.department != null) {
-      final depts = userProvider.department!.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
+      final depts = userProvider.department!
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty);
       _availableDepartments.addAll(depts);
     }
     if (userProvider.stage != null) {
-      final stages = userProvider.stage!.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
+      final stages = userProvider.stage!
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty);
       _availableStages.addAll(stages);
     }
   }
@@ -93,49 +99,53 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
-              ? Center(child: Text(_errorMessage!, style: TextStyle(color: Colors.red)))
-              : RefreshIndicator(
-                  onRefresh: _loadAnalysis,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildFilters(isDark),
-                        const SizedBox(height: 24),
-                        _buildChartCard(isDark),
-                        const SizedBox(height: 32),
-                        Text(
-                          "Attendance Analytics",
-                          style: TextDesign.h2.copyWith(color: textColor),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildAttendanceAnalytics(isDark),
-                        const SizedBox(height: 32),
-                        Text(
-                          "Detailed Statistics",
-                          style: TextDesign.h2.copyWith(color: textColor),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildStatGrid(isDark),
-                        const SizedBox(height: 32),
-                        Text(
-                          "Top Performers",
-                          style: TextDesign.h2.copyWith(color: textColor),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTopPerformers(isDark),
-                        const SizedBox(height: 40),
-                      ],
+          ? Center(
+              child: Text(_errorMessage!, style: TextStyle(color: Colors.red)),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadAnalysis,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildFilters(isDark),
+                    const SizedBox(height: 24),
+                    _buildChartCard(isDark),
+                    const SizedBox(height: 32),
+                    Text(
+                      "Attendance Analytics",
+                      style: TextDesign.h2.copyWith(color: textColor),
                     ),
-                  ),
+                    const SizedBox(height: 16),
+                    _buildAttendanceAnalytics(isDark),
+                    const SizedBox(height: 32),
+                    Text(
+                      "Detailed Statistics",
+                      style: TextDesign.h2.copyWith(color: textColor),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildStatGrid(isDark),
+                    const SizedBox(height: 32),
+                    Text(
+                      "Top Performers",
+                      style: TextDesign.h2.copyWith(color: textColor),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTopPerformers(isDark),
+                    const SizedBox(height: 40),
+                  ],
                 ),
+              ),
+            ),
     );
   }
 
   Widget _buildChartCard(bool isDark) {
-    final trend = (_analysisData?['performance_trend'] as List?)?.cast<num>() ?? [0, 0, 0, 0, 0, 0, 0];
+    final trend =
+        (_analysisData?['performance_trend'] as List?)?.cast<num>() ??
+        [0, 0, 0, 0, 0, 0, 0];
     final days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
     return Container(
@@ -149,7 +159,7 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
             color: Colors.black.withOpacity(0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -168,9 +178,15 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
               LineChartData(
                 gridData: FlGridData(show: false),
                 titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
@@ -178,7 +194,8 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
                       interval: 1,
                       getTitlesWidget: (value, meta) {
                         int index = value.toInt();
-                        if (index < 0 || index >= days.length) return const SizedBox();
+                        if (index < 0 || index >= days.length)
+                          return const SizedBox();
                         return Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
@@ -196,7 +213,13 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
                 borderData: FlBorderData(show: false),
                 lineBarsData: [
                   LineChartBarData(
-                    spots: trend.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value.toDouble())).toList(),
+                    spots: trend
+                        .asMap()
+                        .entries
+                        .map(
+                          (e) => FlSpot(e.key.toDouble(), e.value.toDouble()),
+                        )
+                        .toList(),
                     isCurved: true,
                     gradient: const LinearGradient(
                       colors: [AppColors.secondary, Color(0xFF38BDF8)],
@@ -205,12 +228,13 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
                     isStrokeCapRound: true,
                     dotData: FlDotData(
                       show: true,
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 5,
-                        color: AppColors.secondary,
-                        strokeWidth: 2,
-                        strokeColor: Colors.white,
-                      ),
+                      getDotPainter: (spot, percent, barData, index) =>
+                          FlDotCirclePainter(
+                            radius: 5,
+                            color: AppColors.secondary,
+                            strokeWidth: 2,
+                            strokeColor: Colors.white,
+                          ),
                     ),
                     belowBarData: BarAreaData(
                       show: true,
@@ -250,7 +274,7 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
             color: Colors.black.withOpacity(0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -291,7 +315,9 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
                 value: 1.0,
                 strokeWidth: 8,
                 backgroundColor: Colors.transparent,
-                valueColor: AlwaysStoppedAnimation<Color>(color.withOpacity(0.1)),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  color.withOpacity(0.1),
+                ),
               ),
             ),
             SizedBox(
@@ -337,15 +363,40 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
       crossAxisSpacing: 16,
       childAspectRatio: 1.3,
       children: [
-        _buildMiniStat("Average Mark", "${stats['average_mark'] ?? 0}%", Icons.star_rounded, Colors.green),
-        _buildMiniStat("Engagement", "${stats['engagement'] ?? 0}%", Icons.bolt_rounded, Colors.amber),
-        _buildMiniStat("Attendance", "${stats['attendance'] ?? 0}%", Icons.calendar_today_rounded, Colors.blue),
-        _buildMiniStat("Materials Used", "${stats['materials_used'] ?? 0}", Icons.book_rounded, Colors.purple),
+        _buildMiniStat(
+          "Average Mark",
+          "${stats['average_mark'] ?? 0}%",
+          Icons.star_rounded,
+          Colors.green,
+        ),
+        _buildMiniStat(
+          "Engagement",
+          "${stats['engagement'] ?? 0}%",
+          Icons.bolt_rounded,
+          Colors.amber,
+        ),
+        _buildMiniStat(
+          "Attendance",
+          "${stats['attendance'] ?? 0}%",
+          Icons.calendar_today_rounded,
+          Colors.blue,
+        ),
+        _buildMiniStat(
+          "Materials Used",
+          "${stats['materials_used'] ?? 0}",
+          Icons.book_rounded,
+          Colors.purple,
+        ),
       ],
     );
   }
 
-  Widget _buildMiniStat(String label, String value, IconData icon, Color color) {
+  Widget _buildMiniStat(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(20),
@@ -391,7 +442,10 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
-          child: Text("No performers yet", style: TextStyle(color: isDark ? Colors.white60 : Colors.grey)),
+          child: Text(
+            "No performers yet",
+            style: TextStyle(color: isDark ? Colors.white60 : Colors.grey),
+          ),
         ),
       );
     }
@@ -400,10 +454,14 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
       children: performers.map((p) {
         final grade = p['grade'] as String;
         Color gradeColor;
-        if (grade.startsWith('A')) gradeColor = Colors.green;
-        else if (grade.startsWith('B')) gradeColor = Colors.blue;
-        else if (grade.startsWith('C')) gradeColor = Colors.orange;
-        else gradeColor = Colors.red;
+        if (grade.startsWith('A'))
+          gradeColor = Colors.green;
+        else if (grade.startsWith('B'))
+          gradeColor = Colors.blue;
+        else if (grade.startsWith('C'))
+          gradeColor = Colors.orange;
+        else
+          gradeColor = Colors.red;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -418,7 +476,10 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
                 backgroundColor: gradeColor.withOpacity(0.1),
                 child: Text(
                   grade[0],
-                  style: TextStyle(color: gradeColor, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: gradeColor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -512,7 +573,11 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          icon: Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: isDark ? Colors.white60 : Colors.grey),
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 20,
+            color: isDark ? Colors.white60 : Colors.grey,
+          ),
           dropdownColor: isDark ? const Color(0xFF0F172A) : Colors.white,
           style: TextStyle(
             color: isDark ? Colors.white : const Color(0xFF0F172A),
@@ -520,10 +585,7 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
             fontWeight: FontWeight.w600,
           ),
           items: items.map((String item) {
-            return DropdownMenuItem<String>(
-              value: item,
-              child: Text(item),
-            );
+            return DropdownMenuItem<String>(value: item, child: Text(item));
           }).toList(),
           onChanged: onChanged,
         ),

@@ -80,11 +80,15 @@ class _CustomButtonState extends State<CustomButton>
           height: 55,
           decoration: BoxDecoration(
             color: widget.color,
-            gradient: widget.color != null ? null : (widget.gradient ?? AppColors.primaryGradient),
+            gradient: widget.color != null
+                ? null
+                : (widget.gradient ?? AppColors.primaryGradient),
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: (widget.color ?? AppColors.primary).withOpacity(0.25), // Softer
+                color: (widget.color ?? AppColors.primary).withOpacity(
+                  0.25,
+                ), // Softer
                 blurRadius: 20, // Increased blur
                 spreadRadius: 2, // Slight spread
                 offset: const Offset(0, 8), // Deeper offset

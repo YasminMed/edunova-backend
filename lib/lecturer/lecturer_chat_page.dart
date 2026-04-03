@@ -40,7 +40,9 @@ class _LecturerChatPageState extends State<LecturerChatPage>
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     if (userProvider.email == null) return;
 
-    final sessions = await _chatService.getUserChatSessions(userProvider.email!);
+    final sessions = await _chatService.getUserChatSessions(
+      userProvider.email!,
+    );
     final groups = await _chatService.getUserGroupChats(userProvider.email!);
 
     if (!mounted) return;
@@ -51,7 +53,9 @@ class _LecturerChatPageState extends State<LecturerChatPage>
           'session_id': s.sessionId,
           'other_user_id': s.otherUser.id,
           'other_user_email': s.otherUser.email,
-          'name': s.otherUser.role == 'student' ? 'Student: ${s.otherUser.fullName}' : s.otherUser.fullName,
+          'name': s.otherUser.role == 'student'
+              ? 'Student: ${s.otherUser.fullName}'
+              : s.otherUser.fullName,
           'message': s.latestMessage.isEmpty ? 'Say Hi!' : s.latestMessage,
           'time': _formatTime(s.latestMessageTime),
           'unread': s.unreadCount > 0,
@@ -60,7 +64,7 @@ class _LecturerChatPageState extends State<LecturerChatPage>
           'photo_url': s.otherUser.photoUrl,
         });
       }
-      
+
       _allGroups.clear();
       for (var g in groups) {
         _allGroups.add({
@@ -68,14 +72,16 @@ class _LecturerChatPageState extends State<LecturerChatPage>
           'name': g.name,
           'photo_url': g.photoUrl,
           'admin_id': g.adminId,
-          'message': g.latestMessage.isEmpty ? 'Group created' : g.latestMessage,
+          'message': g.latestMessage.isEmpty
+              ? 'Group created'
+              : g.latestMessage,
           'time': _formatTime(g.latestMessageTime),
           'unread': false,
           'unreadCount': 0,
           'avatarColor': Colors.green, // default color
         });
       }
-      
+
       _isLoading = false;
     });
   }
@@ -119,7 +125,8 @@ class _LecturerChatPageState extends State<LecturerChatPage>
         builder: (context, setDialogState) {
           return AlertDialog(
             title: Text(
-              AppLocalizations.of(context)?.translate('add_friend') ?? 'Add Friend',
+              AppLocalizations.of(context)?.translate('add_friend') ??
+                  'Add Friend',
               style: TextDesign.h3,
             ),
             content: SizedBox(
@@ -130,14 +137,22 @@ class _LecturerChatPageState extends State<LecturerChatPage>
                   TextField(
                     onChanged: (value) => searchQuery = value,
                     decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)?.translate('enter_email') ?? 'Enter email or username',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      hintText:
+                          AppLocalizations.of(
+                            context,
+                          )?.translate('enter_email') ??
+                          'Enter email or username',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.search),
                         onPressed: () async {
                           if (searchQuery.isEmpty) return;
                           setDialogState(() => isSearching = true);
-                          final results = await _chatService.searchUsers(searchQuery);
+                          final results = await _chatService.searchUsers(
+                            searchQuery,
+                          );
                           setDialogState(() {
                             searchResults = results;
                             isSearching = false;
@@ -161,9 +176,17 @@ class _LecturerChatPageState extends State<LecturerChatPage>
                             title: Text(user.fullName),
                             subtitle: Text(user.email),
                             onTap: () async {
-                              final currentUserEmail = Provider.of<UserProvider>(context, listen: false).email;
+                              final currentUserEmail =
+                                  Provider.of<UserProvider>(
+                                    context,
+                                    listen: false,
+                                  ).email;
                               if (currentUserEmail != null) {
-                                final session = await _chatService.startChatSession(currentUserEmail, user.id);
+                                final session = await _chatService
+                                    .startChatSession(
+                                      currentUserEmail,
+                                      user.id,
+                                    );
                                 if (session != null && mounted) {
                                   Navigator.pop(context); // close dialog
                                   Navigator.push(
@@ -263,7 +286,10 @@ class _LecturerChatPageState extends State<LecturerChatPage>
           ? const Center(child: CircularProgressIndicator())
           : TabBarView(
               controller: _tabController,
-              children: [_buildList(_allChats, false), _buildList(_allGroups, true)],
+              children: [
+                _buildList(_allChats, false),
+                _buildList(_allGroups, true),
+              ],
             ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 80),
@@ -292,14 +318,24 @@ class _LecturerChatPageState extends State<LecturerChatPage>
 
   Widget _buildList(List<Map<String, dynamic>> list, bool isGroupView) {
     if (list.isEmpty) {
-      return Center(child: Text(isGroupView ? "No groups yet. Click the + button to create one!" : "No chats yet. Click the + button to start one!"));
+      return Center(
+        child: Text(
+          isGroupView
+              ? "No groups yet. Click the + button to create one!"
+              : "No chats yet. Click the + button to start one!",
+        ),
+      );
     }
-    
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final filtered = list
-        .where((m) => m['name'].toLowerCase().contains(_searchQuery) || m['message'].toLowerCase().contains(_searchQuery))
+        .where(
+          (m) =>
+              m['name'].toLowerCase().contains(_searchQuery) ||
+              m['message'].toLowerCase().contains(_searchQuery),
+        )
         .toList();
-        
+
     return ListView.builder(
       padding: const EdgeInsets.only(top: 10, bottom: 100),
       itemCount: filtered.length,
@@ -346,14 +382,16 @@ class _LecturerChatPageState extends State<LecturerChatPage>
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isDark 
-                    ? Colors.white.withOpacity(0.04) 
+                color: isDark
+                    ? Colors.white.withOpacity(0.04)
                     : const Color(0xFFFBFDFF),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: unread 
-                      ? AppColors.secondary.withOpacity(0.2) 
-                      : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.02)),
+                  color: unread
+                      ? AppColors.secondary.withOpacity(0.2)
+                      : (isDark
+                            ? Colors.white.withOpacity(0.05)
+                            : Colors.black.withOpacity(0.02)),
                   width: 1.5,
                 ),
                 boxShadow: [
@@ -375,18 +413,28 @@ class _LecturerChatPageState extends State<LecturerChatPage>
                         decoration: BoxDecoration(
                           color: avatarColor.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(18),
-                          image: chat['photo_url'] != null 
+                          image: chat['photo_url'] != null
                               ? DecorationImage(
-                                  image: NetworkImage("${ChatService.baseUrl}${chat['photo_url']}"),
+                                  image: NetworkImage(
+                                    "${ChatService.baseUrl}${chat['photo_url']}",
+                                  ),
                                   fit: BoxFit.cover,
                                 )
                               : null,
                         ),
-                        child: (isGroupView && chat['photo_url'] == null) 
-                            ? Icon(Icons.groups_rounded, color: avatarColor, size: 28)
-                            : (!isGroupView && chat['photo_url'] == null 
-                                ? Icon(Icons.person_rounded, color: avatarColor, size: 28) 
-                                : null),
+                        child: (isGroupView && chat['photo_url'] == null)
+                            ? Icon(
+                                Icons.groups_rounded,
+                                color: avatarColor,
+                                size: 28,
+                              )
+                            : (!isGroupView && chat['photo_url'] == null
+                                  ? Icon(
+                                      Icons.person_rounded,
+                                      color: avatarColor,
+                                      size: 28,
+                                    )
+                                  : null),
                       ),
                       if (unread)
                         Positioned(
@@ -399,7 +447,9 @@ class _LecturerChatPageState extends State<LecturerChatPage>
                               color: Colors.green,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                color: isDark
+                                    ? const Color(0xFF1E293B)
+                                    : Colors.white,
                                 width: 2,
                               ),
                             ),
@@ -421,8 +471,12 @@ class _LecturerChatPageState extends State<LecturerChatPage>
                                 chat['name'],
                                 style: TextDesign.h3.copyWith(
                                   fontSize: 16,
-                                  fontWeight: unread ? FontWeight.w900 : FontWeight.w700,
-                                  color: isDark ? Colors.white : AppColors.primaryText,
+                                  fontWeight: unread
+                                      ? FontWeight.w900
+                                      : FontWeight.w700,
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.primaryText,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -432,8 +486,12 @@ class _LecturerChatPageState extends State<LecturerChatPage>
                               chat['time'],
                               style: TextStyle(
                                 fontSize: 11,
-                                fontWeight: unread ? FontWeight.w800 : FontWeight.w500,
-                                color: unread ? AppColors.secondary : Colors.grey,
+                                fontWeight: unread
+                                    ? FontWeight.w800
+                                    : FontWeight.w500,
+                                color: unread
+                                    ? AppColors.secondary
+                                    : Colors.grey,
                               ),
                             ),
                           ],
@@ -446,10 +504,16 @@ class _LecturerChatPageState extends State<LecturerChatPage>
                                 chat['message'],
                                 style: TextDesign.body.copyWith(
                                   fontSize: 14,
-                                  color: unread 
-                                      ? (isDark ? Colors.white : AppColors.primaryText) 
-                                      : (isDark ? Colors.white60 : AppColors.mutedText),
-                                  fontWeight: unread ? FontWeight.w600 : FontWeight.normal,
+                                  color: unread
+                                      ? (isDark
+                                            ? Colors.white
+                                            : AppColors.primaryText)
+                                      : (isDark
+                                            ? Colors.white60
+                                            : AppColors.mutedText),
+                                  fontWeight: unread
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -457,7 +521,10 @@ class _LecturerChatPageState extends State<LecturerChatPage>
                             ),
                             if (unread && unreadCount > 0)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppColors.secondary,
                                   borderRadius: BorderRadius.circular(10),
