@@ -355,6 +355,13 @@ class AppLocalizations {
           'EduNova is a comprehensive educational platform designed to streamline the academic experience for both students and lecturers, fostering a collaborative and engaging environment.',
       'contact_us': 'Contact Us',
       'version': 'Version',
+      'challenge_won': 'Challenge Won!',
+      'challenge_failed': 'Challenge Failed',
+      'congratulations_tasks':
+          "Congratulations! You completed all tasks for last week's challenge. You've earned a challenge medal.",
+      'failed_tasks_new_ready':
+          "You didn't complete all tasks for last week's challenge. Don't worry, new challenges are now available!",
+      'got_it': 'Got it',
     },
     'ar': {
       'reset_password_subtitle': 'أنشئ كلمة مرور جديدة لحسابك',
@@ -690,6 +697,13 @@ class AppLocalizations {
           'إديونوفا هي منصة تعليمية شاملة مصممة لتبسيط التجربة الأكاديمية لكل من الطلاب والمحاضرين، مما يعزز بيئة تعاونية وجذابة.',
       'contact_us': 'اتصل بنا',
       'version': 'الإصدار',
+      'challenge_won': 'تم الفوز بالتحدي!',
+      'challenge_failed': 'فشل التحدي',
+      'congratulations_tasks':
+          'تهانينا! لقد أكملت جميع المهام لتحدي الأسبوع الماضي. لقد حصلت على وسام التحدي.',
+      'failed_tasks_new_ready':
+          'لم تكمل جميع المهام لتحدي الأسبوع الماضي. لا تقلق، تحديات جديدة متاحة الآن!',
+      'got_it': 'فهمت',
     },
     'ckb': {
       'reset_password_subtitle': 'وشەی نهێنی نوێ بۆ هەژمارەکەت دروست بکە',
@@ -1034,6 +1048,13 @@ class AppLocalizations {
           'ئیدیۆنۆڤا سەکۆیەکی پەروەردەیی گشتگیرە کە دروستکراوە بۆ ئاسانکردنی ئەزموونی ئەکادیمی بۆ هەردوو قوتابیان و مامۆستایان، لەگەڵ ڕەخساندنی ژینگەیەکی یارمەتیدەر.',
       'contact_us': 'پەیوەندیمان پێوە بکە',
       'version': 'وەشان',
+      'challenge_won': 'بەرەنگارییەکە بردرایەوە!',
+      'challenge_failed': 'بەرەنگارییەکە دۆڕا',
+      'congratulations_tasks':
+          'پیرۆزە! هەموو ئەرکەکانی بەرەنگاریی هەفتەی ڕابردوو تەواو بوون. مەدالیای بەرەنگاریت بەدەستهێنا.',
+      'failed_tasks_new_ready':
+          'هەموو ئەرکەکانی بەرەنگاریی هەفتەی ڕابردووت تەواو نەکرد. خەم مەخۆ، بەرەنگاریی نوێ ئێستا بەردەستە!',
+      'got_it': 'تێگەیشتم',
     },
   };
 

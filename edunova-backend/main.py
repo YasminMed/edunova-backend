@@ -1531,7 +1531,12 @@ def get_all_student_averages_and_data(db: Session, department: Optional[str] = N
     if stage:
         query = query.filter(models.User.stage == stage)
     all_students = query.all()
-    courses = db.query(models.Course).all()
+    courses_query = db.query(models.Course)
+    if department:
+        courses_query = courses_query.filter(models.Course.department == department)
+    if stage:
+        courses_query = courses_query.filter(models.Course.stage == stage)
+    courses = courses_query.all()
     
     results = {} # student_id -> {"name": "", "email": "", "total_avg": 0.0, "subjects": []}
     

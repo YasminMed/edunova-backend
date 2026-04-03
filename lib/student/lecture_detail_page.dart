@@ -174,36 +174,59 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
             slivers: [
               // Custom Silver AppBar
               SliverAppBar(
-                expandedHeight: 120,
+                expandedHeight: 140,
                 pinned: true,
+                stretch: true,
+                backgroundColor: isDark ? const Color(0xFF1A1A1A) : color,
                 flexibleSpace: FlexibleSpaceBar(
                   centerTitle: true,
                   title: Text(
                     widget.lecture['subject'],
                     style: TextDesign.h3.copyWith(
                       color: Colors.white,
+                      fontSize: 18,
                       shadows: [
-                        Shadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 8,
+                        const Shadow(
+                          color: Colors.black26,
+                          blurRadius: 10,
+                          offset: Offset(0, 2),
                         ),
                       ],
                     ),
                   ),
-                  background: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [color, color.withOpacity(0.8)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? [
+                                    color.withOpacity(0.4),
+                                    const Color(0xFF1A1A1A),
+                                  ]
+                                : [
+                                    color,
+                                    color.withOpacity(0.8),
+                                  ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
                       ),
-                    ),
+                      if (isDark)
+                        BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(color: Colors.transparent),
+                        ),
+                    ],
                   ),
                 ),
                 leading: IconButton(
                   icon: const Icon(
                     Icons.arrow_back_ios_new_rounded,
                     color: Colors.white,
+                    size: 20,
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
@@ -229,18 +252,22 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 10,
+                                horizontal: 22,
+                                vertical: 12,
                               ),
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? AppColors.primary
-                                    : AppColors.primary.withOpacity(0.1),
+                                    : isDark
+                                        ? Colors.white.withOpacity(0.05)
+                                        : AppColors.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: isSelected
                                       ? AppColors.primary
-                                      : AppColors.primary.withOpacity(0.2),
+                                      : isDark
+                                          ? Colors.white.withOpacity(0.1)
+                                          : AppColors.primary.withOpacity(0.2),
                                   width: 1.5,
                                 ),
                                 boxShadow: isSelected
@@ -260,10 +287,12 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                                 style: TextStyle(
                                   color: isSelected
                                       ? Colors.white
-                                      : (isDark
-                                            ? Colors.white
-                                            : Colors.black87),
-                                  fontWeight: FontWeight.bold,
+                                      : isDark
+                                          ? Colors.white
+                                          : Colors.black87,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
                                 ),
                               ),
                             ),

@@ -128,89 +128,108 @@ class _LecturesPageState extends State<LecturesPage> {
           borderRadius: BorderRadius.circular(24),
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: gradient
-                    .map((c) => c.withOpacity(isDark ? 0.2 : 0.3))
-                    .toList(),
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: mainColor.withOpacity(0.4), width: 1.5),
+              border: Border.all(
+                color: mainColor.withValues(alpha: isDark ? 0.3 : 0.5),
+                width: 1.5,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: mainColor.withOpacity(isDark ? 0.05 : 0.1),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: mainColor.withValues(alpha: isDark ? 0.1 : 0.15),
+                  blurRadius: 15,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Stack(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: mainColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      _getIconForCourse(lecture['subject']),
-                      color: isDark ? Colors.white : mainColor,
-                      size: 26,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    lecture['subject'],
-                    style: TextDesign.h3.copyWith(
-                      color: isDark ? Colors.white : AppColors.primaryText,
-                      fontSize: 16,
-                      height: 1.2,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    lecture['code'],
-                    style: TextStyle(
-                      color: isDark
-                          ? Colors.white54
-                          : AppColors.primaryText.withOpacity(0.6),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person,
-                        size: 12,
-                        color: isDark
-                            ? Colors.white54
-                            : AppColors.primaryText.withOpacity(0.5),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          lecture['professor'],
-                          style: TextStyle(
-                            color: isDark
-                                ? Colors.white70
-                                : AppColors.primaryText.withOpacity(0.7),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                  // Subtle Gradient Overlay
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            mainColor.withValues(alpha: isDark ? 0.05 : 0.1),
+                            mainColor.withValues(alpha: isDark ? 0.02 : 0.05),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
                       ),
-                    ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: mainColor.withValues(alpha: isDark ? 0.15 : 0.1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            _getIconForCourse(lecture['subject']),
+                            color: isDark ? Colors.white : mainColor,
+                            size: 26,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          lecture['subject'],
+                          style: TextDesign.h3.copyWith(
+                            color: isDark ? Colors.white : AppColors.primaryText,
+                            fontSize: 16,
+                            height: 1.2,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          lecture['code'],
+                          style: TextStyle(
+                            color: isDark
+                                ? Colors.white54
+                                : AppColors.primaryText.withOpacity(0.6),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.person,
+                              size: 12,
+                              color: isDark
+                                  ? Colors.white54
+                                  : AppColors.primaryText.withOpacity(0.5),
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                lecture['professor'],
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white70
+                                      : AppColors.primaryText.withOpacity(0.7),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

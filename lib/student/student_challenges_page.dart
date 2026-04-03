@@ -84,7 +84,13 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      isWin ? "Challenge Won!" : "Challenge Failed",
+                      isWin
+                          ? (AppLocalizations.of(context)
+                                  ?.translate('challenge_won') ??
+                              "Challenge Won!")
+                          : (AppLocalizations.of(context)
+                                  ?.translate('challenge_failed') ??
+                              "Challenge Failed"),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -92,16 +98,21 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
               ),
               content: Text(
                 isWin
-                    ? "Congratulations! You completed all tasks for last week's challenge. You've earned a challenge medal."
-                    : "You didn't complete all tasks for last week's challenge. Don't worry, new challenges are now available!",
+                    ? (AppLocalizations.of(context)
+                            ?.translate('congratulations_tasks') ??
+                        "Congratulations! You completed all tasks for last week's challenge. You've earned a challenge medal.")
+                    : (AppLocalizations.of(context)
+                            ?.translate('failed_tasks_new_ready') ??
+                        "You didn't complete all tasks for last week's challenge. Don't worry, new challenges are now available!"),
                 style: const TextStyle(fontSize: 15),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    "Got it",
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  child: Text(
+                    AppLocalizations.of(context)?.translate('got_it') ??
+                        "Got it",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -141,7 +152,8 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Weekly Challenges",
+          AppLocalizations.of(context)?.translate('weekly_challenges_title') ??
+              "Weekly Challenges",
           style: TextDesign.h2.copyWith(
             color: isDark ? Colors.white : Colors.black87,
           ),
