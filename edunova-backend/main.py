@@ -580,7 +580,12 @@ otp_storage = {}
 verified_reset_emails = set()
 
 @app.post("/auth/send-otp")
-async def send_otp(request: OTPRequest):
+async def send_otp(request: OTPRequest, db: Session = Depends(get_db)):
+    # Verify user exists first
+    db_user = db.query(models.User).filter(models.User.email.ilike(request.email)).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="No account found with this email address.")
+
     otp = "".join([str(secrets.randbelow(10)) for _ in range(6)])
     
     try:
@@ -628,7 +633,7 @@ async def reset_password(request: ResetPasswordRequest, db: Session = Depends(ge
     if request.email not in verified_reset_emails:
         raise HTTPException(status_code=403, detail="Email not verified for password reset. Please request a new OTP.")
         
-    db_user = db.query(models.User).filter(models.User.email == request.email).first()
+    db_user = db.query(models.User).filter(models.User.email.ilike(request.email)).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
         
