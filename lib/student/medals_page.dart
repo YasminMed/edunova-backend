@@ -1,46 +1,80 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
+import '../services/material_service.dart';
+import '../providers/user_provider.dart';
 
-class MedalsPage extends StatelessWidget {
+class MedalsPage extends StatefulWidget {
   const MedalsPage({super.key});
+
+  @override
+  State<MedalsPage> createState() => _MedalsPageState();
+}
+
+class _MedalsPageState extends State<MedalsPage> {
+  final MaterialService _materialService = MaterialService();
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _medals = [];
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchMedals();
+    });
+  }
+
+  Future<void> _fetchMedals() async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final email = userProvider.email;
+      if (email == null) return;
+      
+      final data = await _materialService.getStudentMedals(email);
+      if (mounted) {
+        setState(() {
+          _medals = List<Map<String, dynamic>>.from(data);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  IconData _getIconFromString(String iconName) {
+    switch (iconName) {
+      case 'assignment_ind_rounded': return Icons.assignment_ind_rounded;
+      case 'emoji_events_rounded': return Icons.emoji_events_rounded;
+      case 'stars_rounded': return Icons.stars_rounded;
+      case 'military_tech_rounded': return Icons.military_tech_rounded;
+      case 'wb_sunny_rounded': return Icons.wb_sunny_rounded;
+      default: return Icons.stars;
+    }
+  }
+
+  Color _getColorFromString(String colorStr) {
+    switch (colorStr) {
+      case 'blue': return Colors.blue;
+      case 'orange': return Colors.orange;
+      case 'green': return Colors.green;
+      case 'amber': return Colors.amber;
+      default: return Colors.blue;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
-
-    final List<Map<String, dynamic>> medals = [
-      {
-        'name': l10n?.translate('assignment_solver') ?? 'Assignment Solver',
-        'desc': 'Completed 50 assignments correctly.',
-        'date': 'Oct 12, 2025',
-        'icon': Icons.assignment_ind_rounded,
-        'color': Colors.blue,
-      },
-      {
-        'name': l10n?.translate('challenger') ?? 'Challenger',
-        'desc': 'Won 3 weekly academic challenges.',
-        'date': 'Oct 28, 2025',
-        'icon': Icons.emoji_events_rounded,
-        'color': Colors.orange,
-      },
-      {
-        'name': l10n?.translate('active_student') ?? 'Active Student',
-        'desc': 'Maintained 100% attendance this month.',
-        'date': 'Nov 05, 2025',
-        'icon': Icons.stars_rounded,
-        'color': Colors.green,
-      },
-      {
-        'name': 'Early Bird',
-        'desc': 'Log in before 8 AM for 7 consecutive days.',
-        'date': 'Nov 10, 2025',
-        'icon': Icons.wb_sunny_rounded,
-        'color': Colors.amber,
-      },
-    ];
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -61,29 +95,38 @@ class MedalsPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: CustomScrollView(
-        slivers: [
-          // Hero Section: Total Medals
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: _buildMedalsHero(context, medals.length),
-            ),
-          ),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : _errorMessage != null
+          ? Center(child: Text(_errorMessage!))
+          : CustomScrollView(
+              slivers: [
+                // Hero Section: Total Medals
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: _buildMedalsHero(context, _medals.length),
+                  ),
+                ),
 
-          // Medals List
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => _buildMedalTile(context, medals[index]),
-                childCount: medals.length,
-              ),
+                // Medals List
+                if (_medals.isEmpty)
+                  const SliverFillRemaining(
+                    child: Center(child: Text("Keep interacting to unlock medals!")),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _buildMedalTile(context, _medals[index]),
+                        childCount: _medals.length,
+                      ),
+                    ),
+                  ),
+                const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              ],
             ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 40)),
-        ],
-      ),
     );
   }
 
@@ -265,10 +308,10 @@ class MedalsPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: medal['color'].withOpacity(0.1),
+              color: _getColorFromString(medal['color'] ?? 'blue').withOpacity(0.1),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(medal['icon'], color: medal['color'], size: 30),
+            child: Icon(_getIconFromString(medal['icon']), color: _getColorFromString(medal['color'] ?? 'blue'), size: 30),
           ),
           const SizedBox(width: 16),
           Expanded(

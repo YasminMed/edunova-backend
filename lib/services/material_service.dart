@@ -475,6 +475,15 @@ class MaterialService {
     }
   }
 
+  Future<List<dynamic>> getStudentMedals(String email) async {
+    try {
+      final response = await _dio.get("/student/medals/$email");
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Future<void> completeWeeklyChallenge(int challengeId, String email) async {
     try {
       final formData = FormData.fromMap({"student_email": email});

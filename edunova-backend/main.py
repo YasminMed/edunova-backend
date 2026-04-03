@@ -2715,6 +2715,7 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
         raise HTTPException(status_code=404, detail="Student not found")
         
     week_start = get_current_week_start()
+    last_week_start = week_start - datetime.timedelta(days=7)
     
     q_count = db.query(models.QuizSubmission).filter(
         models.QuizSubmission.student_id == student.id,
@@ -2734,13 +2735,111 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
     att_present = len([att for att in att_this_week if att.status.lower() == "attended"])
     att_total = len(att_this_week)
     att_rate = att_present / att_total if att_total > 0 else 0.0
+
+    # Determine previous week status
+    prev_q_count = db.query(models.QuizSubmission).filter(
+        models.QuizSubmission.student_id == student.id,
+        models.QuizSubmission.submitted_at >= last_week_start,
+        models.QuizSubmission.submitted_at < week_start
+    ).count()
+
+    prev_a_count = db.query(models.AssignmentSubmission).filter(
+        models.AssignmentSubmission.student_id == student.id,
+        models.AssignmentSubmission.submitted_at >= last_week_start,
+        models.AssignmentSubmission.submitted_at < week_start
+    ).count()
+
+    prev_att_week = db.query(models.Attendance).filter(
+        models.Attendance.student_id == student.id,
+        models.Attendance.date >= last_week_start,
+        models.Attendance.date < week_start
+    ).all()
+
+    prev_att_present = len([att for att in prev_att_week if att.status.lower() == "attended"])
+    prev_att_total = len(prev_att_week)
+    prev_att_rate = prev_att_present / prev_att_total if prev_att_total > 0 else 0.0
+
+    prev_status = "none"
+    if prev_q_count > 0 or prev_a_count > 0 or prev_att_total > 0:
+        if prev_q_count >= 3 and prev_a_count >= 5 and (prev_att_total == 0 or prev_att_rate >= 0.8):
+            prev_status = "won"
+        else:
+            prev_status = "failed"
+    elif student.id is not None:
+        prev_status = "failed"
+
+    last_week_str = last_week_start.strftime("%Y-W%U")
     
     return {
         "quizzes": {"current": q_count, "target": 3},
         "assignments": {"current": a_count, "target": 5},
         "attendance": {"current_rate": round(att_rate, 2), "target_rate": 0.8, "total_sessions": att_total, "present_sessions": att_present},
-        "total_marks": student.total_academic_marks or 0
+        "total_marks": student.total_academic_marks or 0,
+        "previous_week": {"week_str": last_week_str, "status": prev_status}
     }
+
+@app.get("/student/medals/{email}")
+async def get_student_medals(email: str, db: Session = Depends(get_db)):
+    student = db.query(models.User).filter(models.User.email == email).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    medals = []
+
+    a_count = db.query(models.AssignmentSubmission).filter(
+        models.AssignmentSubmission.student_id == student.id
+    ).count()
+    if a_count >= 5:
+        medals.append({
+            "name": "Assignment Solver",
+            "desc": "Completed 5 assignments correctly.",
+            "date": datetime.datetime.utcnow().strftime("%b %d, %Y"),
+            "icon": "assignment_ind_rounded",
+            "color": "blue",
+        })
+
+    c_count = db.query(models.ChallengeCompletion).filter(
+        models.ChallengeCompletion.student_id == student.id
+    ).count()
+    if c_count >= 1:
+        medals.append({
+            "name": "Challenger",
+            "desc": f"Won {c_count} weekly academic challenge(s).",
+            "date": datetime.datetime.utcnow().strftime("%b %d, %Y"),
+            "icon": "emoji_events_rounded",
+            "color": "orange",
+        })
+
+    att_all = db.query(models.Attendance).filter(
+        models.Attendance.student_id == student.id
+    ).all()
+    if len(att_all) >= 3:
+        att_present = len([a for a in att_all if a.status.lower() == "attended"])
+        if (att_present / len(att_all)) >= 0.8:
+            medals.append({
+                "name": "Active Student",
+                "desc": "Maintained 80%+ attendance for classes.",
+                "date": datetime.datetime.utcnow().strftime("%b %d, %Y"),
+                "icon": "stars_rounded",
+                "color": "green",
+            })
+
+    all_stats = get_all_student_averages_and_data(db, department=student.department, stage=student.stage)
+    student_stats = all_stats.get(student.id)
+    if student_stats:
+        all_avgs = sorted([s["total_avg"] for s in all_stats.values()], reverse=True)
+        rank = all_avgs.index(student_stats["total_avg"]) + 1 if student_stats["total_avg"] in all_avgs else len(all_avgs)
+        perc = (rank / len(all_stats) * 100) if len(all_stats) > 0 else 0
+        if perc <= 10 or rank <= 3:
+            medals.append({
+                "name": "Top Ranker",
+                "desc": "Ranked in the top 10% or top 3 of the class.",
+                "date": datetime.datetime.utcnow().strftime("%b %d, %Y"),
+                "icon": "military_tech_rounded",
+                "color": "amber",
+            })
+
+    return medals
 
 @app.get("/challenges")
 async def get_challenges(db: Session = Depends(get_db)):

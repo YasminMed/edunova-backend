@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../services/material_service.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StudentChallengesPage extends StatefulWidget {
   const StudentChallengesPage({super.key});
@@ -38,6 +39,7 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
           _status = data;
           _isLoading = false;
         });
+        _checkPreviousWeekStatus(data['previous_week']);
       }
     } catch (e) {
       if (mounted) {
@@ -46,6 +48,61 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _checkPreviousWeekStatus(Map<String, dynamic>? prevWeek) async {
+    if (prevWeek == null) return;
+    final String? weekStr = prevWeek['week_str'];
+    final String? status = prevWeek['status'];
+
+    if (status == null || status == 'none' || weekStr == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final lastNotified = prefs.getString('last_notified_challenge_week');
+
+    if (lastNotified != weekStr) {
+      if (mounted) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            final isWin = status == 'won';
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [
+                  Icon(
+                    isWin ? Icons.emoji_events_rounded : Icons.sentiment_dissatisfied_rounded,
+                    color: isWin ? Colors.amber : Colors.red,
+                    size: 32,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      isWin ? "Challenge Won!" : "Challenge Failed",
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                isWin 
+                    ? "Congratulations! You completed all tasks for last week's challenge. You've earned a challenge medal."
+                    : "You didn't complete all tasks for last week's challenge. Don't worry, new challenges are now available!",
+                style: const TextStyle(fontSize: 15),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Got it", style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      }
+      await prefs.setString('last_notified_challenge_week', weekStr);
     }
   }
 
