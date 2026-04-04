@@ -453,6 +453,34 @@ async def update_profile(profile: ProfileUpdate, db: Session = Depends(get_db)):
         "stage": db_user.stage
     }
 
+import uuid
+from fastapi.responses import Response
+
+@app.get("/api/files/{file_id}")
+async def get_file(file_id: str, db: Session = Depends(get_db)):
+    upload_file = db.query(models.UploadFile).filter(models.UploadFile.id == file_id).first()
+    if not upload_file:
+        raise HTTPException(status_code=404, detail="File not found")
+    return Response(content=upload_file.data, media_type=upload_file.content_type)
+
+@app.post("/api/files/upload")
+async def upload_file_endpoint(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    try:
+        file_id = str(uuid.uuid4())
+        content = await file.read()
+        new_upload = models.UploadFile(
+            id=file_id,
+            filename=file.filename,
+            content_type=file.content_type,
+            data=content
+        )
+        db.add(new_upload)
+        db.commit()
+        return {"file_id": file_id, "url": f"/api/files/{file_id}"}
+    except Exception as e:
+        print(f"DEBUG: Error uploading file: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload file")
+
 @app.post("/auth/update-profile-photo")
 async def update_profile_photo(
     email: str = Form(...),
@@ -465,15 +493,17 @@ async def update_profile_photo(
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Save the file
-    file_ext = file.filename.split(".")[-1]
-    file_name = f"profile_{secrets.token_hex(8)}.{file_ext}"
-    file_path = os.path.join(UPLOAD_DIR, file_name)
-    
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    file_id = str(uuid.uuid4())
+    content = await file.read()
+    new_upload = models.UploadFile(
+        id=file_id,
+        filename=file.filename,
+        content_type=file.content_type,
+        data=content
+    )
+    db.add(new_upload)
         
-    photo_url = f"/uploads/{file_name}"
+    photo_url = f"/api/files/{file_id}"
     db_user.image_url = photo_url
     db.commit()
     db.refresh(db_user)
@@ -2386,10 +2416,16 @@ async def create_group_chat(
 
     photo_url = None
     if photo:
-        file_path = os.path.join(UPLOAD_DIR, f"grp_{secrets.token_hex(8)}_{photo.filename}")
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(photo.file, buffer)
-        photo_url = f"/uploads/{os.path.basename(file_path)}"
+        file_id = str(uuid.uuid4())
+        content = await photo.read()
+        new_upload = models.UploadFile(
+            id=file_id,
+            filename=photo.filename,
+            content_type=photo.content_type,
+            data=content
+        )
+        db.add(new_upload)
+        photo_url = f"/api/files/{file_id}"
 
     # Create GroupChat
     group = models.GroupChat(name=name, photo_url=photo_url, admin_id=admin.id)
@@ -2460,6 +2496,7 @@ async def get_group_messages(group_id: int, db: Session = Depends(get_db)):
             "sender_name": m.sender.full_name if m.sender else "Unknown",
             "sender_email": m.sender.email if m.sender else "unknown@domain.com",
             "content": m.content,
+            "attachment_id": m.attachment_id,
             "created_at": m.created_at.isoformat() if m.created_at else "",
         }
         for m in messages
@@ -2470,6 +2507,7 @@ async def send_group_message(
     group_id: int,
     sender_email: str = Form(...),
     content: str = Form(...),
+    attachment_id: str = Form(None),
     db: Session = Depends(get_db)
 ):
     group = db.query(models.GroupChat).filter(models.GroupChat.id == group_id).first()
@@ -2487,7 +2525,8 @@ async def send_group_message(
     new_message = models.GroupMessage(
         group_id=group_id,
         sender_id=sender.id,
-        content=content
+        content=content,
+        attachment_id=attachment_id
     )
     db.add(new_message)
     db.commit()
@@ -2499,6 +2538,7 @@ async def send_group_message(
         "sender_name": sender.full_name,
         "sender_email": sender.email,
         "content": new_message.content,
+        "attachment_id": new_message.attachment_id,
         "created_at": new_message.created_at.isoformat() if new_message.created_at else "",
     }
 
@@ -2550,10 +2590,16 @@ async def update_group_chat(
         group.name = name
 
     if photo:
-        file_path = os.path.join(UPLOAD_DIR, f"grp_{secrets.token_hex(8)}_{photo.filename}")
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(photo.file, buffer)
-        group.photo_url = f"/uploads/{os.path.basename(file_path)}"
+        file_id = str(uuid.uuid4())
+        content = await photo.read()
+        new_upload = models.UploadFile(
+            id=file_id,
+            filename=photo.filename,
+            content_type=photo.content_type,
+            data=content
+        )
+        db.add(new_upload)
+        group.photo_url = f"/api/files/{file_id}"
 
     db.commit()
     db.refresh(group)

@@ -84,17 +84,50 @@ class ChatService {
   Future<ChatMessage?> sendChatMessage(
     int sessionId,
     String senderEmail,
-    String content,
-  ) async {
+    String content, {
+    String? attachmentId,
+  }) async {
     try {
+      final data = {
+        "sender_email": senderEmail,
+        "content": content,
+      };
+      if (attachmentId != null) data["attachment_id"] = attachmentId;
+
       final response = await _dio.post(
         "/chat/sessions/$sessionId/messages",
-        data: FormData.fromMap({
-          "sender_email": senderEmail,
-          "content": content,
-        }),
+        data: FormData.fromMap(data),
       );
       return ChatMessage.fromJson(response.data);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<String?> uploadFile({
+    String? filePath,
+    Uint8List? bytes,
+    String? fileName,
+  }) async {
+    try {
+      final Map<String, dynamic> data = {};
+      if (kIsWeb && bytes != null) {
+        data['file'] = MultipartFile.fromBytes(
+          bytes,
+          filename: fileName ?? 'attachment.file',
+        );
+      } else if (filePath != null) {
+        data['file'] = await MultipartFile.fromFile(filePath);
+      } else {
+        return null;
+      }
+
+      final formData = FormData.fromMap(data);
+      final response = await _dio.post(
+        '/api/files/upload',
+        data: formData,
+      );
+      return response.data['file_id'];
     } catch (e) {
       return null;
     }
@@ -158,15 +191,19 @@ class ChatService {
   Future<ChatMessage?> sendGroupMessage(
     int groupId,
     String senderEmail,
-    String content,
-  ) async {
+    String content, {
+    String? attachmentId,
+  }) async {
     try {
+      final data = {
+        "sender_email": senderEmail,
+        "content": content,
+      };
+      if (attachmentId != null) data["attachment_id"] = attachmentId;
+
       final response = await _dio.post(
         "/groups/$groupId/messages",
-        data: FormData.fromMap({
-          "sender_email": senderEmail,
-          "content": content,
-        }),
+        data: FormData.fromMap(data),
       );
       return ChatMessage.fromJson(response.data);
     } catch (e) {

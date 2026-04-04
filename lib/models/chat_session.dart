@@ -56,6 +56,7 @@ class ChatMessage {
   final String senderName;
   final String? senderEmail;
   final String content;
+  final String? attachmentId;
   final String createdAt;
   final bool isRead;
 
@@ -65,6 +66,7 @@ class ChatMessage {
     required this.senderName,
     this.senderEmail,
     required this.content,
+    this.attachmentId,
     required this.createdAt,
     required this.isRead,
   });
@@ -76,6 +78,7 @@ class ChatMessage {
       senderName: json['sender_name'] ?? 'Unknown',
       senderEmail: json['sender_email'],
       content: json['content'] ?? '',
+      attachmentId: json['attachment_id'],
       createdAt: json['created_at'] ?? '',
       isRead: json['is_read'] ?? false,
     );

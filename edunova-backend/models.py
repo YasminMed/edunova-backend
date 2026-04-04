@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, LargeBinary
 from sqlalchemy.orm import relationship
 try:
     from database import Base
@@ -9,6 +9,13 @@ except ImportError:
         import database
         Base = database.Base
 import datetime
+
+class UploadFile(Base):
+    __tablename__ = "upload_files"
+    id = Column(String, primary_key=True, index=True)
+    filename = Column(String)
+    content_type = Column(String)
+    data = Column(LargeBinary)
 
 class User(Base):
     __tablename__ = "users"
@@ -208,6 +215,7 @@ class ChatMessage(Base):
     session_id = Column(Integer, ForeignKey("chat_sessions.id"))
     sender_id = Column(Integer, ForeignKey("users.id"))
     content = Column(String, nullable=False)
+    attachment_id = Column(String, nullable=True) # References UploadFile.id
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     is_read = Column(Integer, default=0)
 
@@ -245,6 +253,7 @@ class GroupMessage(Base):
     group_id = Column(Integer, ForeignKey("group_chats.id"))
     sender_id = Column(Integer, ForeignKey("users.id"))
     content = Column(String, nullable=False)
+    attachment_id = Column(String, nullable=True) # References UploadFile.id
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     group = relationship("GroupChat", back_populates="messages")

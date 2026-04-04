@@ -51,6 +51,7 @@ dependencies:
   audio_session: ^0.1.21
   youtube_explode_dart: ^2.3.0
   shared_preferences: ^2.3.2
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

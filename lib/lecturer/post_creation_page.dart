@@ -362,11 +362,32 @@ class _PostCreationPageState extends State<PostCreationPage> {
                           listen: false,
                         );
                         if (userProvider.email != null) {
-                          await _postService.likePost(
-                            post['id'],
-                            userProvider.email!,
-                          );
-                          _fetchMyPosts();
+                          bool hasLiked = post['has_liked'] == true;
+                          setState(() {
+                            post['has_liked'] = !hasLiked;
+                            post['likes_count'] = (post['likes_count'] ?? 0) + (hasLiked ? -1 : 1);
+                          });
+                          try {
+                            final result = await _postService.likePost(
+                              post['id'],
+                              userProvider.email!,
+                            );
+                            if (mounted) {
+                              setState(() {
+                                post['has_liked'] = result;
+                              });
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              setState(() {
+                                post['has_liked'] = hasLiked;
+                                post['likes_count'] = (post['likes_count'] ?? 0) + (hasLiked ? 1 : -1);
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Failed to update like")),
+                              );
+                            }
+                          }
                         }
                       },
                     ),

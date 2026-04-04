@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
@@ -312,16 +315,45 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
                             ),
                           ),
                         if (!senderIsMe) const SizedBox(height: 4),
-                        Text(
-                          message.content,
-                          style: TextDesign.body.copyWith(
-                            color: senderIsMe
-                                ? Colors.white
-                                : Theme.of(context).textTheme.bodyLarge?.color,
-                            height: 1.4,
+                        if (message.content.isNotEmpty)
+                          Text(
+                            message.content,
+                            style: TextDesign.body.copyWith(
+                              color: senderIsMe
+                                  ? Colors.white
+                                  : Theme.of(context).textTheme.bodyLarge?.color,
+                              height: 1.4,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
+                        if (message.attachmentId != null) ...[
+                          if (message.content.isNotEmpty) const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: () async {
+                              final url = Uri.parse('${ChatService.baseUrl}/api/files/${message.attachmentId}');
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: senderIsMe ? Colors.white24 : Colors.grey.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.attachment, color: senderIsMe ? Colors.white : AppColors.primary, size: 16),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "View Attachment",
+                                    style: TextStyle(color: senderIsMe ? Colors.white : AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -364,6 +396,42 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
       ),
       child: Row(
         children: [
+          IconButton(
+            icon: const Icon(
+              Icons.add_circle_outline_rounded,
+              color: AppColors.mutedText,
+            ),
+            onPressed: () async {
+              FilePickerResult? result = await FilePicker.platform.pickFiles();
+              if (result != null) {
+                final userProvider = Provider.of<UserProvider>(context, listen: false);
+                if (userProvider.email == null) return;
+                
+                final fileId = await _chatService.uploadFile(
+                  filePath: kIsWeb ? null : result.files.single.path,
+                  bytes: kIsWeb ? result.files.single.bytes : null,
+                  fileName: result.files.single.name,
+                );
+                
+                if (fileId != null) {
+                  final textContent = _messageController.text.trim();
+                  _messageController.clear();
+                  final newMessage = await _chatService.sendGroupMessage(
+                    widget.groupId,
+                    userProvider.email!,
+                    textContent.isEmpty ? "Attachment" : textContent,
+                    attachmentId: fileId,
+                  );
+                  if (newMessage != null) {
+                    setState(() {
+                      _messages.add(newMessage);
+                    });
+                    _scrollToBottom();
+                  }
+                }
+              }
+            },
+          ),
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
