@@ -653,7 +653,7 @@ async def get_status(db: Session = Depends(get_db)):
             "chat_columns": cm_cols,
             "group_columns": gm_cols,
             "has_attachment_id": "attachment_id" in cm_cols and "attachment_id" in gm_cols,
-            "deploy_v": "v4"
+            "deploy_v": "v5"
         }
     except Exception as e:
         return {"status": "error", "detail": str(e)}
