@@ -788,8 +788,8 @@ async def delete_post(post_id: int, db: Session = Depends(get_db)):
     return {"message": "Post deleted successfully"}
 
 @app.post("/posts/{post_id}/comments")
-async def add_comment(post_id: int, user_email: str = Body(...), content: str = Body(...), db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == user_email).first()
+async def add_comment(post_id: int, comment: CommentSchema, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == comment.user_email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -800,7 +800,7 @@ async def add_comment(post_id: int, user_email: str = Body(...), content: str = 
     new_comment = models.Comment(
         post_id=post_id,
         user_id=user.id,
-        content=content
+        content=comment.content
     )
     db.add(new_comment)
     db.commit()
