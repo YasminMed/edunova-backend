@@ -185,7 +185,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
             _buildImagePreview(),
           const SizedBox(height: 24),
           _buildMediaSection(isDark),
-          const SizedBox(height: 40),
+          const SizedBox(height: 30),
           _buildPostButton(),
           const SizedBox(height: 20),
         ],
@@ -269,11 +269,11 @@ class _PostCreationPageState extends State<PostCreationPage> {
               : null;
 
           return Container(
-            margin: const EdgeInsets.only(bottom: 20),
-            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -691,16 +691,16 @@ class _PostCreationPageState extends State<PostCreationPage> {
 
   Widget _buildInputCard(bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
           TextField(
             controller: _titleController,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             decoration: const InputDecoration(
               hintText: "Post Title",
               border: InputBorder.none,
@@ -709,7 +709,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
           const Divider(),
           TextField(
             controller: _descController,
-            maxLines: 8,
+            maxLines: 6,
             decoration: const InputDecoration(
               hintText: "Write your description here...",
               border: InputBorder.none,
@@ -747,12 +747,12 @@ class _PostCreationPageState extends State<PostCreationPage> {
         child: GestureDetector(
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 20),
+            padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
               color: isSelected
                   ? color.withValues(alpha: 0.2)
                   : color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isSelected ? color : color.withValues(alpha: 0.3),
                 width: isSelected ? 2 : 1,
@@ -784,7 +784,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
   Widget _buildPostButton() {
     return SizedBox(
       width: double.infinity,
-      height: 60,
+      height: 52,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.secondary,

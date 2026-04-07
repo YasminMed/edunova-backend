@@ -217,6 +217,9 @@ class _WelcomePageState extends State<WelcomePage>
     bool invertX = false,
     bool invertY = false,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final blobOpacity = isDark ? 0.25 : 0.6;
+
     return AnimatedBuilder(
       animation: controller,
       builder: (context, child) {
@@ -244,7 +247,7 @@ class _WelcomePageState extends State<WelcomePage>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
-                colors: [color.withOpacity(0.6), color.withOpacity(0.0)],
+                colors: [color.withOpacity(blobOpacity), color.withOpacity(0.0)],
                 stops: const [0.0, 1.0],
               ),
             ),
@@ -311,7 +314,11 @@ class _WelcomePageState extends State<WelcomePage>
                 sigmaX: 40,
                 sigmaY: 40,
               ), // Reduced blur for performance
-              child: Container(color: Colors.white.withOpacity(0.05)),
+              child: Container(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.black.withOpacity(0.4)
+                    : Colors.white.withOpacity(0.05),
+              ),
             ),
           ),
 
@@ -395,12 +402,12 @@ class _WelcomePageState extends State<WelcomePage>
                                           child: Image.asset(
                                             "assets/edunova_logo.png",
                                             width: min(
-                                              screenSize.width * 0.65,
-                                              260,
+                                              screenSize.width * 0.45,
+                                              180,
                                             ),
                                             height: min(
-                                              screenSize.width * 0.65,
-                                              260,
+                                              screenSize.width * 0.45,
+                                              180,
                                             ),
                                             errorBuilder:
                                                 (context, error, stackTrace) {
