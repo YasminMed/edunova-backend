@@ -138,6 +138,9 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
         ((widget.lecture['gradient'] as List<Color>?)?.isNotEmpty == true
             ? (widget.lecture['gradient'] as List<Color>)[0]
             : AppColors.primary);
+            
+    final bool useBlackText = !isDark && color.computeLuminance() > 0.6;
+    final Color topTextColor = useBlackText ? Colors.black87 : Colors.white;
 
     final List<String> filters = [
       l10n?.translate('pdfs') ?? 'PDFs',
@@ -183,9 +186,9 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                   title: Text(
                     widget.lecture['subject'],
                     style: TextDesign.h3.copyWith(
-                      color: Colors.white,
+                      color: topTextColor,
                       fontSize: 18,
-                      shadows: [
+                      shadows: useBlackText ? [] : [
                         const Shadow(
                           color: Colors.black26,
                           blurRadius: 10,
@@ -223,9 +226,9 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                   ),
                 ),
                 leading: IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white,
+                    color: topTextColor,
                     size: 20,
                   ),
                   onPressed: () => Navigator.pop(context),
@@ -890,7 +893,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
             trailing: Text(
               "${exam['mark']}%",
               style: TextStyle(
-                color: color,
+                color: (!isDark && color.computeLuminance() > 0.6) ? Colors.black87 : color,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
               ),

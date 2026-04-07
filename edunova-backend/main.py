@@ -1852,8 +1852,8 @@ def get_all_student_averages_and_data(db: Session, department: Optional[str] = N
             a_avg = sum([to_float(a.grade) for a in assigns]) / len(assigns) if assigns else None
             
             # 3. Exams
-            m_mark_obj = db.query(models.ExamMark).filter(models.ExamMark.course_id == c.id, models.ExamMark.student_id == s.id, models.ExamMark.exam_type == "midterm").first()
-            f_mark_obj = db.query(models.ExamMark).filter(models.ExamMark.course_id == c.id, models.ExamMark.student_id == s.id, models.ExamMark.exam_type == "final").first()
+            m_mark_obj = db.query(models.ExamMark).filter(models.ExamMark.course_id == c.id, models.ExamMark.student_id == s.id, models.ExamMark.exam_type.ilike("%midterm%")).first()
+            f_mark_obj = db.query(models.ExamMark).filter(models.ExamMark.course_id == c.id, models.ExamMark.student_id == s.id, models.ExamMark.exam_type.ilike("%final%")).first()
             
             m_mark = to_float(m_mark_obj.mark) if m_mark_obj else None
             f_mark = to_float(f_mark_obj.mark) if f_mark_obj else None
