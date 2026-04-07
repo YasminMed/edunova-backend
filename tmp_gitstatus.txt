@@ -1,0 +1,34 @@
+﻿On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/auth/signup_student.dart
+	modified:   lib/l10n/app_localizations.dart
+	modified:   lib/lecturer/lecturer_dashboard.dart
+	modified:   lib/student/faculty_page.dart
+	modified:   lib/student/lectures_page.dart
+	modified:   lib/student/marks_page.dart
+	modified:   lib/student/music_page.dart
+	modified:   lib/student/ranks_page.dart
+	modified:   lib/student/student_dashboard.dart
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	assets/audio/
+	detect_enc.py
+	duplicates.txt
+	final_dedup.py
+	find_duplicates.py
+	remove_duplicates.py
+	tmp_analyze_out.txt
+	tmp_gitstatus.txt
+	tmp_verify.txt
+	update_all_l10n_final.py
+	update_l10n.py
+	update_l10n_v2.py
+	update_l10n_v3.py
+	update_l10n_v4.py
+
+no changes added to commit (use "git add" and/or "git commit -a")

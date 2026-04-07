@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*$py.class
+test.db
+populate_test_db.py
+test_leaderboard.py
+.venv/
+env/
+.env
+uploads/
