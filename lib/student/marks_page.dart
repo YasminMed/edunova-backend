@@ -23,7 +23,11 @@ class _MarksPageState extends State<MarksPage> {
   @override
   void initState() {
     super.initState();
-    _fetchMarks();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _fetchMarks();
+      }
+    });
   }
 
   Future<void> _fetchMarks() async {
