@@ -482,7 +482,12 @@ class _ChatPageState extends State<ChatPage>
                   photoUrl: photoUrl,
                 ),
               ),
-            ).then((_) => _loadChats());
+            ).then((_) {
+              // Add a small delay to ensure the backend has finished marking messages as read
+              Future.delayed(const Duration(milliseconds: 200), () {
+                if (mounted) _loadChats();
+              });
+            });
           }
         },
         borderRadius: BorderRadius.circular(24),
