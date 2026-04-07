@@ -2463,7 +2463,7 @@ async def get_user_chat_sessions(user_email: str, db: Session = Depends(get_db))
         (models.ChatSession.user1_id == user.id) | (models.ChatSession.user2_id == user.id)
     ).all()
     
-    result = []
+    result_map = {}
     for s in sessions:
         other_user = s.user2 if s.user1_id == user.id else s.user1
         if not other_user: 
@@ -2480,7 +2480,7 @@ async def get_user_chat_sessions(user_email: str, db: Session = Depends(get_db))
             models.ChatMessage.is_read == 0
         ).count() if other_user.id != user.id else 0
         
-        result.append({
+        session_data = {
             "session_id": s.id,
             "other_user": {
                 "id": other_user.id,
@@ -2492,7 +2492,26 @@ async def get_user_chat_sessions(user_email: str, db: Session = Depends(get_db))
             "latest_message": latest_msg.content if latest_msg else "",
             "latest_message_time": latest_msg.created_at.isoformat() if latest_msg and latest_msg.created_at else "",
             "unread_count": unread_count
-        })
+        }
+        
+        # Deduplicate by other_user.id, keeping the one with the latest message
+        o_id = other_user.id
+        if o_id not in result_map:
+            result_map[o_id] = session_data
+        else:
+            # Update if this session has a newer message
+            current_latest = result_map[o_id]["latest_message_time"]
+            new_latest = session_data["latest_message_time"]
+            
+            # Combine unread counts
+            result_map[o_id]["unread_count"] += unread_count
+            
+            if not current_latest or (new_latest and new_latest > current_latest):
+                result_map[o_id]["session_id"] = session_data["session_id"]
+                result_map[o_id]["latest_message"] = session_data["latest_message"]
+                result_map[o_id]["latest_message_time"] = session_data["latest_message_time"]
+
+    result = list(result_map.values())
     result.sort(key=lambda x: x["latest_message_time"] or "1970-01-01T00:00:00", reverse=True)
     return result
 
@@ -2522,9 +2541,11 @@ async def get_chat_messages(session_id: int, current_user_email: str = None, db:
             "id": m.id,
             "sender_id": m.sender_id,
             "sender_name": m.sender.full_name if m.sender else "Unknown",
+            "sender_email": m.sender.email if m.sender else "unknown@example.com",
             "content": m.content,
+            "attachment_id": m.attachment_id if hasattr(m, 'attachment_id') else None,
             "created_at": m.created_at.isoformat() if m.created_at else "",
-            "is_read": m.is_read
+            "is_read": m.is_read == 1 if isinstance(m.is_read, int) else m.is_read
         }
         for m in messages
     ]
