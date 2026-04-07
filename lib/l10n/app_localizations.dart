@@ -362,6 +362,18 @@ class AppLocalizations {
       'failed_tasks_new_ready':
           "You didn't complete all tasks for last week's challenge. Don't worry, new challenges are now available!",
       'got_it': 'Got it',
+      'total_academic_marks': 'Total Academic Marks: {count}',
+      'weekly_master_challenge': 'Weekly Master Challenge',
+      'challenge_bonus_desc':
+          'Complete all tasks this week to earn 2 bonus academic marks!',
+      'overall_tasks_progress': 'Overall Tasks Progress',
+      'weekly_tasks_label': 'Weekly Tasks',
+      'submit_quizzes': 'Submit Quizzes',
+      'submit_quizzes_goal': 'Goal: Submit {count} quizzes this week.',
+      'submit_assignments': 'Submit Assignments',
+      'submit_assignments_goal': 'Goal: Submit {count} assignments this week.',
+      'weekly_attendance_label': 'Weekly Attendance',
+      'weekly_attendance_goal': 'Goal: Maintain at least {count}% attendance.',
     },
     'ar': {
       'reset_password_subtitle': 'أنشئ كلمة مرور جديدة لحسابك',
@@ -704,6 +716,18 @@ class AppLocalizations {
       'failed_tasks_new_ready':
           'لم تكمل جميع المهام لتحدي الأسبوع الماضي. لا تقلق، تحديات جديدة متاحة الآن!',
       'got_it': 'فهمت',
+      'total_academic_marks': 'إجمالي الدرجات الأكاديمية: {count}',
+      'weekly_master_challenge': 'تحدي السيد الأسبوعي',
+      'challenge_bonus_desc':
+          'أكمل جميع المهام هذا الأسبوع لكسب درجتين أكاديميتين إضافيتين!',
+      'overall_tasks_progress': 'تقدم المهام الإجمالي',
+      'weekly_tasks_label': 'المهام الأسبوعية',
+      'submit_quizzes': 'تسليم الاختبارات',
+      'submit_quizzes_goal': 'الهدف: تسليم {count} اختبارات هذا الأسبوع.',
+      'submit_assignments': 'تسليم الواجبات',
+      'submit_assignments_goal': 'الهدف: تسليم {count} واجبات هذا الأسبوع.',
+      'weekly_attendance_label': 'الحضور الأسبوعي',
+      'weekly_attendance_goal': 'الهدف: الحفاظ على نسبة حضور لا تقل عن {count}%.',
     },
     'ckb': {
       'reset_password_subtitle': 'وشەی نهێنی نوێ بۆ هەژمارەکەت دروست بکە',
@@ -1055,6 +1079,18 @@ class AppLocalizations {
       'failed_tasks_new_ready':
           'هەموو ئەرکەکانی بەرەنگاریی هەفتەی ڕابردووت تەواو نەکرد. خەم مەخۆ، بەرەنگاریی نوێ ئێستا بەردەستە!',
       'got_it': 'تێگەیشتم',
+      'total_academic_marks': 'کۆی نمرە ئەکادیمییەکان: {count}',
+      'weekly_master_challenge': 'بەرەنگاری باڵادەستی هەفتانە',
+      'challenge_bonus_desc':
+          'هەموو ئەرکەکانی ئەم هەفتەیە تەواو بکە بۆ وەرگرتنی ٢ نمرەی ئەکادیمی زیادە!',
+      'overall_tasks_progress': 'بەرەوپێشچوونی گشتی ئەرکەکان',
+      'weekly_tasks_label': 'ئەرکەکانی هەفتانە',
+      'submit_quizzes': 'ڕادەستکردنی کویزەکان',
+      'submit_quizzes_goal': 'ئامانج: ڕادەستکردنی {count} کویز لەم هەفتەیەدا.',
+      'submit_assignments': 'ڕادەستکردنی ئەرکەکان',
+      'submit_assignments_goal': 'ئامانج: ڕادەستکردنی {count} ئەرک لەم هەفتەیەدا.',
+      'weekly_attendance_label': 'ئامادەبوونی هەفتانە',
+      'weekly_attendance_goal': 'ئامانج: پاراستنی لایەنی کەم {count}%ی ئامادەبوون.',
     },
   };
 

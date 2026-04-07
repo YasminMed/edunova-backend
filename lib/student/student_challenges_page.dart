@@ -149,11 +149,12 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
         (quizCurr + assignCurr + (attRate >= attTarget ? 1 : 0)) /
         (quizTarget + assignTarget + 1);
 
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          AppLocalizations.of(context)?.translate('weekly_challenges_title') ??
-              "Weekly Challenges",
+          l10n?.translate('weekly_challenges_title') ?? "Weekly Challenges",
           style: TextDesign.h2.copyWith(
             color: isDark ? Colors.white : Colors.black87,
           ),
@@ -211,7 +212,10 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Text(
-                            "Total Academic Marks: $totalMarks",
+                            l10n
+                                    ?.translate('total_academic_marks')
+                                    .replaceAll('{count}', totalMarks.toString()) ??
+                                "Total Academic Marks: $totalMarks",
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -228,7 +232,8 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      "Weekly Master Challenge",
+                      l10n?.translate('weekly_master_challenge') ??
+                          "Weekly Master Challenge",
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 24,
@@ -237,7 +242,8 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Complete all tasks this week to earn 2 bonus academic marks!",
+                      l10n?.translate('challenge_bonus_desc') ??
+                          "Complete all tasks this week to earn 2 bonus academic marks!",
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 14,
@@ -248,8 +254,10 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Overall Tasks Progress",
-                          style: TextStyle(color: Colors.white70, fontSize: 15),
+                          l10n?.translate('overall_tasks_progress') ??
+                              "Overall Tasks Progress",
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 15),
                         ),
                         Text(
                           "${(overallProgress * 100).toInt()}%",
@@ -278,8 +286,7 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
               ),
               const SizedBox(height: 32),
               Text(
-                AppLocalizations.of(context)?.translate('daily_tasks') ??
-                    "Weekly Tasks",
+                l10n?.translate('weekly_tasks_label') ?? "Weekly Tasks",
                 style: TextDesign.h2.copyWith(
                   color: isDark ? Colors.white : Colors.black87,
                 ),
@@ -287,32 +294,43 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
               const SizedBox(height: 16),
               _buildDetailedTaskCard(
                 context,
-                "Submit Quizzes",
+                l10n?.translate('submit_quizzes') ?? "Submit Quizzes",
                 "$quizCurr/$quizTarget",
                 (quizCurr / quizTarget).clamp(0.0, 1.0),
                 const Color(0xFF10B981), // Emerald
                 Icons.quiz_rounded,
-                "Goal: Submit $quizTarget quizzes this week.",
+                l10n
+                        ?.translate('submit_quizzes_goal')
+                        .replaceAll('{count}', quizTarget.toString()) ??
+                    "Goal: Submit $quizTarget quizzes this week.",
               ),
               const SizedBox(height: 12),
               _buildDetailedTaskCard(
                 context,
-                "Submit Assignments",
+                l10n?.translate('submit_assignments') ?? "Submit Assignments",
                 "$assignCurr/$assignTarget",
                 (assignCurr / assignTarget).clamp(0.0, 1.0),
                 const Color(0xFFF59E0B), // Amber
                 Icons.assignment_turned_in_rounded,
-                "Goal: Submit $assignTarget assignments this week.",
+                l10n
+                        ?.translate('submit_assignments_goal')
+                        .replaceAll('{count}', assignTarget.toString()) ??
+                    "Goal: Submit $assignTarget assignments this week.",
               ),
               const SizedBox(height: 12),
               _buildDetailedTaskCard(
                 context,
-                "Weekly Attendance",
+                l10n?.translate('weekly_attendance_label') ??
+                    "Weekly Attendance",
                 "${(attRate * 100).toInt()}%",
                 attRate.clamp(0.0, 1.0),
                 const Color(0xFFEC4899), // Pink
                 Icons.event_available_rounded,
-                "Goal: Maintain at least ${(attTarget * 100).toInt()}% attendance.",
+                l10n
+                        ?.translate('weekly_attendance_goal')
+                        .replaceAll(
+                            '{count}', (attTarget * 100).toInt().toString()) ??
+                    "Goal: Maintain at least ${(attTarget * 100).toInt()}% attendance.",
               ),
             ],
           ),
