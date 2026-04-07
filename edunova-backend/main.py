@@ -3524,6 +3524,10 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
         models.ChallengeCompletion.student_id == user.id
     ).first()
     
+    # Calculate stats for UI
+    quiz_count = db.query(models.QuizSubmission).filter(models.QuizSubmission.student_id == user.id).count()
+    assignment_count = db.query(models.AssignmentSubmission).filter(models.AssignmentSubmission.student_id == user.id).count()
+    
     return {
         "has_challenge": True,
         "challenge_id": challenge.id,
@@ -3531,7 +3535,24 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
         "description": challenge.description,
         "points": challenge.points,
         "is_completed": completion is not None,
-        "completed_at": completion.completed_at.isoformat() if completion else None
+        "completed_at": completion.completed_at.isoformat() if completion else None,
+        "total_marks": user.total_academic_marks or 0,
+        "quizzes": {
+            "current": quiz_count,
+            "target": 3
+        },
+        "assignments": {
+            "current": assignment_count,
+            "target": 5
+        },
+        "attendance": {
+            "current_rate": 0.0, # Placeholder
+            "target_rate": 0.8
+        },
+        "previous_week": {
+            "week_str": "last_week",
+            "status": "none"
+        }
     }
 
 @app.post("/challenges/{challenge_id}/complete")
