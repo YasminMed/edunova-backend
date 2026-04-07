@@ -3397,18 +3397,8 @@ async def user_heartbeat(email: str, db: Session = Depends(get_db)):
 
 # Catch-all route to serve the SPA index.html for unknown routes
 # This MUST be at the end of the file so it doesn't hijack API routes
-@app.get("/{full_path:path}")
-async def serve_spa(full_path: str):
-    # Check if a file exists at static/{full_path}
-    potential_file = os.path.join("static", full_path)
-    if os.path.isfile(potential_file):
-        return FileResponse(potential_file)
-    
-    # Otherwise fallback to index.html for SPA routing
-    index_file = os.path.join("static", "index.html")
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
-    return HTMLResponse(content="<h1>Flutter build not found</h1>", status_code=404)
+# SPA catch-all moved to end of file to prevent route collision
+
 # --- Weekly Challenges Endpoints ---
 
 @app.get("/student/weekly-challenge-status/{email}")
@@ -3532,3 +3522,16 @@ async def get_student_medals(email: str, db: Session = Depends(get_db)):
             "points": 50
         } for c in completions
     ]
+# Final catch-all for SPA routing (MUST BE LAST)
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    # Check if a file exists at static/{full_path}
+    potential_file = os.path.join("static", full_path)
+    if os.path.isfile(potential_file):
+        return FileResponse(potential_file)
+    
+    # Otherwise fallback to index.html for SPA routing
+    index_file = os.path.join("static", "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
+    return HTMLResponse(content="<h1>Flutter build not found</h1>", status_code=404)
