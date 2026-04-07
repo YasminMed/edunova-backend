@@ -42,7 +42,116 @@ except ImportError:
         import database
         from database import engine, get_db, SessionLocal
 
-app = FastAPI(title="EduNova API")
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- STARTUP SEQUENCE ---
+    print("DEBUG: Application starting up (lifespan pattern)...")
+    
+    # 1. Initialize Tables
+    try:
+        models.Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print(f"DEBUG: create_all hint: {e}")
+
+    db = SessionLocal()
+    try:
+        from sqlalchemy import text, inspect, not_
+        
+        # 2. Add Missing Columns
+        def add_col_safe(db_session, table, column, type_str, default=None):
+            try:
+                db_session.execute(text(f"SELECT {column} FROM {table} LIMIT 1"))
+            except Exception:
+                db_session.rollback()
+                try:
+                    default_str = f" DEFAULT {default}" if default else ""
+                    db_session.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {type_str}{default_str}"))
+                    db_session.commit()
+                    print(f"DEBUG: Added {column} to {table}")
+                except Exception as e2:
+                    db_session.rollback()
+                    print(f"DEBUG: Could not add {column}: {e2}")
+
+        add_col_safe(db, "users", "role", "VARCHAR", "'student'")
+        add_col_safe(db, "users", "department", "VARCHAR")
+        add_col_safe(db, "users", "stage", "VARCHAR")
+        add_col_safe(db, "users", "years_of_experience", "INTEGER", "0")
+        add_col_safe(db, "users", "image_url", "VARCHAR")
+        add_col_safe(db, "users", "total_academic_marks", "INTEGER", "0")
+        add_col_safe(db, "users", "is_online", "BOOLEAN", "FALSE")
+        add_col_safe(db, "users", "last_seen", "TIMESTAMP", "CURRENT_TIMESTAMP")
+        add_col_safe(db, "chat_messages", "attachment_id", "VARCHAR")
+        add_col_safe(db, "group_messages", "attachment_id", "VARCHAR")
+        add_col_safe(db, "courses", "image_url", "VARCHAR")
+        add_col_safe(db, "courses", "department", "VARCHAR", "'Software Engineering'")
+        add_col_safe(db, "courses", "stage", "VARCHAR", "'First Stage'")
+        add_col_safe(db, "posts", "image_url", "VARCHAR")
+        add_col_safe(db, "assignments", "deadline", "TIMESTAMP")
+        add_col_safe(db, "quizzes", "deadline", "TIMESTAMP")
+
+        # 3. Cleanup orphaned records
+        print("DEBUG: Cleaning up orphaned records...")
+        orphaned_courses = db.query(models.Course).filter(
+            not_(models.Course.lecturer_id.in_(db.query(models.User.id)))
+        ).all()
+        for oc in orphaned_courses:
+            print(f"DEBUG: Deleting orphaned course {oc.name} (id={oc.id})")
+            db.delete(oc)
+            
+        student_models = [
+            (models.Attendance, "student_id"),
+            (models.ExamMark, "student_id"),
+            (models.AssignmentSubmission, "student_id"),
+            (models.QuizSubmission, "student_id"),
+            (models.FeeInstallment, "student_id"),
+            (models.ChallengeCompletion, "student_id")
+        ]
+        for model_cls, field_name in student_models:
+            try:
+                attr = getattr(model_cls, field_name)
+                orphaned = db.query(model_cls).filter(
+                    not_(attr.in_(db.query(models.User.id)))
+                ).all()
+                for o in orphaned:
+                    db.delete(o)
+            except Exception:
+                db.rollback()
+
+        # 4. Mandatory Hard Deletions (smsm and yaso)
+        target_emails = ["smsm@gmail.com", "yaso1@gmail.com", "yaso2@gmail.com", "yaso3@gmail.com", "yait@gmail.com"]
+        to_delete = db.query(models.User).filter(models.User.email.in_(target_emails)).all()
+        for u in to_delete:
+            print(f"DEBUG: Force-deleting user {u.email} (id={u.id})")
+            db.delete(u)
+        db.commit()
+
+        # 5. Fix empty profiles
+        all_users = db.query(models.User).all()
+        for u in all_users:
+            updated = False
+            if u.department is None:
+                u.department = "Software Engineering"
+                updated = True
+            if u.stage is None:
+                u.stage = "Fourth Stage"
+                updated = True
+            if updated:
+                db.add(u)
+        db.commit()
+        print("DEBUG: Startup initialization complete.")
+    except Exception as e:
+        print(f"DEBUG: Startup error: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+    yield
+    # --- SHUTDOWN ---
+    print("DEBUG: Application shutting down...")
+
+app = FastAPI(title="EduNova API", lifespan=lifespan)
 
 # Add CORS middleware for Flutter web/mobile
 app.add_middleware(
@@ -60,9 +169,7 @@ if not os.path.exists("static"):
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static_assets")
 
-import sqlalchemy
-
-# Consolidatied startup sequence at line 213 (startup_event)
+# Main startup moved to lifespan pattern at top of file
 
 
 
@@ -133,278 +240,7 @@ class VerifyOTPRequest(BaseModel):
     email: EmailStr
     otp: str
 
-@app.on_event("startup")
-async def startup_event():
-    print("DEBUG: Running startup event...")
-    try:
-        models.Base.metadata.create_all(bind=engine)
-    except Exception as e:
-        print(f"DEBUG: create_all hint: {e}")
-
-    db = SessionLocal()
-    try:
-        from sqlalchemy import text, inspect, not_
-        inspector = inspect(engine)
-        
-        # Safe column addition Helper
-        def add_col_safe(table, column, type_str, default=None):
-            try:
-                # Basic check if column exists
-                db.execute(text(f"SELECT {column} FROM {table} LIMIT 1"))
-            except Exception:
-                db.rollback()
-                try:
-                    default_str = f" DEFAULT {default}" if default else ""
-                    db.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {type_str}{default_str}"))
-                    db.commit()
-                    print(f"DEBUG: Added {column} to {table}")
-                except Exception as e2:
-                    db.rollback()
-                    print(f"DEBUG: Could not add {column}: {e2}")
-
-        # 1. Standard Migrations
-        add_col_safe("users", "role", "VARCHAR", "'student'")
-        add_col_safe("users", "department", "VARCHAR")
-        add_col_safe("users", "stage", "VARCHAR")
-        add_col_safe("users", "years_of_experience", "INTEGER", "0")
-        add_col_safe("users", "image_url", "VARCHAR")
-        add_col_safe("users", "total_academic_marks", "INTEGER", "0")
-        add_col_safe("users", "is_online", "BOOLEAN", "FALSE")
-        add_col_safe("users", "last_seen", "TIMESTAMP", "CURRENT_TIMESTAMP")
-        add_col_safe("chat_messages", "attachment_id", "VARCHAR")
-        add_col_safe("group_messages", "attachment_id", "VARCHAR")
-        add_col_safe("courses", "image_url", "VARCHAR")
-        add_col_safe("courses", "department", "VARCHAR", "'Software Engineering'")
-        add_col_safe("courses", "stage", "VARCHAR", "'First Stage'")
-        add_col_safe("posts", "image_url", "VARCHAR")
-        add_col_safe("assignments", "deadline", "TIMESTAMP")
-        add_col_safe("quizzes", "deadline", "TIMESTAMP")
-
-        # 2. Cleanup orphaned records (Deep Deletion)
-        print("DEBUG: Cleaning up orphaned records...")
-        orphaned_courses = db.query(models.Course).filter(
-            not_(models.Course.lecturer_id.in_(db.query(models.User.id)))
-        ).all()
-        for oc in orphaned_courses:
-            print(f"DEBUG: Deleting orphaned course {oc.name} (id={oc.id})")
-            db.delete(oc)
-            
-        student_models = [
-            (models.Attendance, "student_id"),
-            (models.ExamMark, "student_id"),
-            (models.AssignmentSubmission, "student_id"),
-            (models.QuizSubmission, "student_id"),
-            (models.FeeInstallment, "student_id"),
-            (models.ChallengeCompletion, "student_id")
-        ]
-        for model_cls, field_name in student_models:
-            try:
-                attr = getattr(model_cls, field_name)
-                orphaned = db.query(model_cls).filter(
-                    not_(attr.in_(db.query(models.User.id)))
-                ).all()
-                for o in orphaned:
-                    db.delete(o)
-            except Exception:
-                db.rollback()
-
-        # 3. Force delete problematic accounts
-        target_emails = ["smsm@gmail.com", "yaso1@gmail.com", "yaso2@gmail.com", "yaso3@gmail.com", "yait@gmail.com"]
-        to_delete = db.query(models.User).filter(models.User.email.in_(target_emails)).all()
-        for u in to_delete:
-            print(f"DEBUG: Force-deleting user {u.email} (id={u.id})")
-            db.delete(u)
-        db.commit()
-
-        # 4. Standard User Updates
-        all_users = db.query(models.User).all()
-        for u in all_users:
-            updated = False
-            if u.department is None:
-                u.department = "Software Engineering"
-                updated = True
-            
-            # Standardize stage names and fix specific user profiles
-            if u.stage is None or u.email in ["smsm@gmail.com", "smsm2@gmail.com"]:
-                role_lower = str(u.role or "student").lower()
-                if role_lower == "student":
-                    u.stage = "Fourth Stage"
-                else:
-                    u.stage = "Third Stage, Fourth Stage"
-                updated = True
-            elif u.stage == "1st":
-                u.stage = "First Stage"
-                updated = True
-            
-            # Ensure yaso has her stage too
-            if u.email == "yaso@gmail.com" and (not u.stage or u.stage == "First Stage"):
-                u.stage = "Fourth Stage"
-                updated = True
-                
-            if updated:
-                db.add(u)
-        db.commit()
-        print("DEBUG: User profiles updated")
-
-        # For Course table
-
-        # Create tables using standard SQL where possible or detect engine
-        is_pg = "postgresql" in str(engine.url)
-        
-        def run_sql(sql_pg, sql_lite):
-            try:
-                db.execute(text(sql_pg if is_pg else sql_lite))
-                db.commit()
-            except Exception as e:
-                db.rollback()
-                print(f"DEBUG Migration Error: {e}")
-
-        run_sql(
-            "CREATE TABLE IF NOT EXISTS quizzes (id SERIAL PRIMARY KEY, course_id INTEGER REFERENCES courses(id), title VARCHAR NOT NULL, content TEXT NOT NULL, file_url TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-            "CREATE TABLE IF NOT EXISTS quizzes (id INTEGER PRIMARY KEY AUTOINCREMENT, course_id INTEGER REFERENCES courses(id), title VARCHAR NOT NULL, content VARCHAR NOT NULL, file_url VARCHAR, created_at DATETIME)"
-        )
-        
-        run_sql(
-            "CREATE TABLE IF NOT EXISTS quiz_submissions (id SERIAL PRIMARY KEY, quiz_id INTEGER REFERENCES quizzes(id), student_id INTEGER REFERENCES users(id), solution_text TEXT, file_url TEXT, grade VARCHAR, lecturer_note TEXT, submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, is_graded INTEGER DEFAULT 0)",
-            "CREATE TABLE IF NOT EXISTS quiz_submissions (id INTEGER PRIMARY KEY AUTOINCREMENT, quiz_id INTEGER REFERENCES quizzes(id), student_id INTEGER REFERENCES users(id), solution_text VARCHAR, file_url VARCHAR, grade VARCHAR, lecturer_note VARCHAR, submitted_at DATETIME, is_graded INTEGER DEFAULT 0)"
-        )
-        
-        run_sql(
-            "CREATE TABLE IF NOT EXISTS exam_marks (id SERIAL PRIMARY KEY, course_id INTEGER REFERENCES courses(id), student_id INTEGER REFERENCES users(id), exam_type VARCHAR NOT NULL, mark VARCHAR NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-            "CREATE TABLE IF NOT EXISTS exam_marks (id INTEGER PRIMARY KEY AUTOINCREMENT, course_id INTEGER REFERENCES courses(id), student_id INTEGER REFERENCES users(id), exam_type VARCHAR NOT NULL, mark VARCHAR NOT NULL, created_at DATETIME)"
-        )
-
-        run_sql(
-            "CREATE TABLE IF NOT EXISTS chat_sessions (id SERIAL PRIMARY KEY, user1_id INTEGER REFERENCES users(id), user2_id INTEGER REFERENCES users(id), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-            "CREATE TABLE IF NOT EXISTS chat_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, user1_id INTEGER REFERENCES users(id), user2_id INTEGER REFERENCES users(id), created_at DATETIME)"
-        )
-        
-        run_sql(
-            "CREATE TABLE IF NOT EXISTS chat_messages (id SERIAL PRIMARY KEY, session_id INTEGER REFERENCES chat_sessions(id), sender_id INTEGER REFERENCES users(id), content TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, is_read INTEGER DEFAULT 0)",
-            "CREATE TABLE IF NOT EXISTS chat_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id INTEGER REFERENCES chat_sessions(id), sender_id INTEGER REFERENCES users(id), content VARCHAR NOT NULL, created_at DATETIME, is_read INTEGER DEFAULT 0)"
-        )
-
-        run_sql(
-            "CREATE TABLE IF NOT EXISTS group_chats (id SERIAL PRIMARY KEY, name VARCHAR NOT NULL, photo_url VARCHAR, admin_id INTEGER REFERENCES users(id), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-            "CREATE TABLE IF NOT EXISTS group_chats (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR NOT NULL, photo_url VARCHAR, admin_id INTEGER REFERENCES users(id), created_at DATETIME)"
-        )
-
-        run_sql(
-            "CREATE TABLE IF NOT EXISTS group_members (id SERIAL PRIMARY KEY, group_id INTEGER REFERENCES group_chats(id), user_id INTEGER REFERENCES users(id), joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-            "CREATE TABLE IF NOT EXISTS group_members (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id INTEGER REFERENCES group_chats(id), user_id INTEGER REFERENCES users(id), joined_at DATETIME)"
-        )
-
-        run_sql(
-            "CREATE TABLE IF NOT EXISTS group_messages (id SERIAL PRIMARY KEY, group_id INTEGER REFERENCES group_chats(id), sender_id INTEGER REFERENCES users(id), content TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-            "CREATE TABLE IF NOT EXISTS group_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id INTEGER REFERENCES group_chats(id), sender_id INTEGER REFERENCES users(id), content VARCHAR NOT NULL, created_at DATETIME)"
-        )
-
-        run_sql(
-            "CREATE TABLE IF NOT EXISTS fee_installments (id SERIAL PRIMARY KEY, student_id INTEGER REFERENCES users(id), title VARCHAR NOT NULL, amount VARCHAR NOT NULL, status VARCHAR DEFAULT 'due', due_date VARCHAR, paid_at TIMESTAMP, proof_url TEXT)",
-            "CREATE TABLE IF NOT EXISTS fee_installments (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER REFERENCES users(id), title VARCHAR NOT NULL, amount VARCHAR NOT NULL, status VARCHAR DEFAULT 'due', due_date VARCHAR, paid_at DATETIME, proof_url VARCHAR)"
-        )
-
-        run_sql(
-            "CREATE TABLE IF NOT EXISTS weekly_challenges (id SERIAL PRIMARY KEY, title VARCHAR NOT NULL, description TEXT, points INTEGER DEFAULT 10, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-            "CREATE TABLE IF NOT EXISTS weekly_challenges (id INTEGER PRIMARY KEY AUTOINCREMENT, title VARCHAR NOT NULL, description VARCHAR, points INTEGER DEFAULT 10, created_at DATETIME)"
-        )
-
-        run_sql(
-            "CREATE TABLE IF NOT EXISTS challenge_completions (id SERIAL PRIMARY KEY, challenge_id INTEGER REFERENCES weekly_challenges(id), student_id INTEGER REFERENCES users(id), completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-            "CREATE TABLE IF NOT EXISTS challenge_completions (id INTEGER PRIMARY KEY AUTOINCREMENT, challenge_id INTEGER REFERENCES weekly_challenges(id), student_id INTEGER REFERENCES users(id), completed_at DATETIME)"
-        )
-
-        # Add view column to course_resources
-        add_col_safe("course_resources", "views", "INTEGER", "0")
-
-        run_sql(
-            "CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, post_id INTEGER REFERENCES posts(id), user_id INTEGER REFERENCES users(id), content TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-            "CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER REFERENCES posts(id), user_id INTEGER REFERENCES users(id), content VARCHAR NOT NULL, created_at DATETIME)"
-        )
-
-        run_sql(
-            "CREATE TABLE IF NOT EXISTS activities (id SERIAL PRIMARY KEY, type VARCHAR NOT NULL, user_id INTEGER REFERENCES users(id), lecturer_id INTEGER REFERENCES users(id), description TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-            "CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY AUTOINCREMENT, type VARCHAR NOT NULL, user_id INTEGER REFERENCES users(id), lecturer_id INTEGER REFERENCES users(id), description VARCHAR, created_at DATETIME)"
-        )
-
-        run_sql(
-            "CREATE TABLE IF NOT EXISTS post_likes (id SERIAL PRIMARY KEY, post_id INTEGER REFERENCES posts(id), user_email VARCHAR NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-            "CREATE TABLE IF NOT EXISTS post_likes (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER REFERENCES posts(id), user_email VARCHAR NOT NULL, created_at DATETIME)"
-        )
-
-        # Create default user if none exists
-        if db.query(models.User).count() == 0:
-            default_user = models.User(
-                email="lecturer@edunova.com",
-                password="password123",
-                full_name="Dr. Smith",
-                gender="Male",
-                role="lecturer"
-            )
-            db.add(default_user)
-            
-            student_user = models.User(
-                email="student@edunova.com",
-                password="password123",
-                full_name="Yasmin Ahmed",
-                gender="Female",
-                role="student"
-            )
-            db.add(student_user)
-            db.commit()
-            print("DEBUG: Default users created")
-        
-        # Add seed courses if none exist
-        if db.query(models.Course).count() == 0:
-            lecturer = db.query(models.User).first()
-            seed_courses = [
-                models.Course(name="Advanced Mathematics", code="MATH401", lecturer_id=lecturer.id),
-                models.Course(name="Quantum Physics", code="PHYS302", lecturer_id=lecturer.id),
-                models.Course(name="Software Engineering", code="SE201", lecturer_id=lecturer.id),
-            ]
-            db.add_all(seed_courses)
-            db.commit()
-            print("DEBUG: Seed courses added")
-            
-            # Add seed resources for the first course
-            first_course = db.query(models.Course).first()
-            if first_course and db.query(models.CourseResource).count() == 0:
-                seed_resources = [
-                    models.CourseResource(
-                        course_id=first_course.id,
-                        category="pdfs",
-                        title="Introduction to Calculus",
-                        file_url="/uploads/sample.pdf"
-                    ),
-                    models.CourseResource(
-                        course_id=first_course.id,
-                        category="assignments",
-                        title="Homework 1: Derivatives",
-                        file_url="/uploads/hw1.pdf"
-                    ),
-                ]
-                db.add_all(seed_resources)
-                db.commit()
-                print("DEBUG: Seed resources added")
-
-            # Seed initial fee installments for student@edunova.com if they don't have any
-            target_student = db.query(models.User).filter(models.User.email == "student@edunova.com").first()
-            if target_student and db.query(models.FeeInstallment).filter(models.FeeInstallment.student_id == target_student.id).count() == 0:
-                installments = [
-                    models.FeeInstallment(student_id=target_student.id, title="1st Installment", amount="750,000", status="due", due_date="Sep 15, 2025"),
-                    models.FeeInstallment(student_id=target_student.id, title="2nd Installment", amount="750,000", status="due", due_date="Nov 01, 2025"),
-                    models.FeeInstallment(student_id=target_student.id, title="3rd Installment", amount="750,000", status="due", due_date="Jan 15, 2026"),
-                    models.FeeInstallment(student_id=target_student.id, title="4th Installment", amount="750,000", status="due", due_date="Mar 15, 2026"),
-                ]
-                db.add_all(installments)
-                db.commit()
-                print("DEBUG: Seed fee installments added for student@edunova.com")
-            
-        print(f"DEBUG: Startup complete. Courses count: {db.query(models.Course).count()}")
-    except Exception as e:
-        print(f"DEBUG: Startup error: {e}")
-    finally:
-        db.close()
+# Startup logic refactored.
 
 # @app.get("/")
 # async def root():
