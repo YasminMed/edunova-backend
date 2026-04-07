@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
@@ -396,42 +394,6 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(
-              Icons.add_circle_outline_rounded,
-              color: AppColors.mutedText,
-            ),
-            onPressed: () async {
-              FilePickerResult? result = await FilePicker.platform.pickFiles();
-              if (result != null) {
-                final userProvider = Provider.of<UserProvider>(context, listen: false);
-                if (userProvider.email == null) return;
-                
-                final fileId = await _chatService.uploadFile(
-                  filePath: kIsWeb ? null : result.files.single.path,
-                  bytes: kIsWeb ? result.files.single.bytes : null,
-                  fileName: result.files.single.name,
-                );
-                
-                if (fileId != null) {
-                  final textContent = _messageController.text.trim();
-                  _messageController.clear();
-                  final newMessage = await _chatService.sendGroupMessage(
-                    widget.groupId,
-                    userProvider.email!,
-                    textContent.isEmpty ? "Attachment" : textContent,
-                    attachmentId: fileId,
-                  );
-                  if (newMessage != null) {
-                    setState(() {
-                      _messages.add(newMessage);
-                    });
-                    _scrollToBottom();
-                  }
-                }
-              }
-            },
-          ),
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),

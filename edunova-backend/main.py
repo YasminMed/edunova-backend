@@ -690,7 +690,7 @@ async def send_otp(request: OTPRequest, db: Session = Depends(get_db)):
         
     otp_storage[request.email] = {
         "otp": otp,
-        "expires": datetime.utcnow() + timedelta(minutes=10)
+        "expires": datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
     }
     
     return {"message": "OTP sent successfully"}
