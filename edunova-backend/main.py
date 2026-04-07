@@ -701,7 +701,7 @@ async def verify_otp(request: VerifyOTPRequest):
     if not record:
         raise HTTPException(status_code=400, detail="No OTP found or it has expired.")
         
-    if datetime.utcnow() > record["expires"]:
+    if datetime.datetime.utcnow() > record["expires"]:
         del otp_storage[request.email]
         raise HTTPException(status_code=400, detail="OTP has expired.")
         

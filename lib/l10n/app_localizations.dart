@@ -19,7 +19,7 @@ class AppLocalizations {
       'success': 'Success!',
       'password_changed': 'Your password has been changed.',
       'back_to_login': 'Back to Login',
-      'verification_subtitle': 'Enter the 4-digit code sent to your email',
+      'verification_subtitle': 'Enter the 6-digit code sent to your email',
       'resend_code': 'Resend Code',
       'enter_email_subtitle': 'Enter your email to receive a verification code',
       'welcome_title': 'Welcome to EduNova',
@@ -381,7 +381,7 @@ class AppLocalizations {
       'password_changed': 'تم تغيير كلمة المرور الخاصة بك.',
       'back_to_login': 'العودة لتسجيل الدخول',
       'verification_subtitle':
-          'أدخل الرمز المكون من 4 أرقام الذي تم إرساله إلى بريدك الإلكتروني',
+          'أدخل الرمز المكون من 6 أرقام الذي تم إرساله إلى بريدك الإلكتروني',
       'resend_code': 'إعادة إرسال الرمز',
       'enter_email_subtitle': 'أدخل بريدك الإلكتروني لتلقي رمز التحقق',
       'welcome_title': 'مرحباً بك في إيدونوفا',
@@ -735,7 +735,7 @@ class AppLocalizations {
       'password_changed': 'وشەی نهێنیت گۆڕدرا.',
       'back_to_login': 'گەڕانەوە بۆ چوونەژوورەوە',
       'verification_subtitle':
-          'کۆدە ٤ ژمارەییەکە بنووسە کە بۆ ئیمەیڵەکەت نێردراوە',
+          'کۆدە ٦ ژمارەییەکە بنووسە کە بۆ ئیمەیڵەکەت نێردراوە',
       'resend_code': 'دووبارە ناردنەوەی کۆد',
       'enter_email_subtitle':
           'ئیمەیڵەکەت بنووسە بۆ وەرگرتنی کۆدی پشتڕاستکردنەوە',
