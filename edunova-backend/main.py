@@ -153,6 +153,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="EduNova API", lifespan=lifespan)
 
+# Add CORS middleware to allow the Flutter app to connect from localhost
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Database initialization moved to lifespan pattern at top of file.
 
 # Add CORS middleware for Flutter web/mobile
