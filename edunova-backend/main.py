@@ -156,7 +156,10 @@ app = FastAPI(title="EduNova API", lifespan=lifespan)
 @app.get("/system/force-cleanup")
 async def force_system_cleanup(db: Session = Depends(get_db)):
     from sqlalchemy import text, not_
-    target_emails = ["smsm@gmail.com", "yaso1@gmail.com", "yaso2@gmail.com", "yaso3@gmail.com", "yait@gmail.com", "yaso@gmail.com"]
+    target_emails = [
+        "smsm@gmail.com", "yaso1@gmail.com", "yaso2@gmail.com", "yaso3@gmail.com", "yait@gmail.com", 
+        "yaso@gmail.com", "yaso4@gmail.com", "smsm2@gmail.com", "smsm3@gmail.com"
+    ]
     
     # 1. Capture current users for info
     all_users = db.query(models.User).all()
