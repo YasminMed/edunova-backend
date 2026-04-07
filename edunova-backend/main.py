@@ -164,14 +164,7 @@ app.add_middleware(
 
 # Database initialization moved to lifespan pattern at top of file.
 
-# Add CORS middleware for Flutter web/mobile
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Static and upload directories initialization.
 
 # Ensure the static directory exists before mounting to avoid errors
 if not os.path.exists("static"):
