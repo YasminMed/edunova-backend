@@ -155,18 +155,20 @@ app = FastAPI(title="EduNova API", lifespan=lifespan)
 
 @app.get("/system/force-cleanup")
 async def force_system_cleanup(db: Session = Depends(get_db)):
-    print("DEBUG: Manual Force-Cleanup Triggered")
     from sqlalchemy import text, not_
-    target_emails = ["smsm@gmail.com", "yaso1@gmail.com", "yaso2@gmail.com", "yaso3@gmail.com", "yait@gmail.com"]
+    target_emails = ["smsm@gmail.com", "yaso1@gmail.com", "yaso2@gmail.com", "yaso3@gmail.com", "yait@gmail.com", "yaso@gmail.com"]
     
-    # 1. Delete problematic users
+    # 1. Capture current users for info
+    all_users = db.query(models.User).all()
+    user_list = [{"id": u.id, "email": u.email, "name": u.full_name} for u in all_users]
+
+    # 2. Delete problematic users
     to_delete = db.query(models.User).filter(models.User.email.in_(target_emails)).all()
     deleted_names = [u.full_name for u in to_delete]
     for u in to_delete:
-        print(f"DEBUG: Manually deleting user {u.email}")
         db.delete(u)
     
-    # 2. Cleanup orphaned records
+    # 3. Cleanup orphaned records
     orphaned_courses = db.query(models.Course).filter(
         not_(models.Course.lecturer_id.in_(db.query(models.User.id)))
     ).all()
@@ -176,8 +178,10 @@ async def force_system_cleanup(db: Session = Depends(get_db)):
     db.commit()
     return {
         "status": "success",
+        "deleted_count": len(deleted_names),
         "deleted_users": deleted_names,
-        "message": f"Successfully deleted {len(deleted_names)} users and cleaned orphaned records."
+        "current_users_in_db": user_list,
+        "message": "Click the link again after I update the target list if you still see bad users."
     }
 
 # Add CORS middleware for Flutter web/mobile
