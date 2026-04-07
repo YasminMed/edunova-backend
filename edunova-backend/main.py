@@ -161,30 +161,46 @@ async def force_system_cleanup(db: Session = Depends(get_db)):
         "yaso@gmail.com", "yaso4@gmail.com", "smsm2@gmail.com", "smsm3@gmail.com"
     ]
     
-    # 1. Capture current users for info
-    all_users = db.query(models.User).all()
-    user_list = [{"id": u.id, "email": u.email, "name": u.full_name} for u in all_users]
-
-    # 2. Delete problematic users
+    # 1. Delete problematic users
     to_delete = db.query(models.User).filter(models.User.email.in_(target_emails)).all()
     deleted_names = [u.full_name for u in to_delete]
     for u in to_delete:
         db.delete(u)
-    
-    # 3. Cleanup orphaned records
-    orphaned_courses = db.query(models.Course).filter(
-        not_(models.Course.lecturer_id.in_(db.query(models.User.id)))
-    ).all()
-    for oc in orphaned_courses:
-        db.delete(oc)
-        
     db.commit()
+
+    # 2. Deep Sanitize: Delete ALL records that point to non-existent users
+    student_models = [
+        (models.Attendance, "student_id"),
+        (models.ExamMark, "student_id"),
+        (models.AssignmentSubmission, "student_id"),
+        (models.QuizSubmission, "student_id"),
+        (models.FeeInstallment, "student_id"),
+        (models.ChallengeCompletion, "student_id")
+    ]
+    
+    total_orphans_purged = 0
+    valid_user_ids = [u.id for u in db.query(models.User.id).all()]
+    
+    for model_cls, field_name in student_models:
+        attr = getattr(model_cls, field_name)
+        orphans = db.query(model_cls).filter(not_(attr.in_(valid_user_ids))).all()
+        for o in orphans:
+            db.delete(o)
+            total_orphans_purged += 1
+            
+    db.commit()
+    
+    # 3. Capture FRESH user list for info
+    all_users = db.query(models.User).all()
+    user_list = [{"id": u.id, "email": u.email, "name": u.full_name} for u in all_users]
+
     return {
         "status": "success",
         "deleted_count": len(deleted_names),
         "deleted_users": deleted_names,
+        "orphans_purged": total_orphans_purged,
         "current_users_in_db": user_list,
-        "message": "Click the link again after I update the target list if you still see bad users."
+        "message": "Cloud deep-clean complete. Refresh your app now!"
     }
 
 # Add CORS middleware for Flutter web/mobile
@@ -1552,7 +1568,9 @@ def get_all_student_averages_and_data(db: Session, department: Optional[str] = N
         courses_query = courses_query.filter(models.Course.stage == stage)
     courses = courses_query.all()
     
-    results = {} # student_id -> {"name": "", "email": "", "total_avg": 0.0, "subjects": []}
+    # IMPORTANT: Ensure result dict only contains IDs for users found in all_students
+    valid_student_ids = {s.id for s in all_students}
+    results = {}
     
     for s in all_students:
         s_total_avg = 0.0
