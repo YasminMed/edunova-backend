@@ -518,6 +518,7 @@ async def login(user: UserAuth, db: Session = Depends(get_db)):
 
         return {
             "message": "Login successful",
+            "id": db_user.id,
             "email": db_user.email,
             "fullName": db_user.full_name,
             "role": db_user.role,
@@ -2472,11 +2473,12 @@ async def get_user_chat_sessions(user_email: str, db: Session = Depends(get_db))
             models.ChatMessage.session_id == s.id
         ).order_by(models.ChatMessage.created_at.desc()).first()
         
+        # Only count unread messages sent by the other person
         unread_count = db.query(models.ChatMessage).filter(
             models.ChatMessage.session_id == s.id,
             models.ChatMessage.sender_id == other_user.id,
             models.ChatMessage.is_read == 0
-        ).count()
+        ).count() if other_user.id != user.id else 0
         
         result.append({
             "session_id": s.id,
@@ -2522,10 +2524,37 @@ async def get_chat_messages(session_id: int, current_user_email: str = None, db:
             "sender_name": m.sender.full_name if m.sender else "Unknown",
             "content": m.content,
             "created_at": m.created_at.isoformat() if m.created_at else "",
-            "is_read": m.is_read == 1
+            "is_read": m.is_read
         }
         for m in messages
     ]
+
+@app.post("/chat/mark-all-read")
+async def mark_all_read(user_email: str = Form(...), db: Session = Depends(get_db)):
+    try:
+        user = db.query(models.User).filter(models.User.email == user_email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        unread_msgs = db.query(models.ChatMessage).join(
+            models.ChatSession, models.ChatMessage.session_id == models.ChatSession.id
+        ).filter(
+            (models.ChatSession.user1_id == user.id) | (models.ChatSession.user2_id == user.id),
+            models.ChatMessage.sender_id != user.id,
+            models.ChatMessage.is_read == 0
+        ).all()
+        
+        for msg in unread_msgs:
+            msg.is_read = 1
+            
+        if unread_msgs:
+            db.commit()
+            
+        return {"success": True, "marked_count": len(unread_msgs)}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/chat/sessions/{session_id}/messages")
 async def send_chat_message(
@@ -2653,6 +2682,7 @@ async def get_user_groups(user_email: str, db: Session = Depends(get_db)):
             "admin_id": g.admin_id,
             "latest_message": latest_msg.content if latest_msg else "",
             "latest_message_time": latest_msg.created_at.isoformat() if latest_msg and latest_msg.created_at else "",
+            "unread_count": 0  # Placeholder: Group unread tracking requires a separate table
         })
     result.sort(key=lambda x: x["latest_message_time"] or "1970-01-01T00:00:00", reverse=True)
     return result
