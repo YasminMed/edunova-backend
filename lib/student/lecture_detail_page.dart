@@ -59,12 +59,11 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
             ? await _materialService.getQuizzes(widget.lecture['id'])
             : await _materialService.getAssignments(widget.lecture['id']);
 
-        setState(() => _resources = items);
-
         final userEmail = Provider.of<UserProvider>(
           context,
           listen: false,
         ).email;
+        Map<int, dynamic> userSubs = {};
         if (userEmail != null) {
           for (var item in items) {
             try {
@@ -78,13 +77,27 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                       userEmail,
                     );
               if (sub != null) {
-                setState(() => _userSubmissions[item['id']] = sub);
+                userSubs[item['id']] = sub;
               }
             } catch (e) {
               debugPrint("Error loading submission for ${item['id']}: $e");
             }
           }
         }
+
+        // Sort items: Put submitted ones at the top
+        items.sort((a, b) {
+          bool aSubmitted = userSubs.containsKey(a['id']);
+          bool bSubmitted = userSubs.containsKey(b['id']);
+          if (aSubmitted && !bSubmitted) return -1;
+          if (!aSubmitted && bSubmitted) return 1;
+          return 0;
+        });
+
+        setState(() {
+          _resources = items;
+          _userSubmissions = userSubs;
+        });
       } else if (category == "Exams") {
         final userEmail = Provider.of<UserProvider>(
           context,
@@ -515,8 +528,14 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
         if (isAssignmentOrQuiz) {
           controller = _controllers.putIfAbsent(
             resource['id'],
-            () => TextEditingController(),
+            () => TextEditingController(
+              text: submission != null ? (submission['solution_text']?.toString() ?? "") : "",
+            ),
           );
+          // Safety catch to guarantee field populates if it initially registered empty before the sub loaded
+          if (submission != null && controller.text.isEmpty && submission['solution_text'] != null) {
+            controller.text = submission['solution_text'].toString();
+          }
         }
 
         return GestureDetector(
