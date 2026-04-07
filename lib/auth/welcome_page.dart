@@ -11,6 +11,7 @@ import 'onboarding_page.dart';
 import '../providers/user_provider.dart';
 import '../student/student_dashboard.dart';
 import '../lecturer/lecturer_main_navigation.dart';
+import '../l10n/app_localizations.dart';
 
 // Provider for Welcome Logic
 class WelcomeProvider extends ChangeNotifier {
@@ -212,9 +213,9 @@ class _WelcomePageState extends State<WelcomePage>
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         alignment: Alignment.center,
         children: [
@@ -392,7 +393,7 @@ class _WelcomePageState extends State<WelcomePage>
                                           ),
                                         ),
                                         child: Text(
-                                          "YOUR LEARNING STAR",
+                                          l10n?.translate('slogan')?.toUpperCase() ?? "YOUR LEARNING STAR",
                                           textAlign: TextAlign.center,
                                           style: TextDesign.pageSubtitle
                                               .copyWith(
@@ -426,7 +427,7 @@ class _WelcomePageState extends State<WelcomePage>
                         opacity: provider.showContent ? 1.0 : 0.0,
                         child: Center(
                           child: Text(
-                            "© 2025 EduNova • Your Learning Star",
+                            "© 2026 EduNova • ${l10n?.translate('slogan') ?? "Your Learning Star"}",
                             style: TextDesign.small.copyWith(
                               color: AppColors.mutedText.withOpacity(0.6),
                               fontWeight: FontWeight.w600,

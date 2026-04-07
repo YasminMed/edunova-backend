@@ -3433,17 +3433,60 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
     # Weekly attendance
     att_this_week = db.query(models.Attendance).filter(
         models.Attendance.student_id == user.id,
-        models.Attendance.date >= week_start.date()
+        models.Attendance.date >= week_start
     ).all()
-    att_present = len([att for att in att_this_week if att.status.lower() == "attended"])
+    att_present = len([att for att in att_this_week if att.status and att.status.lower().strip() == "attended"])
     att_total = len(att_this_week)
-    att_rate = att_present / att_total if att_total > 0 else 0.0
+    
+    # NEW logic: Initial attendance is 100% until a session is missed
+    att_rate = att_present / att_total if att_total > 0 else 1.0
 
     completion = db.query(models.ChallengeCompletion).filter(
         models.ChallengeCompletion.challenge_id == challenge.id,
         models.ChallengeCompletion.student_id == user.id
     ).first()
     
+    # AUTOMATIC REWARD SYSTEM
+    quiz_target = 3
+    assignment_target = 5
+    attendance_target = 0.8
+    
+    goals_met = (
+        quiz_count >= quiz_target and 
+        assignment_count >= assignment_target and 
+        att_rate >= attendance_target
+    )
+    
+    if goals_met and not completion:
+        # User hit all goals but hasn't been rewarded yet
+        completion = models.ChallengeCompletion(
+            challenge_id=challenge.id,
+            student_id=user.id
+        )
+        db.add(completion)
+        
+        # Award 2 points (academic marks)
+        user.total_academic_marks = (user.total_academic_marks or 0) + 2
+        
+        db.commit()
+        db.refresh(completion)
+        db.refresh(user)
+
+    # Calculate previous week status
+    prev_week_start = week_start - datetime.timedelta(days=7)
+    prev_week_str = prev_week_start.strftime("%Y-W%U")
+    prev_challenge = db.query(models.WeeklyChallenge).filter(
+        models.WeeklyChallenge.title.like(f"%{prev_week_str}%")
+    ).first()
+    
+    prev_status = "none"
+    if prev_challenge:
+        prev_completion = db.query(models.ChallengeCompletion).filter(
+            models.ChallengeCompletion.challenge_id == prev_challenge.id,
+            models.ChallengeCompletion.student_id == user.id
+        ).first()
+        prev_status = "won" if prev_completion else "failed"
+
     return {
         "has_challenge": True,
         "challenge_id": challenge.id,
@@ -3455,21 +3498,21 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
         "total_marks": user.total_academic_marks or 0,
         "quizzes": {
             "current": quiz_count,
-            "target": 3
+            "target": quiz_target
         },
         "assignments": {
             "current": assignment_count,
-            "target": 5
+            "target": assignment_target
         },
         "attendance": {
             "current_rate": round(att_rate, 2),
-            "target_rate": 0.8,
+            "target_rate": attendance_target,
             "total_sessions": att_total,
             "present_sessions": att_present
         },
         "previous_week": {
-            "week_str": (week_start - datetime.timedelta(days=7)).strftime("%Y-W%U"),
-            "status": "none" # Simplified check
+            "week_str": prev_week_str,
+            "status": prev_status
         }
     }
 

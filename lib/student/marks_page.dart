@@ -29,11 +29,12 @@ class _MarksPageState extends State<MarksPage> {
   Future<void> _fetchMarks() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final email = userProvider.email;
+    final l10n = AppLocalizations.of(context);
 
     if (email == null) {
       setState(() {
         _isLoading = false;
-        _errorMessage = "User email not found";
+        _errorMessage = l10n?.translate('user_email_not_found') ?? "User email not found";
       });
       return;
     }
@@ -51,14 +52,14 @@ class _MarksPageState extends State<MarksPage> {
         });
       }
     } on DioException catch (e) {
-      String message = "Error connecting to server";
+      String message = l10n?.translate('error_connecting_server') ?? "Error connecting to server";
       if (e.response != null) {
         final detail = e.response?.data?['detail'];
         message = detail ?? "Server error: ${e.response?.statusCode}";
       } else if (e.type == DioExceptionType.connectionTimeout) {
-        message = "Connection timed out";
+        message = l10n?.translate('connection_timed_out') ?? "Connection timed out";
       } else if (e.type == DioExceptionType.connectionError) {
-        message = "No internet connection or server unreachable";
+        message = l10n?.translate('no_internet_connection') ?? "No internet connection or server unreachable";
       }
 
       setState(() {
@@ -67,7 +68,8 @@ class _MarksPageState extends State<MarksPage> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = "An unexpected error occurred: $e";
+        _errorMessage = l10n?.translate('unexpected_error')?.replaceFirst('{error}', e.toString()) ??
+            "An unexpected error occurred: $e";
         _isLoading = false;
       });
     }
@@ -114,7 +116,7 @@ class _MarksPageState extends State<MarksPage> {
                       });
                       _fetchMarks();
                     },
-                    child: const Text("Retry"),
+                    child: Text(l10n?.translate('retry') ?? "Retry"),
                   ),
                 ],
               ),

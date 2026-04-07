@@ -122,9 +122,12 @@ class _MedalsPageState extends State<MedalsPage> {
 
                 // Medals List
                 if (_medals.isEmpty)
-                  const SliverFillRemaining(
+                   SliverFillRemaining(
                     child: Center(
-                      child: Text("Keep interacting to unlock medals!"),
+                      child: Text(
+                        l10n?.translate('keep_interacting_medals') ??
+                            "Keep interacting to unlock medals!",
+                      ),
                     ),
                   )
                 else
@@ -217,9 +220,9 @@ class _MedalsPageState extends State<MedalsPage> {
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            "ACADEMIC ELITE",
-                            style: TextStyle(
+                          child: Text(
+                            l10n?.translate('academic_elite') ?? "ACADEMIC ELITE",
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 10,
@@ -237,7 +240,8 @@ class _MedalsPageState extends State<MedalsPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          "Keep unlocking achievements!",
+                          l10n?.translate('keep_unlocking') ??
+                              "Keep unlocking achievements!",
                           style: TextDesign.body.copyWith(
                             color: Colors.white.withOpacity(0.8),
                             fontSize: 14,

@@ -85,7 +85,7 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  "Failed to load courses",
+                                  l10n?.translate('failed_load_courses') ?? "Failed to load courses",
                                   style: TextDesign.h3,
                                 ),
                                 const SizedBox(height: 8),
@@ -99,7 +99,7 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                                 const SizedBox(height: 24),
                                 ElevatedButton(
                                   onPressed: viewModel.loadSubjects,
-                                  child: const Text("Retry"),
+                                  child: Text(l10n?.translate('retry') ?? "Retry"),
                                 ),
                               ],
                             ),
@@ -394,8 +394,8 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                     if (context.mounted) {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Course created successfully!"),
+                        SnackBar(
+                          content: Text(l10n?.translate('course_created_success') ?? "Course created successfully!"),
                           backgroundColor: Colors.green,
                         ),
                       );
@@ -404,7 +404,7 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
                 },
                 child: Text(
                   currentStep == 0
-                      ? (l10n?.translate('continue') ?? "Continue")
+                      ? (l10n?.translate('continue_button') ?? "Continue")
                       : (l10n?.translate('create') ?? "Create"),
                   style: const TextStyle(color: Colors.white),
                 ),
@@ -568,18 +568,20 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
   }
 
   void _showDeleteDialog(BuildContext context, Map<String, dynamic> subject) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (diagContext) => AlertDialog(
-        title: const Text("Delete Course"),
+        title: Text(l10n?.translate('delete_course') ?? "Delete Course"),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         content: Text(
+          l10n?.translate('delete_course_confirm_msg').replaceFirst('{name}', subject['name']) ??
           "Are you sure you want to delete \"${subject['name']}\"? This action cannot be undone.",
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(diagContext),
-            child: const Text("Cancel"),
+            child: Text(l10n?.translate('cancel') ?? "Cancel"),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -594,10 +596,10 @@ class _LecturerMaterialsPageState extends State<LecturerMaterialsPage> {
               viewModel.deleteCourse(subject['id']);
               Navigator.pop(diagContext);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Course deleted successfully")),
+                SnackBar(content: Text(l10n?.translate('course_deleted_success') ?? "Course deleted successfully")),
               );
             },
-            child: const Text("Delete"),
+            child: Text(l10n?.translate('delete') ?? "Delete"),
           ),
         ],
       ),
