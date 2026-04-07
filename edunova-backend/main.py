@@ -62,84 +62,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static_assets")
 
 import sqlalchemy
 
-@app.on_event("startup")
-async def startup_db_migration():
-    print("DEBUG: Running auto-migration check...")
-    db = SessionLocal()
-    try:
-        from sqlalchemy import text, inspect
-        inspector = inspect(engine)
-        
-        # 1. Check chat_messages table
-        cm_cols = [c["name"] for c in inspector.get_columns("chat_messages")]
-        if "attachment_id" not in cm_cols:
-            print("DEBUG: Adding attachment_id column to chat_messages")
-            db.execute(text("ALTER TABLE chat_messages ADD COLUMN attachment_id VARCHAR"))
-            db.commit()
-            
-        # 2. Check group_messages table
-        gm_cols = [c["name"] for c in inspector.get_columns("group_messages")]
-        if "attachment_id" not in gm_cols:
-            print("DEBUG: Adding attachment_id column to group_messages")
-            db.execute(text("ALTER TABLE group_messages ADD COLUMN attachment_id VARCHAR"))
-            db.commit()
-
-        # 3. Check users table for online status
-        user_cols = [c["name"] for c in inspector.get_columns("users")]
-        if "is_online" not in user_cols:
-            print("DEBUG: Adding is_online column to users")
-            db.execute(text("ALTER TABLE users ADD COLUMN is_online BOOLEAN DEFAULT FALSE"))
-            db.commit()
-        if "last_seen" not in user_cols:
-            print("DEBUG: Adding last_seen column to users")
-            db.execute(text("ALTER TABLE users ADD COLUMN last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
-            db.commit()
-            
-        # 4. Cleanup orphaned records (Deep Deletion for previously deleted users)
-        print("DEBUG: Cleaning up orphaned records...")
-        from sqlalchemy import not_
-        
-        # Cleanup Courses with missing lecturers
-        orphaned_courses = db.query(models.Course).filter(
-            not_(models.Course.lecturer_id.in_(db.query(models.User.id)))
-        ).all()
-        for oc in orphaned_courses:
-            print(f"DEBUG: Deleting orphaned course {oc.name} (id={oc.id})")
-            db.delete(oc)
-            
-        # Cleanup student data with missing students
-        student_models = [
-            (models.Attendance, "student_id"),
-            (models.ExamMark, "student_id"),
-            (models.AssignmentSubmission, "student_id"),
-            (models.QuizSubmission, "student_id"),
-            (models.FeeInstallment, "student_id"),
-            (models.ChallengeCompletion, "student_id")
-        ]
-        for model_cls, field_name in student_models:
-            attr = getattr(model_cls, field_name)
-            orphaned = db.query(model_cls).filter(
-                not_(attr.in_(db.query(models.User.id)))
-            ).all()
-            if orphaned:
-                print(f"DEBUG: Deleting {len(orphaned)} orphaned records from {model_cls.__tablename__}")
-                for o in orphaned:
-                    db.delete(o)
-
-        # 4.3 Force delete specific problematic accounts
-        target_emails = ["smsm@gmail.com", "yaso1@gmail.com", "yaso2@gmail.com", "yaso3@gmail.com", "yait@gmail.com"]
-        to_delete = db.query(models.User).filter(models.User.email.in_(target_emails)).all()
-        for u in to_delete:
-            print(f"DEBUG: Force-deleting user {u.email} (id={u.id})")
-            db.delete(u)
-
-        db.commit()
-        print("DEBUG: Auto-migration and cleanup completed successfully")
-    except Exception as e:
-        print(f"DEBUG: Auto-migration error: {e}")
-        db.rollback()
-    finally:
-        db.close()
+# Consolidatied startup sequence at line 213 (startup_event)
 
 
 
@@ -220,12 +143,13 @@ async def startup_event():
 
     db = SessionLocal()
     try:
-        from sqlalchemy import text
+        from sqlalchemy import text, inspect, not_
+        inspector = inspect(engine)
         
         # Safe column addition Helper
         def add_col_safe(table, column, type_str, default=None):
             try:
-                # Basic check if column exists (Postgres/SQLite compatible-ish check)
+                # Basic check if column exists
                 db.execute(text(f"SELECT {column} FROM {table} LIMIT 1"))
             except Exception:
                 db.rollback()
@@ -238,12 +162,17 @@ async def startup_event():
                     db.rollback()
                     print(f"DEBUG: Could not add {column}: {e2}")
 
+        # 1. Standard Migrations
         add_col_safe("users", "role", "VARCHAR", "'student'")
         add_col_safe("users", "department", "VARCHAR")
         add_col_safe("users", "stage", "VARCHAR")
         add_col_safe("users", "years_of_experience", "INTEGER", "0")
         add_col_safe("users", "image_url", "VARCHAR")
         add_col_safe("users", "total_academic_marks", "INTEGER", "0")
+        add_col_safe("users", "is_online", "BOOLEAN", "FALSE")
+        add_col_safe("users", "last_seen", "TIMESTAMP", "CURRENT_TIMESTAMP")
+        add_col_safe("chat_messages", "attachment_id", "VARCHAR")
+        add_col_safe("group_messages", "attachment_id", "VARCHAR")
         add_col_safe("courses", "image_url", "VARCHAR")
         add_col_safe("courses", "department", "VARCHAR", "'Software Engineering'")
         add_col_safe("courses", "stage", "VARCHAR", "'First Stage'")
@@ -251,7 +180,43 @@ async def startup_event():
         add_col_safe("assignments", "deadline", "TIMESTAMP")
         add_col_safe("quizzes", "deadline", "TIMESTAMP")
 
-        # Broad Auto-fix for existing users with NULL department/stage
+        # 2. Cleanup orphaned records (Deep Deletion)
+        print("DEBUG: Cleaning up orphaned records...")
+        orphaned_courses = db.query(models.Course).filter(
+            not_(models.Course.lecturer_id.in_(db.query(models.User.id)))
+        ).all()
+        for oc in orphaned_courses:
+            print(f"DEBUG: Deleting orphaned course {oc.name} (id={oc.id})")
+            db.delete(oc)
+            
+        student_models = [
+            (models.Attendance, "student_id"),
+            (models.ExamMark, "student_id"),
+            (models.AssignmentSubmission, "student_id"),
+            (models.QuizSubmission, "student_id"),
+            (models.FeeInstallment, "student_id"),
+            (models.ChallengeCompletion, "student_id")
+        ]
+        for model_cls, field_name in student_models:
+            try:
+                attr = getattr(model_cls, field_name)
+                orphaned = db.query(model_cls).filter(
+                    not_(attr.in_(db.query(models.User.id)))
+                ).all()
+                for o in orphaned:
+                    db.delete(o)
+            except Exception:
+                db.rollback()
+
+        # 3. Force delete problematic accounts
+        target_emails = ["smsm@gmail.com", "yaso1@gmail.com", "yaso2@gmail.com", "yaso3@gmail.com", "yait@gmail.com"]
+        to_delete = db.query(models.User).filter(models.User.email.in_(target_emails)).all()
+        for u in to_delete:
+            print(f"DEBUG: Force-deleting user {u.email} (id={u.id})")
+            db.delete(u)
+        db.commit()
+
+        # 4. Standard User Updates
         all_users = db.query(models.User).all()
         for u in all_users:
             updated = False
