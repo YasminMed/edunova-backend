@@ -826,7 +826,6 @@ async def create_post(
 
         new_post = models.Post(
             user_id=user.id,
-            created_by=user.id,
             title=title,
             description=description,
             image_url=image_url
@@ -878,9 +877,9 @@ async def add_comment(post_id: int, comment: CommentSchema, db: Session = Depend
         db.add(new_comment)
         db.commit()
 
-        # Log activity - safely, using created_by as fallback so we never pass None
+        # Log activity - safely, so it never breaks comment creation
         try:
-            recipient_id = post.user_id or post.created_by
+            recipient_id = post.user_id
             if recipient_id and recipient_id != user.id:
                 log_activity(db, "comment_added", user.id, recipient_id, f"Commented on your post: \"{post.title}\"")
         except Exception as log_err:
