@@ -153,42 +153,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="EduNova API", lifespan=lifespan)
 
-@app.get("/system/force-cleanup")
-async def force_system_cleanup(db: Session = Depends(get_db)):
-    from sqlalchemy import text
-    # 1. Targets
-    target_emails = ["smsm@gmail.com", "yaso1@gmail.com"]
-    to_delete = db.query(models.User).filter(models.User.email.in_(target_emails)).all()
-    for u in to_delete:
-        db.delete(u)
-    db.commit()
-
-    # 2. EMERGENCY RESTORE Yasmen with Raw SQL (Safest for Cloud DB)
-    yasmen_email = "yaso@gmail.com"
-    yasmen = db.query(models.User).filter(models.User.email == yasmen_email).first()
-    if not yasmen:
-        try:
-            db.execute(text("""
-                INSERT INTO users (email, password, full_name, role, gender, department, stage)
-                VALUES (:email, :password, :name, :role, :gender, :dept, :stage)
-            """), {
-                "email": yasmen_email,
-                "password": "password123",
-                "name": "yasmen",
-                "role": "student",
-                "gender": "Male",
-                "dept": "Software Engineering",
-                "stage": "Fourth Stage"
-            })
-            db.commit()
-        except Exception as e:
-            db.rollback()
-            print(f"DEBUG: Restoration error: {e}")
-
-    return {
-        "status": "success",
-        "message": "Yasmen restored via Raw SQL. Problematic accounts deleted. 500 Error resolved."
-    }
+# Database initialization moved to lifespan pattern at top of file.
 
 # Add CORS middleware for Flutter web/mobile
 app.add_middleware(
