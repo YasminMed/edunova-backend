@@ -630,14 +630,22 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                         decoration: BoxDecoration(
                           color: Colors.green.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.green.withOpacity(0.3)),
                         ),
-                        child: Text(
-                          "Grade: ${submission['grade']}",
-                          style: const TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.check_circle_outline_rounded, size: 14, color: Colors.green),
+                            const SizedBox(width: 4),
+                            Text(
+                              "Graded: ${submission['grade']}",
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                       )
                     else if (submission != null)
@@ -649,14 +657,22 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                         decoration: BoxDecoration(
                           color: Colors.orange.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orange.withOpacity(0.3)),
                         ),
-                        child: const Text(
-                          "Uploaded",
-                          style: TextStyle(
-                            color: Colors.orange,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.upload_file_rounded, size: 14, color: Colors.orange),
+                            const SizedBox(width: 4),
+                            const Text(
+                              "Uploaded",
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                   ],

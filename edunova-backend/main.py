@@ -1092,28 +1092,28 @@ async def get_lecturers(department: Optional[str] = None, stage: Optional[str] =
     for l in lecturers:
         l_dept = (l.department or "").lower()
         l_stage = (l.stage or "").lower()
+        l_depts = [d.strip() for d in l_dept.replace(",", " ").split() if d.strip()]
+        l_stages = [s.strip() for s in l_stage.replace(",", " ").split() if s.strip()]
         
         match_dept = True
         if search_dept:
             s_dept_parts = [p for p in search_dept.replace(",", " ").split() if p not in ["department", "dept", "of", "and"]]
-            l_dept_parts = [p for p in l_dept.replace(",", " ").split() if p not in ["department", "dept", "of", "and"]]
-            # Match if any significant word matches
-            match_dept = any(sp in l_dept for sp in s_dept_parts) or any(lp in search_dept for lp in l_dept_parts)
-            # Special check for "it" to avoid matching "it" inside "architectural"
-            if "it" in s_dept_parts or "it" in l_dept_parts:
-                if "it" in s_dept_parts and "it" not in l_dept.split():
-                     # if search is 'it', but it's not a standalone word in lecturer dept
-                     if "information technology" not in l_dept:
-                         match_dept = False
-                if "it" in l_dept_parts and "it" not in search_dept.split():
-                     if "information technology" not in search_dept:
-                         match_dept = False
+            # Match if any significant word matches or if one of the lecturer's depts matches
+            match_dept = any(sp in l_dept for sp in s_dept_parts) or any(ld in search_dept for ld in l_depts)
+            # Special check for "it"/ "se" to avoid sub-word matching
+            for sp in s_dept_parts:
+                if len(sp) <= 2: # short codes like IT, SE
+                    if sp not in l_depts and sp not in l_dept.split():
+                        match_dept = False
 
         match_stage = True
         if search_stage:
             s_stage_parts = [p for p in search_stage.split() if p not in ["stage", "st", "nd", "rd", "th"]]
-            # Match if any key word like 'fourth' is in lecturer stage
-            match_stage = any(sp in l_stage for sp in s_stage_parts)
+            # Match if any key word like 'fourth' is in lecturer stage list or if lecturer has NO stage specified (all-access)
+            if l_stages:
+                match_stage = any(sp in l_stage for sp in s_stage_parts) or any(ls in search_stage for ls in l_stages)
+            else:
+                match_stage = True # If lecturer has no stage, assume they are general staff
             
         if match_dept and match_stage:
             result.append({
@@ -1825,16 +1825,6 @@ def get_all_student_averages_and_data(db: Session, department: Optional[str] = N
         s_subjects_data = []
         
         for c in courses:
-            # Check if student has any activity in this course
-            # Activity = Attendance, Assignment, Quiz, or Exam
-            has_activity = db.query(models.Attendance).filter(models.Attendance.course_id == c.id, models.Attendance.student_id == s.id).first() or \
-                           db.query(models.AssignmentSubmission).join(models.Assignment).filter(models.Assignment.course_id == c.id, models.AssignmentSubmission.student_id == s.id).first() or \
-                           db.query(models.QuizSubmission).join(models.Quiz).filter(models.Quiz.course_id == c.id, models.QuizSubmission.student_id == s.id).first() or \
-                           db.query(models.ExamMark).filter(models.ExamMark.course_id == c.id, models.ExamMark.student_id == s.id).first()
-            
-            if not has_activity:
-                continue
-                
             # 1. Quiz Average
             quizzes = db.query(models.QuizSubmission).join(models.Quiz).filter(
                 models.Quiz.course_id == c.id,
@@ -2075,38 +2065,34 @@ async def get_lecturer_student_analysis(
             "top_performers": []
         }
 
-    # 1. Performance Trend (Last 7 days)
+    # Performance Trend (Last 7 days)
     trend = []
     today = datetime.datetime.utcnow().date()
+    # Collect all historical scores for these students to show representational progress
+    all_graded_subs = db.query(models.AssignmentSubmission).filter(
+        models.AssignmentSubmission.student_id.in_(student_ids),
+        models.AssignmentSubmission.is_graded == 1
+    ).all()
+    all_exam_marks = db.query(models.ExamMark).filter(
+        models.ExamMark.student_id.in_(student_ids)
+    ).all()
+
     for i in range(6, -1, -1):
         day = today - datetime.timedelta(days=i)
-        # Avg marks from submissions and exams for students on this day
-        # In this simplified model, we'll check created_at/submitted_at
-        scores = []
+        # Avg scores for work done on or before this day
+        day_scores = []
+        for s in all_graded_subs:
+            if s.submitted_at and s.submitted_at.date() <= day:
+                day_scores.append(to_float(s.grade))
+        for e in all_exam_marks:
+            if e.created_at and e.created_at.date() <= day:
+                day_scores.append(to_float(e.mark))
         
-        # Submissions
-        subs = db.query(models.AssignmentSubmission).filter(
-            models.AssignmentSubmission.student_id.in_(student_ids),
-            models.AssignmentSubmission.is_graded == 1
-        ).all()
-        for s in subs:
-            if s.submitted_at and s.submitted_at.date() == day:
-                scores.append(to_float(s.grade))
-                
-        # Exams
-        exams = db.query(models.ExamMark).filter(
-            models.ExamMark.student_id.in_(student_ids)
-        ).all()
-        for e in exams:
-            if e.created_at and e.created_at.date() == day:
-                scores.append(to_float(e.mark))
-        
-        if scores:
-            trend.append(sum(scores) / len(scores))
+        if day_scores:
+            trend.append(round(sum(day_scores) / len(day_scores), 1))
         else:
-            # If no data for a day, use 0 or previous day value (for visual continuity)
-            trend.append(trend[-1] if trend else 0)
-            
+            trend.append(0)
+
     # 2. Attendance Analytics
     att_records = db.query(models.Attendance).filter(models.Attendance.student_id.in_(student_ids)).all()
     total_att = len(att_records)
@@ -2123,43 +2109,36 @@ async def get_lecturer_student_analysis(
     
     # 3. Detailed Statistics
     # Average Mark
-    all_scores = []
-    for s_id in student_ids:
-        # Re-use logic or manual collect
-        s_subs = db.query(models.AssignmentSubmission).filter(models.AssignmentSubmission.student_id == s_id, models.AssignmentSubmission.is_graded == 1).all()
-        s_exams = db.query(models.ExamMark).filter(models.ExamMark.student_id == s_id).all()
-        s_scores = [to_float(sub.grade) for sub in s_subs] + [to_float(ex.mark) for ex in s_exams]
-        if s_scores:
-            all_scores.append(sum(s_scores) / len(s_scores))
-            
+    all_scores = [to_float(s.grade) for s in all_graded_subs] + [to_float(e.mark) for e in all_exam_marks]
     avg_mark = sum(all_scores) / len(all_scores) if all_scores else 0.0
     
-    # Engagement: submissions vs expected
-    courses = db.query(models.Course).filter(
-        models.Course.lecturer_id == lecturer.id,
-        models.Course.department.in_(target_depts),
-        models.Course.stage.in_(target_stages)
-    ).all()
-    course_ids = [c.id for c in courses]
-    assign_count = db.query(models.Assignment).filter(models.Assignment.course_id.in_(course_ids)).count()
-    expected_subs = assign_count * len(student_ids)
+    # Engagement: submissions vs expected across this lecturer's relevant courses
+    courses = db.query(models.Course).filter(models.Course.lecturer_id == lecturer.id).all()
+    # Filter courses manually to match target depts/stages more accurately if needed
+    relevant_course_ids = [c.id for c in courses if any(td in (c.department or "") for td in target_depts) and any(ts in (c.stage or "") for ts in target_stages)]
     
-    if expected_subs > 0:
-        actual_subs = db.query(models.AssignmentSubmission).join(models.Assignment).filter(
-            models.Assignment.course_id.in_(course_ids),
-            models.AssignmentSubmission.student_id.in_(student_ids)
-        ).count()
-        engagement = (actual_subs / expected_subs * 100)
-    else:
-        engagement = 0.0
+    if not relevant_course_ids:
+        relevant_course_ids = [c.id for c in courses]
+
+    assign_count = db.query(models.Assignment).filter(models.Assignment.course_id.in_(relevant_course_ids)).count()
+    quiz_count = db.query(models.Quiz).filter(models.Quiz.course_id.in_(relevant_course_ids)).count()
+    expected_subs = (assign_count + quiz_count) * len(student_ids) if student_ids else 0
     
-    # Materials Used: count of resources + assignments + quizzes by lecturer
-    if course_ids:
-        materials_count = db.query(models.CourseResource).filter(models.CourseResource.course_id.in_(course_ids)).count()
-        materials_count += db.query(models.Assignment).filter(models.Assignment.course_id.in_(course_ids)).count()
-        materials_count += db.query(models.Quiz).filter(models.Quiz.course_id.in_(course_ids)).count()
-    else:
-        materials_count = 0
+    actual_subs = db.query(models.AssignmentSubmission).join(models.Assignment).filter(
+        models.Assignment.course_id.in_(relevant_course_ids),
+        models.AssignmentSubmission.student_id.in_(student_ids)
+    ).count()
+    actual_subs += db.query(models.QuizSubmission).join(models.Quiz).filter(
+        models.Quiz.course_id.in_(relevant_course_ids),
+        models.QuizSubmission.student_id.in_(student_ids)
+    ).count()
+
+    engagement = (actual_subs / expected_subs * 100) if expected_subs > 0 else 0.0
+    
+    # Materials Used
+    materials_count = db.query(models.CourseResource).filter(models.CourseResource.course_id.in_(relevant_course_ids)).count()
+    materials_count += assign_count
+    materials_count += quiz_count
     
     detailed_stats = {
         "average_mark": round(avg_mark, 1),
