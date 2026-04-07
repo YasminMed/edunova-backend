@@ -3435,11 +3435,28 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
         models.Attendance.student_id == user.id,
         models.Attendance.date >= week_start
     ).all()
-    att_present = len([att for att in att_this_week if att.status and att.status.lower().strip() == "attended"])
-    att_total = len(att_this_week)
     
-    # NEW logic: Initial attendance is 100% until a session is missed
-    att_rate = att_present / att_total if att_total > 0 else 1.0
+    course_attendance = {}
+    for att in att_this_week:
+        if att.course_id not in course_attendance:
+            course_attendance[att.course_id] = {"present": 0, "total": 0}
+        
+        course_attendance[att.course_id]["total"] += 1
+        if att.status and att.status.lower().strip() == "attended":
+            course_attendance[att.course_id]["present"] += 1
+            
+    if not course_attendance:
+        att_rate = 1.0
+    else:
+        course_rates = [
+            data["present"] / data["total"] 
+            for data in course_attendance.values() 
+            if data["total"] > 0
+        ]
+        att_rate = sum(course_rates) / len(course_rates) if course_rates else 1.0
+        
+    att_present = sum(data["present"] for data in course_attendance.values())
+    att_total = sum(data["total"] for data in course_attendance.values())
 
     completion = db.query(models.ChallengeCompletion).filter(
         models.ChallengeCompletion.challenge_id == challenge.id,
