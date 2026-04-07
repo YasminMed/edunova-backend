@@ -547,8 +547,9 @@ class MaterialService {
 
   Future<Map<String, dynamic>> getWeeklyChallengeStatus(String email) async {
     try {
+      final normalizedEmail = email.trim().toLowerCase();
       final response = await _dio.get(
-        "/student/weekly-challenge-status/$email",
+        "/student/weekly-challenge-status/$normalizedEmail",
       );
       return response.data;
     } on DioException catch (e) {
@@ -558,7 +559,8 @@ class MaterialService {
 
   Future<List<dynamic>> getStudentMedals(String email) async {
     try {
-      final response = await _dio.get("/student/medals/$email");
+      final normalizedEmail = email.trim().toLowerCase();
+      final response = await _dio.get("/student/medals/$normalizedEmail");
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -567,7 +569,8 @@ class MaterialService {
 
   Future<void> completeWeeklyChallenge(int challengeId, String email) async {
     try {
-      final formData = FormData.fromMap({"student_email": email});
+      final normalizedEmail = email.trim().toLowerCase();
+      final formData = FormData.fromMap({"student_email": normalizedEmail});
       await _dio.post("/challenges/$challengeId/complete", data: formData);
     } on DioException catch (e) {
       throw _handleError(e);

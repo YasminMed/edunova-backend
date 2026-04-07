@@ -6,6 +6,7 @@ import 'dart:ui';
 import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/animated_background.dart';
 import 'onboarding_page.dart';
 import '../providers/user_provider.dart';
 import '../student/student_dashboard.dart';
@@ -206,56 +207,7 @@ class _WelcomePageState extends State<WelcomePage>
     super.dispose();
   }
 
-  Widget _buildBlob({
-    required Color color,
-    required double size,
-    required Animation<double> controller,
-    double xAmplitude = 0,
-    double yAmplitude = 0,
-    double startX = 0,
-    double startY = 0,
-    bool invertX = false,
-    bool invertY = false,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final blobOpacity = isDark ? 0.25 : 0.6;
-
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, child) {
-        final screenWidth = MediaQuery.of(context).size.width;
-        final screenHeight = MediaQuery.of(context).size.height;
-
-        double xValue = sin(controller.value * 2 * pi);
-        double yValue = cos(controller.value * 2 * pi);
-
-        if (invertX) xValue = -xValue;
-        if (invertY) yValue = -yValue;
-
-        double left = startX * screenWidth;
-        double top = startY * screenHeight;
-
-        left += xValue * xAmplitude;
-        top += yValue * yAmplitude;
-
-        return Positioned(
-          top: top - size / 2,
-          left: left - size / 2,
-          child: Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [color.withOpacity(blobOpacity), color.withOpacity(0.0)],
-                stops: const [0.0, 1.0],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+  // Removed _buildBlob to use central AnimatedBackground widget instead.
 
   @override
   Widget build(BuildContext context) {
@@ -266,61 +218,8 @@ class _WelcomePageState extends State<WelcomePage>
       body: Stack(
         alignment: Alignment.center,
         children: [
-          // --- 1. Background Layer (Always animating) ---
-          _buildBlob(
-            color: AppColors.primary,
-            size: 450,
-            controller: _controller1,
-            startX: 0.8,
-            startY: 0.2,
-            xAmplitude: 150,
-            yAmplitude: 100,
-          ),
-          _buildBlob(
-            color: AppColors.secondary,
-            size: 500,
-            controller: _controller2,
-            startX: 0.2,
-            startY: 0.8,
-            xAmplitude: 120,
-            yAmplitude: 200,
-            invertX: true,
-          ),
-          _buildBlob(
-            color: AppColors.accentLight,
-            size: 350,
-            controller: _controller3,
-            startX: 0.5,
-            startY: 0.5,
-            xAmplitude: 180,
-            yAmplitude: 120,
-            invertY: true,
-          ),
-          _buildBlob(
-            color: AppColors.warning.withOpacity(0.5),
-            size: 400,
-            controller: _controller1,
-            startX: 0.9,
-            startY: 0.9,
-            xAmplitude: 100,
-            yAmplitude: 80,
-            invertX: true,
-            invertY: true,
-          ),
-
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(
-                sigmaX: 40,
-                sigmaY: 40,
-              ), // Reduced blur for performance
-              child: Container(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.black.withOpacity(0.4)
-                    : Colors.white.withOpacity(0.05),
-              ),
-            ),
-          ),
+          // --- 1. Standardized Animated Background ---
+          const AnimatedBackground(),
 
           // --- 2. Particle Layer ---
           AnimatedBuilder(
