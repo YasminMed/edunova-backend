@@ -745,31 +745,48 @@ async def reset_password(request: ResetPasswordRequest, db: Session = Depends(ge
 async def create_post(
     title: str = Form(...),
     description: str = Form(...),
+    user_email: str = Form(...),
     image: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
-    # For now, let's assume a default user_id since we don't have full auth context here
-    user_id = 1 
-    
-    image_url = None
+    try:
+        # Validate input
+        if not title or not title.strip():
+            raise HTTPException(status_code=400, detail="Title cannot be empty")
+        if not description or not description.strip():
+            raise HTTPException(status_code=400, detail="Description cannot be empty")
+        if not user_email or not user_email.strip():
+            raise HTTPException(status_code=400, detail="User email is required")
 
-    if image:
-        image_path = os.path.join(UPLOAD_DIR, f"{secrets.token_hex(8)}_{image.filename}")
-        with open(image_path, "wb") as buffer:
-            shutil.copyfileobj(image.file, buffer)
-        image_url = f"/uploads/{os.path.basename(image_path)}"
+        # Find the actual user ID by email
+        user = db.query(models.User).filter(models.User.email == user_email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail=f"User with email {user_email} not found")
 
-    new_post = models.Post(
-        user_id=user_id,
-        title=title,
-        description=description,
-        image_url=image_url
-    )
-    db.add(new_post)
-    db.commit()
-    db.refresh(new_post)
+        image_url = None
+        if image:
+            image_path = os.path.join(UPLOAD_DIR, f"{secrets.token_hex(8)}_{image.filename}")
+            with open(image_path, "wb") as buffer:
+                shutil.copyfileobj(image.file, buffer)
+            image_url = f"/uploads/{os.path.basename(image_path)}"
 
-    return {"message": "Post created successfully", "post_id": new_post.id}
+        new_post = models.Post(
+            user_id=user.id,
+            title=title,
+            description=description,
+            image_url=image_url
+        )
+        db.add(new_post)
+        db.commit()
+        db.refresh(new_post)
+
+        return {"message": "Post created successfully", "post_id": new_post.id}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating post: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create post: {str(e)}")
 
 @app.delete("/posts/{post_id}")
 async def delete_post(post_id: int, db: Session = Depends(get_db)):

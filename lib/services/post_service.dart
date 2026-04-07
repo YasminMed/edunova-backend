@@ -16,6 +16,7 @@ class PostService {
   Future<void> createPost({
     required String title,
     required String description,
+    required String email,
     File? image,
     Uint8List? bytes,
     String? fileName,
@@ -24,6 +25,7 @@ class PostService {
       FormData formData = FormData.fromMap({
         "title": title,
         "description": description,
+        "user_email": email,
       });
 
       if (kIsWeb && bytes != null) {

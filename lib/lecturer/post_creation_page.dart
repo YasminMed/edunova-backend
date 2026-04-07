@@ -804,10 +804,22 @@ class _PostCreationPageState extends State<PostCreationPage> {
 
                 setState(() => _isUploading = true);
 
+                final userProvider = Provider.of<UserProvider>(context, listen: false);
+                final email = userProvider.email;
+
+                if (email == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("User session error. Please re-login.")),
+                  );
+                  setState(() => _isUploading = false);
+                  return;
+                }
+
                 try {
                   await _postService.createPost(
                     title: _titleController.text.trim(),
                     description: _descController.text.trim(),
+                    email: email,
                     image: _selectedImage,
                     bytes: _selectedImageBytes,
                     fileName: _selectedImageName,
