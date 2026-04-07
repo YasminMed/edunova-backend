@@ -34,7 +34,7 @@ class User(Base):
     is_online = Column(Boolean, default=False)
     last_seen = Column(DateTime, default=datetime.datetime.utcnow)
 
-    posts = relationship("Post", back_populates="author")
+    posts = relationship("Post", back_populates="author", foreign_keys="[Post.user_id]")
     fee_installments = relationship("FeeInstallment", back_populates="student")
 
 class Post(Base):
@@ -42,13 +42,13 @@ class Post(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     title = Column(String, nullable=False)
     description = Column(String)
     image_url = Column(String)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    author = relationship("User", back_populates="posts")
+    author = relationship("User", back_populates="posts", foreign_keys=[user_id])
     likes = relationship("PostLike", back_populates="post", cascade="all, delete-orphan")
 
 class PostLike(Base):
