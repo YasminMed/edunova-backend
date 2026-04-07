@@ -772,6 +772,7 @@ async def create_post(
 
         new_post = models.Post(
             user_id=user.id,
+            created_by=user.id,
             title=title,
             description=description,
             image_url=image_url
