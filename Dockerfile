@@ -15,6 +15,9 @@ RUN flutter build web --release
 # Stage 2: Runtime Environment (FastAPI)
 FROM python:3.11-slim
 
+# Ensure Python logs are shown immediately in Railway
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
 # Cache backend dependencies
