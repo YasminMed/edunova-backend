@@ -444,6 +444,21 @@ async def startup_event():
                 print("DEBUG: Seed fee installments added for student@edunova.com")
             
         print(f"DEBUG: Startup complete. Courses count: {db.query(models.Course).count()}")
+        # 7. Check weekly_challenges table
+        try:
+            challenge_count = db.query(models.WeeklyChallenge).count()
+            if challenge_count == 0:
+                print("DEBUG: Seeding initial Weekly Master Challenge")
+                seed_challenge = models.WeeklyChallenge(
+                    title="Weekly Master Challenge",
+                    description="Complete all your tasks and sessions this week to earn the Master Medal!",
+                    points=50
+                )
+                db.add(seed_challenge)
+                db.commit()
+        except Exception as e:
+            print(f"DEBUG: Error seeding challenges: {e}")
+            
     except Exception as e:
         print(f"DEBUG: Startup error: {e}")
     finally:
@@ -3487,3 +3502,84 @@ async def serve_spa(full_path: str):
     if os.path.exists(index_file):
         return FileResponse(index_file)
     return HTMLResponse(content="<h1>Flutter build not found</h1>", status_code=404)
+# --- Weekly Challenges Endpoints ---
+
+@app.get("/student/weekly-challenge-status/{email}")
+async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Get the latest challenge
+    challenge = db.query(models.WeeklyChallenge).order_by(models.WeeklyChallenge.created_at.desc()).first()
+    if not challenge:
+        return {
+            "has_challenge": False,
+            "message": "No active challenge found"
+        }
+        
+    # Check if user completed it
+    completion = db.query(models.ChallengeCompletion).filter(
+        models.ChallengeCompletion.challenge_id == challenge.id,
+        models.ChallengeCompletion.student_id == user.id
+    ).first()
+    
+    return {
+        "has_challenge": True,
+        "challenge_id": challenge.id,
+        "title": challenge.title,
+        "description": challenge.description,
+        "points": challenge.points,
+        "is_completed": completion is not None,
+        "completed_at": completion.completed_at.isoformat() if completion else None
+    }
+
+@app.post("/challenges/{challenge_id}/complete")
+async def complete_challenge(challenge_id: int, student_email: str = Form(...), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == student_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Check if already completed
+    existing = db.query(models.ChallengeCompletion).filter(
+        models.ChallengeCompletion.challenge_id == challenge_id,
+        models.ChallengeCompletion.student_id == user.id
+    ).first()
+    
+    if existing:
+        return {"message": "Challenge already completed", "status": "exists"}
+        
+    new_completion = models.ChallengeCompletion(
+        challenge_id=challenge_id,
+        student_id=user.id
+    )
+    db.add(new_completion)
+    
+    # Reward points to user
+    challenge = db.query(models.WeeklyChallenge).filter(models.WeeklyChallenge.id == challenge_id).first()
+    if challenge:
+        user.total_academic_marks = (user.total_academic_marks or 0) + (challenge.points or 10)
+        
+    db.commit()
+    return {"message": "Challenge completed successfully!", "status": "success"}
+
+# Placeholder for medals endpoint used by material_service
+@app.get("/student/medals/{email}")
+async def get_student_medals(email: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        return []
+    
+    completions = db.query(models.ChallengeCompletion).filter(
+        models.ChallengeCompletion.student_id == user.id
+    ).all()
+    
+    # Return as list of medal objects
+    return [
+        {
+            "id": c.id,
+            "name": "Challenge Medal",
+            "date": c.completed_at.strftime("%b %d, %Y"),
+            "points": 50
+        } for c in completions
+    ]
