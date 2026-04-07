@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:typed_data';
 
 class AuthService {
-  static const String baseUrl = "https://web-production-06d8c.up.railway.app";
+  static const String baseUrl = "https://edunova-backend-production.up.railway.app";
   final Dio _dio = Dio(
     BaseOptions(
       baseUrl: baseUrl,

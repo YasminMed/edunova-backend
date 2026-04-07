@@ -6,7 +6,7 @@ import '../models/chat_session.dart';
 import '../models/group_chat.dart';
 
 class ChatService {
-  static const String baseUrl = "https://web-production-06d8c.up.railway.app";
+  static const String baseUrl = "https://edunova-backend-production.up.railway.app";
   final Dio _dio = Dio(
     BaseOptions(
       baseUrl: baseUrl,
