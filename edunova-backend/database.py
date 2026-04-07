@@ -6,20 +6,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Railway provides DATABASE_URL. We need to handle the 'postgres://' vs 'postgresql://' issue if it arises
+# Database Configuration
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+
 if SQLALCHEMY_DATABASE_URL:
-    print("DEBUG: DATABASE_URL found in environment")
+    # Standardize postgres prefix for SQLAlchemy compatibility
     if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
         SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    
+    # Check for internal vs external Railway URL for debugging
+    is_internal = "railway.internal" in SQLALCHEMY_DATABASE_URL
+    conn_type = "Internal (Preferred)" if is_internal else "External (Link)"
+    display_url = SQLALCHEMY_DATABASE_URL.split("@")[-1]  # Hide credentials
+    print(f"DATABASE_STATUS: Connected to PostgreSQL ({conn_type}) -> {display_url}")
 else:
-    print("DEBUG: DATABASE_URL NOT FOUND. Falling back to SQLite.")
-
-# Default to sqlite for local testing if no DATABASE_URL is provided
-if not SQLALCHEMY_DATABASE_URL:
+    print("DATABASE_STATUS: WARNING - DATABASE_URL NOT FOUND. Falling back to ephemeral SQLite (test.db).")
     SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-
-print(f"DEBUG: Initializing engine with URL: {SQLALCHEMY_DATABASE_URL.split('@')[-1]}") # Masking credentials
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
