@@ -16,6 +16,8 @@ class ManagedSubjectViewModel extends BaseViewModel {
   ];
 
   DateTime _selectedAttendanceDate = DateTime.now();
+  int? _currentCourseId;
+  int? get currentCourseId => _currentCourseId;
   DateTime get selectedAttendanceDate => _selectedAttendanceDate;
 
   void setSelectedAttendanceDate(DateTime date) {
@@ -44,6 +46,7 @@ class ManagedSubjectViewModel extends BaseViewModel {
     String? stage,
   }) {
     _selectedFilterIndex = index;
+    _currentCourseId = courseId;
     if (index == 0) {
       loadResources(courseId, _filters[index]);
     } else if (index == 3) {
@@ -222,6 +225,13 @@ class ManagedSubjectViewModel extends BaseViewModel {
         );
       }
       await loadSubmissions(parentId, isQuiz: isQuiz);
+      if (_currentCourseId != null) {
+        if (isQuiz) {
+          await loadQuizzes(_currentCourseId!);
+        } else {
+          await loadAssignments(_currentCourseId!);
+        }
+      }
     } catch (e) {
       debugPrint("Error grading submission: $e");
     } finally {

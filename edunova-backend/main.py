@@ -171,6 +171,8 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # --- Global Helpers ---
 
+CHALLENGE_TITLE_PREFIX = "Weekly Master Challenge - "
+
 def get_current_week_start():
     today = datetime.datetime.utcnow()
     # Monday is 0
@@ -1338,6 +1340,12 @@ async def submit_assignment(
     student = db.query(models.User).filter(models.User.email == student_email).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+
+    # Check Deadline
+    assignment = db.query(models.Assignment).filter(models.Assignment.id == assignment_id).first()
+    if assignment and assignment.deadline:
+        if datetime.datetime.utcnow() > assignment.deadline:
+            raise HTTPException(status_code=403, detail="The deadline for this assignment has passed.")
     
     # Check if existing submission
     submission = db.query(models.AssignmentSubmission).filter(
@@ -1520,6 +1528,12 @@ async def submit_quiz(
     student = db.query(models.User).filter(models.User.email == student_email).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+    
+    # Check Deadline
+    quiz = db.query(models.Quiz).filter(models.Quiz.id == quiz_id).first()
+    if quiz and quiz.deadline:
+        if datetime.datetime.utcnow() > quiz.deadline:
+            raise HTTPException(status_code=403, detail="The deadline for this quiz has passed.")
     
     submission = db.query(models.QuizSubmission).filter(
         models.QuizSubmission.quiz_id == quiz_id,
@@ -3014,9 +3028,8 @@ async def get_student_progress(email: str, db: Session = Depends(get_db)):
         fully_completed = (q_count >= TARGET_QUIZZES and a_count >= TARGET_ASSIGNMENTS and att_rate >= TARGET_ATTENDANCE_RATE)
         if fully_completed:
             # Check if already awarded this week
-            # We use a naming convention for WeeklyChallenge to track this week's completion
             week_str = week_start.strftime("%Y-W%U")
-            challenge_title = f"Weekly Challenge {week_str}"
+            challenge_title = f"{CHALLENGE_TITLE_PREFIX}{week_str}"
             
             challenge = db.query(models.WeeklyChallenge).filter(models.WeeklyChallenge.title == challenge_title).first()
             if not challenge:
@@ -3388,7 +3401,7 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
         
     week_start = get_current_week_start()
     current_week_str = week_start.strftime("%Y-W%U")
-    challenge_title = f"Weekly Master Challenge - {current_week_str}"
+    challenge_title = f"{CHALLENGE_TITLE_PREFIX}{current_week_str}"
     
     # Get or safe-create the latest challenge
     challenge = db.query(models.WeeklyChallenge).filter(models.WeeklyChallenge.title == challenge_title).first()

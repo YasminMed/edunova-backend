@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../services/material_service.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class LectureDetailPage extends StatefulWidget {
   final Map<String, dynamic> lecture;
@@ -524,6 +525,16 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
             ? _userSubmissions[resource['id']]
             : null;
 
+        bool isDeadlinePassed = false;
+        if (resource['deadline'] != null) {
+          try {
+            final deadline = DateTime.parse(resource['deadline'].toString());
+            isDeadlinePassed = DateTime.now().isAfter(deadline);
+          } catch (e) {
+            debugPrint("Error parsing deadline: $e");
+          }
+        }
+
         TextEditingController? controller;
         if (isAssignmentOrQuiz) {
           controller = _controllers.putIfAbsent(
@@ -544,17 +555,25 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
               : () async {
                   if (_selectedFilterIndex == 0) {
                     // PDF
-                    try {
-                      await _materialService.incrementResourceView(
-                        resource['id'],
-                      );
+                    final url = resource['file_url'];
+                    if (url != null && url.isNotEmpty) {
+                      try {
+                        await launchUrlString(url, mode: LaunchMode.externalApplication);
+                        await _materialService.incrementResourceView(resource['id']);
+                      } catch (e) {
+                        debugPrint("Error launching URL: $e");
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Could not open file: $e")),
+                          );
+                        }
+                      }
+                    } else {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Opening Material...")),
+                          const SnackBar(content: Text("PDF URL not found.")),
                         );
                       }
-                    } catch (e) {
-                      debugPrint("Error incrementing view: $e");
                     }
                   }
                 },
@@ -689,7 +708,16 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                   if (resource['file_url'] != null) ...[
                     const SizedBox(height: 8),
                     InkWell(
-                      onTap: () {},
+                      onTap: () async {
+                        final url = resource['file_url'];
+                        if (url != null) {
+                          try {
+                            await launchUrlString(url, mode: LaunchMode.externalApplication);
+                          } catch (e) {
+                            debugPrint("Error opening reference material: $e");
+                          }
+                        }
+                      },
                       child: Row(
                         children: [
                           Icon(
@@ -714,8 +742,11 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                   TextField(
                     controller: controller,
                     maxLines: 5,
+                    enabled: !isDeadlinePassed,
                     decoration: InputDecoration(
-                      hintText: "Your answer here...",
+                      hintText: isDeadlinePassed 
+                          ? "Deadline passed - changes locked" 
+                          : "Your answer here...",
                       filled: true,
                       fillColor: Theme.of(context).brightness == Brightness.dark
                           ? Colors.grey[800]
@@ -730,7 +761,7 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () async {
+                      onPressed: isDeadlinePassed ? null : () async {
                         final email = Provider.of<UserProvider>(
                           context,
                           listen: false,
@@ -779,9 +810,9 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: submission != null
-                            ? Colors.orange
-                            : AppColors.primary,
+                        backgroundColor: isDeadlinePassed
+                            ? Colors.grey
+                            : (submission != null ? Colors.orange : AppColors.primary),
                         foregroundColor: Colors.white,
                         elevation: 2,
                         shadowColor: Colors.black.withOpacity(0.3),
@@ -790,9 +821,9 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                         ),
                       ),
                       child: Text(
-                        submission != null
-                            ? "Edit Submission"
-                            : "Submit Answer",
+                        isDeadlinePassed
+                            ? "Deadline Passed"
+                            : (submission != null ? "Edit Submission" : "Submit Answer"),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
