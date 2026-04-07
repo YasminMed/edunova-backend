@@ -1,0 +1,7 @@
+Users containing smsm:
+(5, 'smsm2', 'smsm2@gmail.com', 'lecturer')
+(3, 'smsm', 'smsm@gmail.com', 'lecturer')
+(8, 'smsm3', 'smsm3@gmail.com', 'lecturer')
+
+Users containing lecturer:
+(3, 'lecturer software3-4', 'ya44122037@cihanuniversity.edu.iq', 'lecturer')

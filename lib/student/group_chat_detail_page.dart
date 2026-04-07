@@ -91,7 +91,7 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
     // Optimistic UI
     final tempMsg = ChatMessage(
       id: 0,
-      senderId: -1,
+      senderId: userProvider.userId ?? -1,
       senderName: 'Me',
       senderEmail: userProvider.email,
       content: content,
@@ -256,9 +256,9 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
                 final message = _messages[index];
 
                 bool senderIsMe =
-                    message.senderId == -1 ||
-                    (userProvider.email != null &&
-                        message.senderEmail == userProvider.email);
+                    (userProvider.userId != null &&
+                        message.senderId == userProvider.userId) ||
+                    message.senderId == -1;
 
                 String displayName = message.senderName;
                 if (message.senderId == widget.adminId) {
@@ -281,7 +281,7 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
                     decoration: BoxDecoration(
                       color: senderIsMe
                           ? AppColors.primary
-                          : Theme.of(context).cardColor.withOpacity(0.9),
+                          : Colors.white,
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(16),
                         topRight: const Radius.circular(16),
@@ -319,7 +319,7 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
                             style: TextDesign.body.copyWith(
                               color: senderIsMe
                                   ? Colors.white
-                                  : Theme.of(context).textTheme.bodyLarge?.color,
+                                  : AppColors.primaryText,
                               height: 1.4,
                             ),
                           ),

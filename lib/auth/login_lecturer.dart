@@ -55,6 +55,7 @@ class _LoginLecturerPageState extends State<LoginLecturerPage> {
 
         final userProvider = context.read<UserProvider>();
         await userProvider.setUser(
+          userData['id'],
           userData['fullName'] ?? 'Lecturer',
           _emailController.text.trim(),
           'lecturer',

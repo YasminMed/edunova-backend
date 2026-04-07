@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserProvider extends ChangeNotifier {
+  int? _userId;
   String? _fullName;
   String? _email;
   String? _role;
@@ -9,6 +10,7 @@ class UserProvider extends ChangeNotifier {
   String? _stage;
   String? _photoUrl;
 
+  int? get userId => _userId;
   String? get fullName => _fullName;
   String? get email => _email;
   String? get role => _role;
@@ -23,6 +25,7 @@ class UserProvider extends ChangeNotifier {
       _stage!.isNotEmpty;
 
   Future<void> setUser(
+    int id,
     String fullName,
     String email,
     String role, {
@@ -31,6 +34,7 @@ class UserProvider extends ChangeNotifier {
     String? photoUrl,
     bool persist = true,
   }) async {
+    _userId = id;
     _fullName = fullName;
     _email = email;
     _role = role;
@@ -40,6 +44,7 @@ class UserProvider extends ChangeNotifier {
 
     if (persist) {
       final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('userId', id);
       await prefs.setString('fullName', fullName);
       await prefs.setString('email', email);
       await prefs.setString('role', role);
@@ -53,6 +58,7 @@ class UserProvider extends ChangeNotifier {
 
   Future<void> loadUser() async {
     final prefs = await SharedPreferences.getInstance();
+    _userId = prefs.getInt('userId');
     _fullName = prefs.getString('fullName');
     _email = prefs.getString('email');
     _role = prefs.getString('role');
@@ -63,6 +69,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> clearUser() async {
+    _userId = null;
     _fullName = null;
     _email = null;
     _role = null;

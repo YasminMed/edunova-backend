@@ -1,0 +1,16 @@
+ID: 10, Email: dent@gmail.com, Name: dentistLect, Role: lecturer
+ID: 4, Email: yasmin@test.com, Name: yasmin, Role: student
+ID: 5, Email: final@test.com, Name: final, Role: student
+ID: 6, Email: root@edunova.com, Name: System Root, Role: admin
+ID: 2, Email: yasotaleb05@gmail.com, Name: software4, Role: student
+ID: 11, Email: graph@gmail.com, Name: graph, Role: lecturer
+ID: 3, Email: ya44122037@cihanuniversity.edu.iq, Name: lecturer software3-4, Role: lecturer
+ID: 6, Email: yaso3@gmail.com, Name: yaso3, Role: student
+ID: 2, Email: yaso1@gmail.com, Name: yasmen, Role: student
+ID: 4, Email: yaso2@gmail.com, Name: yaso2, Role: student
+ID: 7, Email: yaso4@gmail.com, Name: yaso4, Role: student
+ID: 9, Email: yait@gmail.com, Name: yasmenIT, Role: student
+ID: 5, Email: smsm2@gmail.com, Name: smsm2, Role: lecturer
+ID: 3, Email: smsm@gmail.com, Name: smsm, Role: lecturer
+ID: 8, Email: smsm3@gmail.com, Name: smsm3, Role: lecturer
+ID: 1, Email: yaso@gmail.com, Name: yasmen, Role: student

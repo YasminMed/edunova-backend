@@ -29,6 +29,18 @@ class ChatService {
     }
   }
 
+  Future<bool> markAllChatSessionsRead(String userEmail) async {
+    try {
+      final response = await _dio.post(
+        "/chat/mark-all-read",
+        data: FormData.fromMap({"user_email": userEmail}),
+      );
+      return response.data['success'] == true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<ChatSession?> startChatSession(
     String currentUserEmail,
     int targetUserId,

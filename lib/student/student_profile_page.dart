@@ -58,6 +58,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   role: userProvider.role!,
                 );
                 await userProvider.setUser(
+                  userProvider.userId!,
                   nameController.text.trim(),
                   userProvider.email!,
                   userProvider.role!,
@@ -351,6 +352,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         );
 
         await userProvider.setUser(
+          userProvider.userId!,
           userProvider.fullName!,
           userProvider.email!,
           userProvider.role!,

@@ -168,7 +168,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     // Optimistic UI
     final tempMsg = ChatMessage(
       id: 0,
-      senderId: -1, // current user temp
+      senderId: userProvider.userId ?? -1,
       senderName: 'Me',
       content: content,
       createdAt: DateTime.now().toIso8601String(),
@@ -322,9 +322,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               itemBuilder: (context, index) {
                 final message = _messages[index];
                 final isMe =
-                    message.senderId == -1 ||
-                    (userProvider.email != null &&
-                        _messages[index].senderName != widget.name);
+                    message.senderId == (userProvider.userId ?? -1);
                 // We assume if senderName != otherUser's name (which is widget.name), it's probably me.
                 // A better check would be senderEmail, but we don't have it in ChatMessage. We can check by ID if we stored current user ID.
                 return Align(
@@ -343,7 +341,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     decoration: BoxDecoration(
                       color: isMe
                           ? AppColors.primary
-                          : Theme.of(context).cardColor.withOpacity(0.9),
+                          : Colors.white,
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(16),
                         topRight: const Radius.circular(16),
@@ -371,7 +369,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                             style: TextDesign.body.copyWith(
                               color: isMe
                                   ? Colors.white
-                                  : Theme.of(context).textTheme.bodyLarge?.color,
+                                  : AppColors.primaryText,
                               height: 1.4,
                             ),
                           ),

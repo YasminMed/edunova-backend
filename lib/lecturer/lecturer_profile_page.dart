@@ -58,6 +58,7 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
                   role: 'lecturer',
                 );
                 await userProvider.setUser(
+                  userProvider.userId!,
                   nameController.text.trim(),
                   userProvider.email!,
                   'lecturer',
@@ -336,6 +337,7 @@ class _LecturerProfilePageState extends State<LecturerProfilePage> {
         );
 
         await userProvider.setUser(
+          userProvider.userId!,
           userProvider.fullName!,
           userProvider.email!,
           'lecturer',

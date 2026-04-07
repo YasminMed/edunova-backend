@@ -116,6 +116,7 @@ class _DepartmentStageSelectionPageState
 
           // Update local provider
           await userProvider.setUser(
+            userProvider.userId!,
             userProvider.fullName ?? "Student",
             userProvider.email!,
             widget.role,
@@ -180,6 +181,7 @@ class _DepartmentStageSelectionPageState
 
           // Update local provider
           await userProvider.setUser(
+            userProvider.userId!,
             userProvider.fullName ?? "Lecturer",
             userProvider.email!,
             widget.role,

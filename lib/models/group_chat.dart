@@ -5,6 +5,7 @@ class GroupChat {
   final int adminId;
   final String latestMessage;
   final String latestMessageTime;
+  final int unreadCount;
 
   GroupChat({
     required this.id,
@@ -13,6 +14,7 @@ class GroupChat {
     required this.adminId,
     required this.latestMessage,
     required this.latestMessageTime,
+    required this.unreadCount,
   });
 
   factory GroupChat.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class GroupChat {
       adminId: json['admin_id'] ?? 0,
       latestMessage: json['latest_message'] ?? '',
       latestMessageTime: json['latest_message_time'] ?? '',
+      unreadCount: json['unread_count'] ?? 0,
     );
   }
 }

@@ -76,8 +76,8 @@ class _LecturerChatPageState extends State<LecturerChatPage>
               ? 'Group created'
               : g.latestMessage,
           'time': _formatTime(g.latestMessageTime),
-          'unread': false,
-          'unreadCount': 0,
+          'unread': g.unreadCount > 0,
+          'unreadCount': g.unreadCount,
           'avatarColor': Colors.green, // default color
         });
       }
@@ -103,13 +103,19 @@ class _LecturerChatPageState extends State<LecturerChatPage>
     super.dispose();
   }
 
-  void _markAllAsRead() {
+  void _markAllAsRead() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (userProvider.email != null) {
+      await _chatService.markAllChatSessionsRead(userProvider.email!);
+    }
     setState(() {
       for (var chat in _allChats) {
         chat['unread'] = false;
+        chat['unreadCount'] = 0;
       }
       for (var group in _allGroups) {
         group['unread'] = false;
+        group['unreadCount'] = 0;
       }
     });
   }

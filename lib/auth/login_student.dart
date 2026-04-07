@@ -56,6 +56,7 @@ class _LoginStudentPageState extends State<LoginStudentPage> {
 
         // Store user data in UserProvider
         await context.read<UserProvider>().setUser(
+          userData['id'],
           userData['fullName'] ?? 'Student',
           _emailController.text.trim(),
           'student',
