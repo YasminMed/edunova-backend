@@ -38,7 +38,7 @@ class User(Base):
     fee_installments = relationship("FeeInstallment", back_populates="student", cascade="all, delete-orphan")
     courses = relationship("Course", back_populates="lecturer", cascade="all, delete-orphan")
     comments = relationship("Comment", back_populates="user", cascade="all, delete-orphan")
-    activities = relationship("Activity", foreign_keys=[Activity.user_id], back_populates="user", cascade="all, delete-orphan")
+    activities = relationship("Activity", foreign_keys="[Activity.user_id]", back_populates="user", cascade="all, delete-orphan")
     attendance_records = relationship("Attendance", back_populates="student", cascade="all, delete-orphan")
     assignment_submissions = relationship("AssignmentSubmission", back_populates="student", cascade="all, delete-orphan")
     quiz_submissions = relationship("QuizSubmission", back_populates="student", cascade="all, delete-orphan")
