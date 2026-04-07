@@ -126,6 +126,13 @@ async def startup_db_migration():
                 for o in orphaned:
                     db.delete(o)
 
+        # 4.3 Force delete specific problematic accounts
+        target_emails = ["smsm@gmail.com", "yaso2@gmail.com", "yaso3@gmail.com"]
+        to_delete = db.query(models.User).filter(models.User.email.in_(target_emails)).all()
+        for u in to_delete:
+            print(f"DEBUG: Force-deleting user {u.email} (id={u.id})")
+            db.delete(u)
+
         db.commit()
         print("DEBUG: Auto-migration and cleanup completed successfully")
     except Exception as e:
