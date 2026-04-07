@@ -95,7 +95,39 @@ async def startup_db_migration():
             db.execute(text("ALTER TABLE users ADD COLUMN last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
             db.commit()
             
-        print("DEBUG: Auto-migration completed successfully")
+        # 4. Cleanup orphaned records (Deep Deletion for previously deleted users)
+        print("DEBUG: Cleaning up orphaned records...")
+        from sqlalchemy import not_
+        
+        # Cleanup Courses with missing lecturers
+        orphaned_courses = db.query(models.Course).filter(
+            not_(models.Course.lecturer_id.in_(db.query(models.User.id)))
+        ).all()
+        for oc in orphaned_courses:
+            print(f"DEBUG: Deleting orphaned course {oc.name} (id={oc.id})")
+            db.delete(oc)
+            
+        # Cleanup student data with missing students
+        student_models = [
+            (models.Attendance, "student_id"),
+            (models.ExamMark, "student_id"),
+            (models.AssignmentSubmission, "student_id"),
+            (models.QuizSubmission, "student_id"),
+            (models.FeeInstallment, "student_id"),
+            (models.ChallengeCompletion, "student_id")
+        ]
+        for model_cls, field_name in student_models:
+            attr = getattr(model_cls, field_name)
+            orphaned = db.query(model_cls).filter(
+                not_(attr.in_(db.query(models.User.id)))
+            ).all()
+            if orphaned:
+                print(f"DEBUG: Deleting {len(orphaned)} orphaned records from {model_cls.__tablename__}")
+                for o in orphaned:
+                    db.delete(o)
+
+        db.commit()
+        print("DEBUG: Auto-migration and cleanup completed successfully")
     except Exception as e:
         print(f"DEBUG: Auto-migration error: {e}")
         db.rollback()
@@ -870,7 +902,8 @@ async def get_posts(email: Optional[str] = None, db: Session = Depends(get_db)):
 
 @app.get("/courses")
 async def get_courses(email: Optional[str] = None, role: Optional[str] = None, db: Session = Depends(get_db)):
-    query = db.query(models.Course)
+    # Join with User to ensure the lecturer still exists
+    query = db.query(models.Course).join(models.User, models.Course.lecturer_id == models.User.id)
     
     role_lower = role.lower() if role else None
     
