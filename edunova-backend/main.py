@@ -155,24 +155,19 @@ app = FastAPI(title="EduNova API", lifespan=lifespan)
 
 @app.get("/system/force-cleanup")
 async def force_system_cleanup(db: Session = Depends(get_db)):
-    from sqlalchemy import text, not_
-    # 1. Correct targets (DO NOT include yaso@gmail.com)
-    target_emails = [
-        "smsm@gmail.com", "yaso1@gmail.com", "yaso2@gmail.com", "yaso3@gmail.com", "yait@gmail.com", 
-        "yaso4@gmail.com", "smsm2@gmail.com", "smsm3@gmail.com"
-    ]
+    from sqlalchemy import text
+    # 1. ONLY TARGET THESE TWO
+    target_emails = ["smsm@gmail.com", "yaso1@gmail.com"]
     
-    # 2. Delete problematic users
+    # Delete them
     to_delete = db.query(models.User).filter(models.User.email.in_(target_emails)).all()
-    deleted_names = [u.full_name for u in to_delete]
     for u in to_delete:
         db.delete(u)
     db.commit()
 
-    # 3. RESTORE Yasmen if missing
+    # 2. RESTORE Yasmen immediately
     yasmen_email = "yaso@gmail.com"
     yasmen = db.query(models.User).filter(models.User.email == yasmen_email).first()
-    restored = False
     if not yasmen:
         yasmen = models.User(
             email=yasmen_email,
@@ -184,38 +179,10 @@ async def force_system_cleanup(db: Session = Depends(get_db)):
         )
         db.add(yasmen)
         db.commit()
-        restored = True
-
-    # 4. Deep Sanitize: Delete ALL records that point to non-existent users
-    student_models = [
-        (models.Attendance, "student_id"),
-        (models.ExamMark, "student_id"),
-        (models.AssignmentSubmission, "student_id"),
-        (models.QuizSubmission, "student_id"),
-        (models.FeeInstallment, "student_id"),
-        (models.ChallengeCompletion, "student_id")
-    ]
-    total_orphans_purged = 0
-    valid_user_ids = [u.id for u in db.query(models.User.id).all()]
-    for model_cls, field_name in student_models:
-        attr = getattr(model_cls, field_name)
-        orphans = db.query(model_cls).filter(not_(attr.in_(valid_user_ids))).all()
-        for o in orphans:
-            db.delete(o)
-            total_orphans_purged += 1
-    db.commit()
-    
-    # 5. FRESH user list
-    all_users = db.query(models.User).all()
-    user_list = [{"id": u.id, "email": u.email, "name": u.full_name} for u in all_users]
 
     return {
         "status": "success",
-        "restored_yasmen": restored,
-        "deleted_count": len(deleted_names),
-        "orphans_purged": total_orphans_purged,
-        "current_users_in_db": user_list,
-        "message": "Yasmen restored and database cleaned! You can log in now."
+        "message": "Yasmen restored. Problematic accounts deleted. Server stabilized."
     }
 
 # Add CORS middleware for Flutter web/mobile
