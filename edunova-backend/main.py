@@ -59,6 +59,26 @@ async def lifespan(app: FastAPI):
     try:
         from sqlalchemy import text, inspect, not_
         
+        # 1. PostgreSQL ID Auto-Increment Fix (Self-Healing)
+        # This ensures the 'users' table can generate its own IDs on Railway.
+        try:
+            db.execute(text("""
+                DO $$ 
+                BEGIN 
+                    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'users_id_seq') THEN
+                        CREATE SEQUENCE users_id_seq;
+                        ALTER TABLE users ALTER COLUMN id SET DEFAULT nextval('users_id_seq');
+                        PERFORM setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1);
+                        ALTER SEQUENCE users_id_seq OWNED BY users.id;
+                    END IF;
+                END $$;
+            """))
+            db.commit()
+            print("DEBUG: Fixed PostgreSQL ID sequence (Self-Healing).")
+        except Exception as e_seq:
+            db.rollback()
+            print(f"DEBUG: Sequence hint (might be SQLite): {e_seq}")
+
         # 2. Add Missing Columns
         def add_col_safe(db_session, table, column, type_str, default=None):
             try:
