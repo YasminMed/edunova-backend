@@ -395,12 +395,12 @@ class _WelcomePageState extends State<WelcomePage>
                                           child: Image.asset(
                                             "assets/edunova_logo.png",
                                             width: min(
-                                              screenSize.width * 0.65,
-                                              260,
+                                              screenSize.width * 0.50,
+                                              180,
                                             ),
                                             height: min(
-                                              screenSize.width * 0.65,
-                                              260,
+                                              screenSize.width * 0.50,
+                                              180,
                                             ),
                                             errorBuilder:
                                                 (context, error, stackTrace) {
