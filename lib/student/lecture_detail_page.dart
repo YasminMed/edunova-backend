@@ -84,6 +84,17 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
               debugPrint("Error loading submission for ${item['id']}: $e");
             }
           }
+          
+          // Sort: Unsubmitted FIRST
+          setState(() {
+            _resources.sort((a, b) {
+              bool aSubmitted = _userSubmissions.containsKey(a['id']);
+              bool bSubmitted = _userSubmissions.containsKey(b['id']);
+              if (!aSubmitted && bSubmitted) return -1;
+              if (aSubmitted && !bSubmitted) return 1;
+              return 0;
+            });
+          });
         }
       } else if (category == "Exams") {
         final userEmail = Provider.of<UserProvider>(

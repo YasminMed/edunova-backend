@@ -34,8 +34,16 @@ class User(Base):
     is_online = Column(Boolean, default=False)
     last_seen = Column(DateTime, default=datetime.datetime.utcnow)
 
-    posts = relationship("Post", back_populates="author")
-    fee_installments = relationship("FeeInstallment", back_populates="student")
+    posts = relationship("Post", back_populates="author", cascade="all, delete-orphan")
+    fee_installments = relationship("FeeInstallment", back_populates="student", cascade="all, delete-orphan")
+    courses = relationship("Course", back_populates="lecturer", cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="user", cascade="all, delete-orphan")
+    activities = relationship("Activity", foreign_keys=[Activity.user_id], back_populates="user", cascade="all, delete-orphan")
+    attendance_records = relationship("Attendance", back_populates="student", cascade="all, delete-orphan")
+    assignment_submissions = relationship("AssignmentSubmission", back_populates="student", cascade="all, delete-orphan")
+    quiz_submissions = relationship("QuizSubmission", back_populates="student", cascade="all, delete-orphan")
+    exam_marks = relationship("ExamMark", back_populates="student", cascade="all, delete-orphan")
+    challenge_completions = relationship("ChallengeCompletion", back_populates="student", cascade="all, delete-orphan")
 
 class Post(Base):
     __tablename__ = "posts"
@@ -73,7 +81,10 @@ class Course(Base):
 
     resources = relationship("CourseResource", back_populates="course", cascade="all, delete-orphan")
     attendance = relationship("Attendance", back_populates="course", cascade="all, delete-orphan")
-    lecturer = relationship("User")
+    assignments = relationship("Assignment", back_populates="course", cascade="all, delete-orphan")
+    quizzes = relationship("Quiz", back_populates="course", cascade="all, delete-orphan")
+    exam_marks = relationship("ExamMark", back_populates="course", cascade="all, delete-orphan")
+    lecturer = relationship("User", back_populates="courses")
 
 class CourseResource(Base):
     __tablename__ = "course_resources"
@@ -97,7 +108,7 @@ class Comment(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
     post = relationship("Post")
-    user = relationship("User")
+    user = relationship("User", back_populates="comments")
 
 class Activity(Base):
     __tablename__ = "activities"
@@ -108,7 +119,7 @@ class Activity(Base):
     description = Column(String)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
-    user = relationship("User", foreign_keys=[user_id])
+    user = relationship("User", foreign_keys=[user_id], back_populates="activities")
     lecturer = relationship("User", foreign_keys=[lecturer_id])
 
 class Attendance(Base):
@@ -122,7 +133,7 @@ class Attendance(Base):
     date = Column(DateTime, default=datetime.datetime.utcnow)
 
     course = relationship("Course", back_populates="attendance")
-    student = relationship("User")
+    student = relationship("User", back_populates="attendance_records")
 
 class Assignment(Base):
     __tablename__ = "assignments"
@@ -136,7 +147,7 @@ class Assignment(Base):
     deadline = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    course = relationship("Course")
+    course = relationship("Course", back_populates="assignments")
     submissions = relationship("AssignmentSubmission", back_populates="assignment", cascade="all, delete-orphan")
 
 class ExamMark(Base):
@@ -149,8 +160,8 @@ class ExamMark(Base):
     mark = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
-    course = relationship("Course")
-    student = relationship("User")
+    course = relationship("Course", back_populates="exam_marks")
+    student = relationship("User", back_populates="exam_marks")
 
 class AssignmentSubmission(Base):
     __tablename__ = "assignment_submissions"
@@ -166,7 +177,7 @@ class AssignmentSubmission(Base):
     is_graded = Column(Integer, default=0) # 0 for no, 1 for yes
 
     assignment = relationship("Assignment", back_populates="submissions")
-    student = relationship("User")
+    student = relationship("User", back_populates="assignment_submissions")
 
 class Quiz(Base):
     __tablename__ = "quizzes"
@@ -179,7 +190,7 @@ class Quiz(Base):
     deadline = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    course = relationship("Course")
+    course = relationship("Course", back_populates="quizzes")
     submissions = relationship("QuizSubmission", back_populates="quiz", cascade="all, delete-orphan")
 
 class QuizSubmission(Base):
@@ -196,7 +207,7 @@ class QuizSubmission(Base):
     is_graded = Column(Integer, default=0)
 
     quiz = relationship("Quiz", back_populates="submissions")
-    student = relationship("User")
+    student = relationship("User", back_populates="quiz_submissions")
 
 class ChatSession(Base):
     __tablename__ = "chat_sessions"
