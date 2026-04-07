@@ -57,6 +57,13 @@ app.add_middleware(
 if not os.path.exists("static"):
     os.makedirs("static")
 
+# Models for cleaner endpoint parameter handling
+from pydantic import BaseModel
+
+class CommentSchema(BaseModel):
+    user_email: str
+    content: str
+
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static_assets")
 
