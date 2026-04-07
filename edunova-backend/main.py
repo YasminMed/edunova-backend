@@ -44,6 +44,17 @@ except ImportError:
 
 app = FastAPI(title="EduNova API")
 
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"GLOBAL ERROR on {request.url}: {repr(exc)}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {str(exc)}"}
+    )
+
 # Add CORS middleware for Flutter web/mobile
 app.add_middleware(
     CORSMiddleware,
@@ -97,6 +108,20 @@ async def startup_db_migration():
             print("DEBUG: Adding is_online column to users")
             db.execute(text("ALTER TABLE users ADD COLUMN is_online BOOLEAN DEFAULT FALSE"))
             db.commit()
+        # 4. Ensure posts.created_by column exists
+        try:
+            post_cols = [c["name"] for c in inspector.get_columns("posts")]
+            if "created_by" not in post_cols:
+                print("DEBUG: Adding created_by column to posts")
+                db.execute(text("ALTER TABLE posts ADD COLUMN created_by INTEGER REFERENCES users(id)"))
+                # Backfill existing posts: set created_by = user_id where user_id is valid
+                db.execute(text("UPDATE posts SET created_by = user_id WHERE user_id IS NOT NULL AND created_by IS NULL"))
+                db.commit()
+                print("DEBUG: created_by column added and backfilled")
+        except Exception as e:
+            db.rollback()
+            print(f"DEBUG: Error adding created_by: {e}")
+
         if "last_seen" not in user_cols:
             print("DEBUG: Adding last_seen column to users")
             db.execute(text("ALTER TABLE users ADD COLUMN last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
@@ -419,67 +444,81 @@ async def startup_event():
 @app.post("/auth/signup")
 async def signup(user: UserAuth, db: Session = Depends(get_db)):
     print(f"DEBUG: Signup request for email: {user.email}")
-    # Check if user already exists
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
-    if db_user:
-        print(f"DEBUG: Signup failed - email {user.email} already exists")
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    # Create new user
-    print(f"DEBUG: Saving user with dept={user.department}, stage={user.stage}")
-    new_user = models.User(
-        email=user.email,
-        password=user.password, # In production, hash this!
-        full_name=user.fullName,
-        gender=user.gender,
-        role=user.role,
-        department=user.department,
-        stage=user.stage,
-        years_of_experience=user.years_of_experience or 0,
-        image_url=user.image_url
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
-    return {"message": "User created successfully", "email": new_user.email}
+    try:
+        db_user = db.query(models.User).filter(models.User.email == user.email).first()
+        if db_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        new_user = models.User(
+            email=user.email,
+            password=user.password,
+            full_name=user.fullName,
+            gender=user.gender,
+            role=user.role,
+            department=user.department,
+            stage=user.stage,
+            years_of_experience=user.years_of_experience or 0,
+            image_url=user.image_url
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        return {"message": "User created successfully", "email": new_user.email}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR during signup for {user.email}: {repr(e)}")
+        raise HTTPException(status_code=500, detail=f"Signup error: {str(e)}")
 
 @app.post("/auth/login")
 async def login(user: UserAuth, db: Session = Depends(get_db)):
     print(f"DEBUG: Login request for email: {user.email}")
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
-    
-    if not db_user:
-        print(f"DEBUG: Login failed - email {user.email} not found in database")
-        raise HTTPException(status_code=404, detail="Email not registered")
-    
-    if db_user.password != user.password:
-        raise HTTPException(status_code=401, detail="Incorrect password")
-    
-    # Check if role matches
-    if db_user.role != user.role:
-        print(f"DEBUG: Login failed - role mismatch for {user.email}: expected {db_user.role}, got {user.role}")
-        raise HTTPException(status_code=403, detail=f"Access denied - you are registered as a {db_user.role}")
-        
-    print(f"DEBUG: Login successful for {db_user.email}. Dept: {db_user.department}, Stage: {db_user.stage}")
-    
-    # Update online status
-    db_user.is_online = True
-    db_user.last_seen = datetime.datetime.utcnow()
-    db.commit()
+    try:
+        if not user.email or not user.password:
+            raise HTTPException(status_code=400, detail="Email and password are required")
 
-    return {
-        "message": "Login successful",
-        "email": db_user.email,
-        "fullName": db_user.full_name,
-        "role": db_user.role,
-        "department": db_user.department,
-        "stage": db_user.stage,
-        "years_of_experience": db_user.years_of_experience,
-        "image_url": db_user.image_url,
-        "total_academic_marks": db_user.total_academic_marks or 0,
-        "is_online": True
-    }
+        db_user = db.query(models.User).filter(models.User.email == user.email).first()
+
+        if not db_user:
+            print(f"DEBUG: Login failed - email {user.email} not found")
+            raise HTTPException(status_code=404, detail="Email not registered")
+
+        if db_user.password != user.password:
+            raise HTTPException(status_code=401, detail="Incorrect password")
+
+        if db_user.role != user.role:
+            print(f"DEBUG: Role mismatch for {user.email}: DB={db_user.role}, request={user.role}")
+            raise HTTPException(status_code=403, detail=f"Access denied - you are registered as a {db_user.role}")
+
+        print(f"DEBUG: Login successful for {db_user.email}")
+
+        try:
+            db_user.is_online = True
+            db_user.last_seen = datetime.datetime.utcnow()
+            db.commit()
+        except Exception as status_err:
+            db.rollback()
+            print(f"DEBUG: Could not update online status: {status_err}")
+
+        return {
+            "message": "Login successful",
+            "email": db_user.email,
+            "fullName": db_user.full_name,
+            "role": db_user.role,
+            "department": db_user.department,
+            "stage": db_user.stage,
+            "years_of_experience": db_user.years_of_experience,
+            "image_url": db_user.image_url,
+            "total_academic_marks": db_user.total_academic_marks or 0,
+            "is_online": True
+        }
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR during login for {user.email}: {repr(e)}")
+        raise HTTPException(status_code=500, detail=f"Login error: {str(e)}")
 
 class ProfileUpdate(BaseModel):
     fullName: Optional[str] = None
