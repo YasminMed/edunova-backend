@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -128,19 +129,26 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     if (userProvider.email == null) return;
 
-    final msgs = await _chatService.getChatMessages(
-      widget.sessionId,
-      userProvider.email!,
-    );
-    if (!mounted) return;
+    try {
+      final msgs = await _chatService.getChatMessages(
+        widget.sessionId,
+        userProvider.email!,
+      );
+      if (!mounted) return;
 
-    setState(() {
-      _messages = msgs;
-    });
+      if (msgs.isNotEmpty || _messages.isEmpty) {
+        setState(() {
+          _messages = msgs;
+        });
+      }
 
-    if (!isPolling) {
-      // scroll down only initially
-      _scrollToBottom();
+      if (!isPolling) {
+        // scroll down only initially
+        _scrollToBottom();
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error loading messages: $e');
+      // On error, we keep the current _messages list to avoid "emptying" the screen
     }
   }
 
@@ -321,8 +329,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                final isMe =
-                    message.senderId == (userProvider.userId ?? -1);
+                final isMe = message.senderId == (userProvider.userId ?? -1) || 
+                             (message.senderEmail != null && message.senderEmail == userProvider.email);
                 // We assume if senderName != otherUser's name (which is widget.name), it's probably me.
                 // A better check would be senderEmail, but we don't have it in ChatMessage. We can check by ID if we stored current user ID.
                 return Align(

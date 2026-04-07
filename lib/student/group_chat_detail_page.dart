@@ -258,7 +258,7 @@ class _GroupChatDetailPageState extends State<GroupChatDetailPage> {
                 bool senderIsMe =
                     (userProvider.userId != null &&
                         message.senderId == userProvider.userId) ||
-                    message.senderId == -1;
+                    (message.senderEmail != null && message.senderEmail == userProvider.email);
 
                 String displayName = message.senderName;
                 if (message.senderId == widget.adminId) {
