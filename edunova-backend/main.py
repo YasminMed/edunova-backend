@@ -110,6 +110,21 @@ async def startup_db_migration():
             db.commit()
         # 4. Ensure posts.created_by column exists
         try:
+            print("DEBUG: Cleaning up orphaned records")
+            # Posts with no valid user
+            db.execute(text("DELETE FROM posts WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)"))
+            # Comments with no valid user or post
+            db.execute(text("DELETE FROM comments WHERE (user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)) OR (post_id IS NOT NULL AND post_id NOT IN (SELECT id FROM posts))"))
+            # Chat messages with no valid sender
+            db.execute(text("DELETE FROM chat_messages WHERE sender_id IS NOT NULL AND sender_id NOT IN (SELECT id FROM users)"))
+            # Group messages with no valid sender
+            db.execute(text("DELETE FROM group_messages WHERE sender_id IS NOT NULL AND sender_id NOT IN (SELECT id FROM users)"))
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            print(f"DEBUG: Error cleaning up orphans: {e}")
+
+        try:
             post_cols = [c["name"] for c in inspector.get_columns("posts")]
             if "created_by" not in post_cols:
                 print("DEBUG: Adding created_by column to posts")
@@ -826,7 +841,7 @@ async def create_post(
     except Exception as e:
         db.rollback()
         print(f"Error creating post: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to create post: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Failed to create post: {str(e)}")
 
 @app.delete("/posts/{post_id}")
 async def delete_post(post_id: int, db: Session = Depends(get_db)):
@@ -846,89 +861,117 @@ async def delete_post(post_id: int, db: Session = Depends(get_db)):
 
 @app.post("/posts/{post_id}/comments")
 async def add_comment(post_id: int, comment: CommentSchema, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == comment.user_email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    post = db.query(models.Post).filter(models.Post.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    
-    new_comment = models.Comment(
-        post_id=post_id,
-        user_id=user.id,
-        content=comment.content
-    )
-    db.add(new_comment)
-    db.commit()
+    try:
+        user = db.query(models.User).filter(models.User.email == comment.user_email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        post = db.query(models.Post).filter(models.Post.id == post_id).first()
+        if not post:
+            raise HTTPException(status_code=404, detail="Post not found")
+        
+        new_comment = models.Comment(
+            post_id=post_id,
+            user_id=user.id,
+            content=comment.content
+        )
+        db.add(new_comment)
+        db.commit()
 
-    # Log activity
-    log_activity(db, "comment_added", user.id, post.user_id, f"Commented on your post: \"{post.title}\"")
-    
-    return {"message": "Comment added successfully"}
+        # Log activity - safely, using created_by as fallback so we never pass None
+        try:
+            recipient_id = post.user_id or post.created_by
+            if recipient_id and recipient_id != user.id:
+                log_activity(db, "comment_added", user.id, recipient_id, f"Commented on your post: \"{post.title}\"")
+        except Exception as log_err:
+            print(f"DEBUG: Activity log failed (non-critical): {log_err}")
+        
+        return {"message": "Comment added successfully"}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        print(f"Error adding comment: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Failed to add comment. DB Error: {str(e)}")
 
 @app.get("/posts/{post_id}/comments")
 async def get_comments(post_id: int, db: Session = Depends(get_db)):
-    comments = db.query(models.Comment).filter(models.Comment.post_id == post_id).order_by(models.Comment.created_at.desc()).all()
-    result = []
-    for c in comments:
-        result.append({
-            "id": c.id,
-            "user_name": c.user.full_name,
-            "content": c.content,
-            "created_at": c.created_at.isoformat()
-        })
-    return result
+    try:
+        comments = db.query(models.Comment).filter(models.Comment.post_id == post_id).order_by(models.Comment.created_at.desc()).all()
+        result = []
+        for c in comments:
+            result.append({
+                "id": c.id,
+                "user_name": c.user.full_name if c.user else "User",
+                "content": c.content,
+                "created_at": c.created_at.isoformat() if c.created_at else ""
+            })
+        return result
+    except Exception as e:
+        print(f"Error getting comments for post {post_id}: {str(e)}")
+        return []
 
 @app.post("/posts/{post_id}/like")
 async def toggle_post_like(post_id: int, user_email: str = Body(..., embed=True), db: Session = Depends(get_db)):
-    post = db.query(models.Post).filter(models.Post.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-        
-    existing_like = db.query(models.PostLike).filter(
-        models.PostLike.post_id == post_id,
-        models.PostLike.user_email == user_email
-    ).first()
-    
-    if existing_like:
-        db.delete(existing_like)
-        db.commit()
-        return {"message": "Post unliked", "liked": False}
-    else:
-        new_like = models.PostLike(post_id=post_id, user_email=user_email)
-        db.add(new_like)
-        db.commit()
-        return {"message": "Post liked", "liked": True}
+    try:
+        post = db.query(models.Post).filter(models.Post.id == post_id).first()
+        if not post:
+            raise HTTPException(status_code=404, detail="Post not found")
+        existing_like = db.query(models.PostLike).filter(
+            models.PostLike.post_id == post_id,
+            models.PostLike.user_email == user_email
+        ).first()
+        if existing_like:
+            db.delete(existing_like)
+            db.commit()
+            return {"message": "Post unliked", "liked": False}
+        else:
+            new_like = models.PostLike(post_id=post_id, user_email=user_email)
+            db.add(new_like)
+            db.commit()
+            return {"message": "Post liked", "liked": True}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        print(f"Error toggling like on post {post_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to toggle like: {str(e)}")
 
 @app.get("/posts")
 async def get_posts(email: Optional[str] = None, db: Session = Depends(get_db)):
-    posts = db.query(models.Post).order_by(models.Post.created_at.desc()).all()
-    result = []
-    for post in posts:
-        likes_count = db.query(models.PostLike).filter(models.PostLike.post_id == post.id).count()
-        comments_count = db.query(models.Comment).filter(models.Comment.post_id == post.id).count()
-        
-        has_liked = False
-        if email:
-            has_liked = db.query(models.PostLike).filter(
-                models.PostLike.post_id == post.id,
-                models.PostLike.user_email == email
-            ).first() is not None
-
-        post_data = {
-            "id": post.id,
-            "title": post.title,
-            "description": post.description,
-            "image_url": post.image_url,
-            "created_at": post.created_at.isoformat() if post.created_at else None,
-            "author_name": post.author.full_name if post.author else "Lecturer",
-            "likes_count": likes_count,
-            "comments_count": comments_count,
-            "has_liked": has_liked
-        }
-        result.append(post_data)
-    return result
+    try:
+        posts = db.query(models.Post).order_by(models.Post.created_at.desc()).all()
+        result = []
+        for post in posts:
+            try:
+                likes_count = db.query(models.PostLike).filter(models.PostLike.post_id == post.id).count()
+                comments_count = db.query(models.Comment).filter(models.Comment.post_id == post.id).count()
+                has_liked = False
+                if email:
+                    has_liked = db.query(models.PostLike).filter(
+                        models.PostLike.post_id == post.id,
+                        models.PostLike.user_email == email
+                    ).first() is not None
+                author = post.author
+                result.append({
+                    "id": post.id,
+                    "title": post.title or "",
+                    "description": post.description or "",
+                    "image_url": post.image_url,
+                    "created_at": post.created_at.isoformat() if post.created_at else None,
+                    "author_name": author.full_name if author else "Lecturer",
+                    "author_email": author.email if author else "",
+                    "likes_count": likes_count,
+                    "comments_count": comments_count,
+                    "has_liked": has_liked
+                })
+            except Exception as post_err:
+                print(f"Skipping post {post.id} due to error: {post_err}")
+                continue
+        return result
+    except Exception as e:
+        print(f"Error getting posts: {str(e)}")
+        return []
 
 # --- Course Endpoints ---
 
@@ -2492,31 +2535,38 @@ async def send_chat_message(
     content: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    session = db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    try:
+        session = db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+            
+        sender = db.query(models.User).filter(models.User.email == sender_email).first()
+        if not sender:
+            raise HTTPException(status_code=404, detail="Sender not found")
+            
+        new_message = models.ChatMessage(
+            session_id=session_id,
+            sender_id=sender.id,
+            content=content
+        )
+        db.add(new_message)
+        db.commit()
+        db.refresh(new_message)
         
-    sender = db.query(models.User).filter(models.User.email == sender_email).first()
-    if not sender:
-        raise HTTPException(status_code=404, detail="Sender not found")
-        
-    new_message = models.ChatMessage(
-        session_id=session_id,
-        sender_id=sender.id,
-        content=content
-    )
-    db.add(new_message)
-    db.commit()
-    db.refresh(new_message)
-    
-    return {
-        "id": new_message.id,
-        "sender_id": new_message.sender_id,
-        "sender_name": sender.full_name,
-        "content": new_message.content,
-        "created_at": new_message.created_at.isoformat() if new_message.created_at else "",
-        "is_read": new_message.is_read == 1
-    }
+        return {
+            "id": new_message.id,
+            "sender_id": new_message.sender_id,
+            "sender_name": sender.full_name,
+            "content": new_message.content,
+            "created_at": new_message.created_at.isoformat() if new_message.created_at else "",
+            "is_read": new_message.is_read == 1
+        }
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        print(f"Error sending chat message: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Failed to send message: {str(e)}")
 
 # --- Group Chat Endpoints ---
 
@@ -2633,37 +2683,44 @@ async def send_group_message(
     attachment_id: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    group = db.query(models.GroupChat).filter(models.GroupChat.id == group_id).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
+    try:
+        group = db.query(models.GroupChat).filter(models.GroupChat.id == group_id).first()
+        if not group:
+            raise HTTPException(status_code=404, detail="Group not found")
 
-    sender = db.query(models.User).filter(models.User.email == sender_email).first()
-    if not sender:
-        raise HTTPException(status_code=404, detail="Sender not found")
-        
-    membership = db.query(models.GroupMember).filter(models.GroupMember.group_id == group_id, models.GroupMember.user_id == sender.id).first()
-    if not membership:
-        raise HTTPException(status_code=403, detail="Not a member of this group")
+        sender = db.query(models.User).filter(models.User.email == sender_email).first()
+        if not sender:
+            raise HTTPException(status_code=404, detail="Sender not found")
+            
+        membership = db.query(models.GroupMember).filter(models.GroupMember.group_id == group_id, models.GroupMember.user_id == sender.id).first()
+        if not membership:
+            raise HTTPException(status_code=403, detail="Not a member of this group")
 
-    new_message = models.GroupMessage(
-        group_id=group_id,
-        sender_id=sender.id,
-        content=content,
-        attachment_id=attachment_id
-    )
-    db.add(new_message)
-    db.commit()
-    db.refresh(new_message)
+        new_message = models.GroupMessage(
+            group_id=group_id,
+            sender_id=sender.id,
+            content=content,
+            attachment_id=attachment_id
+        )
+        db.add(new_message)
+        db.commit()
+        db.refresh(new_message)
 
-    return {
-        "id": new_message.id,
-        "sender_id": new_message.sender_id,
-        "sender_name": sender.full_name,
-        "sender_email": sender.email,
-        "content": new_message.content,
-        "attachment_id": new_message.attachment_id,
-        "created_at": new_message.created_at.isoformat() if new_message.created_at else "",
-    }
+        return {
+            "id": new_message.id,
+            "sender_id": new_message.sender_id,
+            "sender_name": sender.full_name,
+            "sender_email": sender.email,
+            "content": new_message.content,
+            "attachment_id": new_message.attachment_id,
+            "created_at": new_message.created_at.isoformat() if new_message.created_at else "",
+        }
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        print(f"Error sending group message: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Failed to send group message: {str(e)}")
 
 # --- Group Settings UI Endpoints ---
 
