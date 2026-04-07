@@ -153,6 +153,33 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="EduNova API", lifespan=lifespan)
 
+@app.get("/system/force-cleanup")
+async def force_system_cleanup(db: Session = Depends(get_db)):
+    print("DEBUG: Manual Force-Cleanup Triggered")
+    from sqlalchemy import text, not_
+    target_emails = ["smsm@gmail.com", "yaso1@gmail.com", "yaso2@gmail.com", "yaso3@gmail.com", "yait@gmail.com"]
+    
+    # 1. Delete problematic users
+    to_delete = db.query(models.User).filter(models.User.email.in_(target_emails)).all()
+    deleted_names = [u.full_name for u in to_delete]
+    for u in to_delete:
+        print(f"DEBUG: Manually deleting user {u.email}")
+        db.delete(u)
+    
+    # 2. Cleanup orphaned records
+    orphaned_courses = db.query(models.Course).filter(
+        not_(models.Course.lecturer_id.in_(db.query(models.User.id)))
+    ).all()
+    for oc in orphaned_courses:
+        db.delete(oc)
+        
+    db.commit()
+    return {
+        "status": "success",
+        "deleted_users": deleted_names,
+        "message": f"Successfully deleted {len(deleted_names)} users and cleaned orphaned records."
+    }
+
 # Add CORS middleware for Flutter web/mobile
 app.add_middleware(
     CORSMiddleware,
@@ -239,42 +266,6 @@ class OTPRequest(BaseModel):
 class VerifyOTPRequest(BaseModel):
     email: EmailStr
     otp: str
-
-@app.get("/system/force-cleanup")
-async def force_system_cleanup(db: Session = Depends(get_db)):
-    print("DEBUG: Manual Force-Cleanup Triggered")
-    from sqlalchemy import not_
-    target_emails = ["smsm@gmail.com", "yaso1@gmail.com", "yaso2@gmail.com", "yaso3@gmail.com", "yait@gmail.com"]
-    
-    # 1. Delete problematic users
-    to_delete = db.query(models.User).filter(models.User.email.in_(target_emails)).all()
-    deleted_names = [u.full_name for u in to_delete]
-    for u in to_delete:
-        print(f"DEBUG: Manually deleting user {u.email}")
-        db.delete(u)
-    
-    # 2. Cleanup orphaned records
-    orphaned_courses = db.query(models.Course).filter(
-        not_(models.Course.lecturer_id.in_(db.query(models.User.id)))
-    ).all()
-    for oc in orphaned_courses:
-        db.delete(oc)
-        
-    db.commit()
-    return {
-        "status": "success",
-        "deleted_users": deleted_names,
-        "message": f"Successfully deleted {len(deleted_names)} users and cleaned orphaned records."
-    }
-
-# Startup logic refactored.
-
-# @app.get("/")
-# async def root():
-#     return {
-#         "message": "Welcome to EduNova API",
-#         "database": "Online" if os.getenv("DATABASE_URL") else "Offline (SQLite Fallback)"
-#     }
 
 @app.post("/auth/signup")
 async def signup(user: UserAuth, db: Session = Depends(get_db)):
