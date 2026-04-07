@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
@@ -143,11 +144,10 @@ class _StudentChallengesPageState extends State<StudentChallengesPage> {
     final attRate = (_status['attendance']?['current_rate'] ?? 0.0).toDouble();
     final attTarget = (_status['attendance']?['target_rate'] ?? 0.8).toDouble();
     final totalMarks = _status['total_marks'] ?? 0;
-
-    // Overall progress for the big card (just a simple average or count)
-    double overallProgress =
-        (quizCurr + assignCurr + (attRate >= attTarget ? 1 : 0)) /
-        (quizTarget + assignTarget + 1);
+    double overallProgress = (min(quizCurr, quizTarget).toDouble() +
+            min(assignCurr, assignTarget).toDouble() +
+            (attRate >= attTarget ? 1.0 : 0.0)) /
+        (quizTarget + assignTarget + 1.0);
 
     final l10n = AppLocalizations.of(context);
 

@@ -579,28 +579,35 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                        horizontal: 14,
+                        vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.1),
+                        color: Colors.amber, // Solid yellow/amber as requested
                         borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.amber.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(
                             Icons.stars_rounded,
-                            color: Colors.amber,
-                            size: 12,
+                            color: Colors.white,
+                            size: 14,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 6),
                           Text(
                             "$_totalMarks",
                             style: TextDesign.body.copyWith(
-                              color: Colors.amber[800],
-                              fontWeight: FontWeight.w800,
-                              fontSize: 11,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 13,
                             ),
                           ),
                         ],

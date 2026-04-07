@@ -2924,6 +2924,44 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
     att_total = len(att_this_week)
     att_rate = att_present / att_total if att_total > 0 else 0.0
 
+    # Weekly Reward Logic
+    current_week_str = week_start.strftime("%Y-W%U")
+    challenge_title = f"Weekly Master Challenge - {current_week_str}"
+    
+    # 1. Ensure the challenge object exists for this week
+    challenge = db.query(models.WeeklyChallenge).filter(models.WeeklyChallenge.title == challenge_title).first()
+    if not challenge:
+        challenge = models.WeeklyChallenge(
+            title=challenge_title,
+            description="Complete 3 quizzes, 5 assignments, and maintain 80% attendance.",
+            points=2
+        )
+        db.add(challenge)
+        db.commit()
+        db.refresh(challenge)
+
+    # 2. Check if goals are met for CURRENT week
+    goals_met = q_count >= 3 and a_count >= 5 and (att_total == 0 or att_rate >= 0.8)
+    
+    if goals_met:
+        # Check if already awarded
+        completion = db.query(models.ChallengeCompletion).filter(
+            models.ChallengeCompletion.challenge_id == challenge.id,
+            models.ChallengeCompletion.student_id == student.id
+        ).first()
+        
+        if not completion:
+            # Award 2 marks!
+            student.total_academic_marks = (student.total_academic_marks or 0) + 2
+            
+            new_completion = models.ChallengeCompletion(
+                challenge_id=challenge.id,
+                student_id=student.id
+            )
+            db.add(new_completion)
+            db.commit()
+            print(f"DEBUG: Awarded 2 marks to {student.email} for week {current_week_str}")
+
     # Determine previous week status
     prev_q_count = db.query(models.QuizSubmission).filter(
         models.QuizSubmission.student_id == student.id,
