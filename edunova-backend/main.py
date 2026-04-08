@@ -162,7 +162,7 @@ async def startup_db_migration():
 
 
 # Create uploads directory if it doesn't exist
-UPLOAD_DIR = "uploads"
+UPLOAD_DIR = os.path.abspath("uploads")
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
@@ -849,6 +849,11 @@ async def create_post(
             image_path = os.path.join(UPLOAD_DIR, f"{secrets.token_hex(8)}_{image.filename}")
             with open(image_path, "wb") as buffer:
                 shutil.copyfileobj(image.file, buffer)
+            
+            print(f"DEBUG: Saved post image to {image_path}")
+            if not os.path.exists(image_path):
+                print(f"ERROR: Post image {image_path} was NOT saved correctly")
+                
             image_url = f"/uploads/{os.path.basename(image_path)}"
 
         new_post = models.Post(
@@ -1208,6 +1213,10 @@ async def upload_resource(
     file_path = os.path.join(UPLOAD_DIR, f"{secrets.token_hex(8)}_{file.filename}")
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+    
+    print(f"DEBUG: Saved resource file to {file_path}")
+    if not os.path.exists(file_path):
+        print(f"ERROR: File {file_path} was NOT saved correctly")
     
     new_resource = models.CourseResource(
         course_id=course_id,
@@ -3577,6 +3586,10 @@ async def get_student_medals(email: str, db: Session = Depends(get_db)):
 # Final catch-all for SPA routing (MUST BE LAST)
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
+    # Do not serve index.html for missing uploads or API calls
+    if full_path.startswith("uploads/") or full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="Resource not found")
+        
     # Check if a file exists at static/{full_path}
     potential_file = os.path.join("static", full_path)
     if os.path.isfile(potential_file):

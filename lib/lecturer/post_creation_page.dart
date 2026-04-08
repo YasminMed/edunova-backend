@@ -264,9 +264,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
         itemBuilder: (context, index) {
           final post = _myPosts[index];
           final String? imageUrl = post['image_url'];
-          final fullImageUrl = imageUrl != null
-              ? "${AuthService.baseUrl}$imageUrl"
-              : null;
+          final fullImageUrl = AuthService.resolveUrl(imageUrl);
 
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -331,7 +329,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
                 Text(post['title'] ?? "", style: TextDesign.h3),
                 const SizedBox(height: 8),
                 Text(post['description'] ?? "", style: TextDesign.body),
-                if (fullImageUrl != null) ...[
+                if (fullImageUrl.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(15),

@@ -12,6 +12,17 @@ class AuthService {
     ),
   );
 
+  /// Resolves an asset or upload path to a full URL if needed.
+  static String resolveUrl(String? path) {
+    if (path == null || path.isEmpty) return "";
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    // Ensure leading slash and prefix with base URL
+    final normalizedPath = path.startsWith('/') ? path : '/$path';
+    return "$baseUrl$normalizedPath";
+  }
+
   Future<Map<String, dynamic>> login(
     String email,
     String password,

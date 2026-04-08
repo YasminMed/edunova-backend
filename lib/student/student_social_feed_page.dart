@@ -141,9 +141,7 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                 itemBuilder: (context, index) {
                   final post = _posts[index];
                   final String? imageUrl = post['image_url'];
-                  final fullImageUrl = imageUrl != null
-                      ? "${AuthService.baseUrl}$imageUrl"
-                      : null;
+                  final fullImageUrl = AuthService.resolveUrl(imageUrl);
                   final bool hasLiked = post['has_liked'] ?? false;
 
                   return Padding(

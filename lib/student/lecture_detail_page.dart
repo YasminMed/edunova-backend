@@ -4,9 +4,9 @@ import '../constants/app_colors.dart';
 import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
 import '../services/material_service.dart';
+import '../services/file_service.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 
 class LectureDetailPage extends StatefulWidget {
   final Map<String, dynamic> lecture;
@@ -554,27 +554,10 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
               ? null
               : () async {
                   if (_selectedFilterIndex == 0) {
-                    // PDF
-                    final url = resource['file_url'];
-                    if (url != null && url.isNotEmpty) {
-                      try {
-                        await launchUrlString(url, mode: LaunchMode.externalApplication);
-                        await _materialService.incrementResourceView(resource['id']);
-                      } catch (e) {
-                        debugPrint("Error launching URL: $e");
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Could not open file: $e")),
-                          );
-                        }
-                      }
-                    } else {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("PDF URL not found.")),
-                        );
-                      }
-                    }
+                    final String? url = resource['file_url'];
+                    final String fileName = resource['title'] ?? 'document.pdf';
+                    await FileService.downloadAndOpenFile(context, url, fileName);
+                    await _materialService.incrementResourceView(resource['id']);
                   }
                 },
           child: Container(
@@ -710,13 +693,8 @@ class _LectureDetailPageState extends State<LectureDetailPage> {
                     InkWell(
                       onTap: () async {
                         final url = resource['file_url'];
-                        if (url != null) {
-                          try {
-                            await launchUrlString(url, mode: LaunchMode.externalApplication);
-                          } catch (e) {
-                            debugPrint("Error opening reference material: $e");
-                          }
-                        }
+                        final fileName = resource['title'] ?? 'material.pdf';
+                        await FileService.downloadAndOpenFile(context, url, fileName);
                       },
                       child: Row(
                         children: [
