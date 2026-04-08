@@ -146,7 +146,12 @@ class _StudentAnalysisPageState extends State<StudentAnalysisPage> {
     final trend =
         (_analysisData?['performance_trend'] as List?)?.cast<num>() ??
         [0, 0, 0, 0, 0, 0, 0];
-    final days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    final now = DateTime.now();
+    final dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    final days = List.generate(7, (i) {
+      final date = now.subtract(Duration(days: 6 - i));
+      return dayNames[date.weekday % 7];
+    });
 
     return Container(
       padding: const EdgeInsets.all(24),

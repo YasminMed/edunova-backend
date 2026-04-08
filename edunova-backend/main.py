@@ -78,6 +78,11 @@ class CommentSchema(BaseModel):
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static_assets")
 
+# Mount uploads for posters, PDFs, etc.
+if not os.path.exists("uploads"):
+    os.makedirs("uploads")
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 import sqlalchemy
 
 @app.on_event("startup")
@@ -3646,8 +3651,8 @@ async def get_student_medals(email: str, db: Session = Depends(get_db)):
 # Final catch-all for SPA routing (MUST BE LAST)
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
-    # Do not serve index.html for missing uploads or API calls
-    if full_path.startswith("uploads/") or full_path.startswith("api/"):
+    # Do not serve index.html for API calls
+    if full_path.startswith("api/"):
         raise HTTPException(status_code=404, detail="Resource not found")
         
     # Check if a file exists at static/{full_path}
