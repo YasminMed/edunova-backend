@@ -6,6 +6,7 @@ import 'dart:ui';
 import '../viewmodels/lecturer/managed_subject_viewmodel.dart';
 import 'assignment_review_page.dart';
 import 'add_material_dialog.dart';
+import '../l10n/app_localizations.dart';
 
 class ManagedSubjectDetailPage extends StatelessWidget {
   final Map<String, dynamic> subject;
@@ -107,7 +108,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                     ),
                   ),
                   SliverToBoxAdapter(
-                    child: _buildFilterBar(viewModel, color, isDark),
+                    child: _buildFilterBar(context, viewModel, color, isDark),
                   ),
                   SliverPadding(
                     padding: const EdgeInsets.all(20),
@@ -128,10 +129,12 @@ class ManagedSubjectDetailPage extends StatelessWidget {
   }
 
   Widget _buildFilterBar(
+    BuildContext context,
     ManagedSubjectViewModel viewModel,
     Color color,
     bool isDark,
   ) {
+    final l10n = AppLocalizations.of(context);
     const activeColor = Color(0xFF009688); // Teal color from design
     final inactiveColor = activeColor.withOpacity(0.12);
 
@@ -171,7 +174,7 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    viewModel.filters[index],
+                    l10n?.translate(viewModel.filters[index].toLowerCase()) ?? viewModel.filters[index],
                     style: TextStyle(
                       color: isSelected ? Colors.white : activeColor,
                       fontWeight: FontWeight.w700,

@@ -50,7 +50,7 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Latest Posts",
+          AppLocalizations.of(context)?.translate('latest_posts') ?? "Latest Posts",
           style: TextDesign.h2.copyWith(
             color: isDark ? Colors.white : Colors.black87,
           ),
@@ -92,7 +92,10 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                     size: 60,
                   ),
                   const SizedBox(height: 16),
-                  Text("Failed to load posts", style: TextDesign.h3),
+                  Text(
+                    AppLocalizations.of(context)?.translate('failed_load_posts') ?? "Failed to load posts",
+                    style: TextDesign.h3,
+                  ),
                   const SizedBox(height: 8),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -108,7 +111,7 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                       setState(() => _isLoading = true);
                       _fetchPosts();
                     },
-                    child: const Text("Retry"),
+                    child: Text(AppLocalizations.of(context)?.translate('retry') ?? "Retry"),
                   ),
                 ],
               ),
@@ -125,7 +128,7 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "No posts yet",
+                    AppLocalizations.of(context)?.translate('no_posts_yet') ?? "No posts yet",
                     style: TextDesign.h3.copyWith(color: Colors.grey),
                   ),
                 ],
@@ -148,9 +151,9 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                     padding: const EdgeInsets.only(bottom: 20),
                     child: _buildPostCard(
                       context,
-                      userName: post['author_name'] ?? "Lecturer",
-                      time: _formatTimestamp(post['created_at']),
-                      title: post['title'] ?? "No Title",
+                      userName: post['author_name'] ?? (AppLocalizations.of(context)?.translate('lecturer_fallback') ?? "Lecturer"),
+                      time: _formatTimestamp(context, post['created_at']),
+                      title: post['title'] ?? (AppLocalizations.of(context)?.translate('no_title') ?? "No Title"),
                       description: post['description'] ?? "",
                       image: fullImageUrl,
                       likes: (post['likes_count'] ?? 0).toInt(),
@@ -191,8 +194,8 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                                     (hasLiked ? 1 : -1);
                               });
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Failed to update like"),
+                                SnackBar(
+                                  content: Text(AppLocalizations.of(context)?.translate('failed_update_like') ?? "Failed to update like"),
                                 ),
                               );
                             }
@@ -224,8 +227,9 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
     );
   }
 
-  String _formatTimestamp(String? isoDate) {
-    if (isoDate == null) return "Just now";
+  String _formatTimestamp(BuildContext context, String? isoDate) {
+    final l10n = AppLocalizations.of(context);
+    if (isoDate == null) return l10n?.translate('just_now') ?? "Just now";
     try {
       DateTime date = DateTime.parse(isoDate);
       if (!isoDate.endsWith('Z')) {
@@ -233,11 +237,15 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
       }
       final now = DateTime.now();
       final diff = now.difference(date.toLocal());
-      if (diff.inMinutes < 60) return "${diff.inMinutes}m ago";
-      if (diff.inHours < 24) return "${diff.inHours}h ago";
-      return "${diff.inDays}d ago";
+      if (diff.inMinutes < 60) {
+        return l10n?.translate('minutes_ago').replaceFirst('{count}', diff.inMinutes.toString()) ?? "${diff.inMinutes}m ago";
+      }
+      if (diff.inHours < 24) {
+        return l10n?.translate('hours_ago').replaceFirst('{count}', diff.inHours.toString()) ?? "${diff.inHours}h ago";
+      }
+      return l10n?.translate('days_ago').replaceFirst('{count}', diff.inDays.toString()) ?? "${diff.inDays}d ago";
     } catch (_) {
-      return "Recently";
+      return l10n?.translate('recently') ?? "Recently";
     }
   }
 
@@ -446,7 +454,7 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text("Comments", style: TextDesign.h3),
+                Text(AppLocalizations.of(context)?.translate('messages') ?? "Comments", style: TextDesign.h3),
                 const Divider(),
                 Expanded(
                   child: FutureBuilder<List<dynamic>>(
@@ -459,7 +467,7 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                       if (comments.isEmpty) {
                         return Center(
                           child: Text(
-                            "No comments yet. Be the first!",
+                            AppLocalizations.of(context)?.translate('no_comments_yet') ?? "No comments yet. Be the first!",
                             style: TextStyle(color: Colors.grey[500]),
                           ),
                         );
@@ -503,7 +511,7 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                                         Row(
                                           children: [
                                             Text(
-                                              c['user_name'] ?? "User",
+                                              c['user_name'] ?? (AppLocalizations.of(context)?.translate('user_fallback') ?? "User"),
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 13,
@@ -511,7 +519,7 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                                             ),
                                             const Spacer(),
                                             Text(
-                                              _formatTimestamp(c['created_at']),
+                                              _formatTimestamp(context, c['created_at']),
                                               style: TextStyle(
                                                 color: Colors.grey[500],
                                                 fontSize: 11,
@@ -549,7 +557,7 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                         child: TextField(
                           controller: commentController,
                           decoration: InputDecoration(
-                            hintText: "Add a comment...",
+                            hintText: AppLocalizations.of(context)?.translate('add_comment_hint') ?? "Add a comment...",
                             filled: true,
                             fillColor: isDark
                                 ? Colors.grey[800]
@@ -581,8 +589,8 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                             } catch (e) {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("Failed to post comment"),
+                                  SnackBar(
+                                    content: Text(AppLocalizations.of(context)?.translate('failed_post_comment') ?? "Failed to post comment"),
                                   ),
                                 );
                               }

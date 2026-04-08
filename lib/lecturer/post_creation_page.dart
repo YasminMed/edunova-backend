@@ -10,6 +10,7 @@ import '../services/post_service.dart';
 import '../services/auth_service.dart';
 import '../providers/user_provider.dart';
 import '../widgets/share_post_bottom_sheet.dart';
+import '../l10n/app_localizations.dart';
 
 class PostCreationPage extends StatefulWidget {
   const PostCreationPage({super.key});
@@ -108,7 +109,8 @@ class _PostCreationPageState extends State<PostCreationPage> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          "Create Post",
+          AppLocalizations.of(context)?.translate('create_post_title') ??
+              "Create Post",
           style: TextDesign.h2.copyWith(color: textColor),
         ),
         backgroundColor: Colors.transparent,
@@ -699,8 +701,9 @@ class _PostCreationPageState extends State<PostCreationPage> {
           TextField(
             controller: _titleController,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            decoration: const InputDecoration(
-              hintText: "Post Title",
+            decoration: InputDecoration(
+              hintText: AppLocalizations.of(context)?.translate('no_title') ??
+                  "Post Title",
               border: InputBorder.none,
             ),
           ),
@@ -708,8 +711,10 @@ class _PostCreationPageState extends State<PostCreationPage> {
           TextField(
             controller: _descController,
             maxLines: 6,
-            decoration: const InputDecoration(
-              hintText: "Write your description here...",
+            decoration: InputDecoration(
+              hintText:
+                  AppLocalizations.of(context)?.translate('post_content_hint') ??
+                      "Write your description here...",
               border: InputBorder.none,
             ),
           ),
@@ -723,7 +728,11 @@ class _PostCreationPageState extends State<PostCreationPage> {
       children: [
         _buildMediaButton(
           Icons.image_rounded,
-          _selectedImage != null ? "Image Selected" : "Add Image",
+          _selectedImage != null
+              ? (AppLocalizations.of(context)?.translate('success') ??
+                  "Image Selected")
+              : (AppLocalizations.of(context)?.translate('select_image') ??
+                  "Add Image"),
           Colors.blue,
           _pickImage,
           (_selectedImage != null || _selectedImageBytes != null),
@@ -861,9 +870,10 @@ class _PostCreationPageState extends State<PostCreationPage> {
                   strokeWidth: 2,
                 ),
               )
-            : const Text(
-                "Post Update",
-                style: TextStyle(
+            : Text(
+                AppLocalizations.of(context)?.translate('post') ??
+                    "Post Update",
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

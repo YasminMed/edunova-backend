@@ -227,145 +227,142 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 _buildProgressCard(),
                 const SizedBox(height: 24),
 
-                // Horizontal Grid Menu (2 Rows)
-                SizedBox(
-                  height: 240,
-                  child: GridView.count(
-                    scrollDirection: Axis.horizontal,
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 1.1,
-                    padding: const EdgeInsets.only(right: 20),
-                    children: [
-                      _DashboardGridItem(
-                        title:
-                            AppLocalizations.of(context)?.translate('marks') ??
-                            "Marks",
-                        icon: Icons.grade_rounded,
-                        color: Colors.amber,
-                        onTap: () {
-                          Navigator.push(
+                // Grid Menu (2 Rows of 4)
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 4,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.85, // Adjusted for 4 columns
+                  children: [
+                    _DashboardGridItem(
+                      title:
+                          AppLocalizations.of(context)?.translate('marks') ??
+                          "Marks",
+                      icon: Icons.grade_rounded,
+                      color: Colors.amber,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MarksPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _DashboardGridItem(
+                      title:
+                          AppLocalizations.of(context)?.translate('ranks') ??
+                          "Ranks",
+                      icon: Icons.leaderboard_rounded,
+                      color: Colors.blueAccent,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RanksPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _DashboardGridItem(
+                      title:
+                          AppLocalizations.of(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => const MarksPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      _DashboardGridItem(
-                        title:
-                            AppLocalizations.of(context)?.translate('medals') ??
-                            "Medals",
-                        icon: Icons.emoji_events_rounded,
-                        color: Colors.orange,
-                        onTap: () {
-                          Navigator.push(
+                          )?.translate('timetable') ??
+                          "Timetable",
+                      icon: Icons.calendar_today_rounded,
+                      color: Colors.purple,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const TimetablePage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _DashboardGridItem(
+                      title:
+                          AppLocalizations.of(context)?.translate('music') ??
+                          "Music",
+                      icon: Icons.music_note_rounded,
+                      color: Colors.pinkAccent,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MusicPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _DashboardGridItem(
+                      title:
+                          AppLocalizations.of(context)?.translate('medals') ??
+                          "Medals",
+                      icon: Icons.emoji_events_rounded,
+                      color: Colors.orange,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MedalsPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _DashboardGridItem(
+                      title:
+                          AppLocalizations.of(context)?.translate('fees') ??
+                          "Fees",
+                      icon: Icons.payment_rounded,
+                      color: Colors.green,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const FeesPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _DashboardGridItem(
+                      title:
+                          AppLocalizations.of(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => const MedalsPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      _DashboardGridItem(
-                        title:
-                            AppLocalizations.of(context)?.translate('ranks') ??
-                            "Ranks",
-                        icon: Icons.leaderboard_rounded,
-                        color: Colors.blueAccent,
-                        onTap: () {
-                          Navigator.push(
+                          )?.translate('lectures') ??
+                          "Lectures",
+                      icon: Icons.menu_book_rounded,
+                      color: Colors.teal,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LecturesPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _DashboardGridItem(
+                      title:
+                          AppLocalizations.of(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => const RanksPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      _DashboardGridItem(
-                        title:
-                            AppLocalizations.of(context)?.translate('fees') ??
-                            "Fees",
-                        icon: Icons.payment_rounded,
-                        color: Colors.green,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const FeesPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      _DashboardGridItem(
-                        title:
-                            AppLocalizations.of(
-                              context,
-                            )?.translate('timetable') ??
-                            "Timetable",
-                        icon: Icons.calendar_today_rounded,
-                        color: Colors.purple,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const TimetablePage(),
-                            ),
-                          );
-                        },
-                      ),
-                      _DashboardGridItem(
-                        title:
-                            AppLocalizations.of(
-                              context,
-                            )?.translate('lectures') ??
-                            "Lectures",
-                        icon: Icons.menu_book_rounded,
-                        color: Colors.teal,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LecturesPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      _DashboardGridItem(
-                        title:
-                            AppLocalizations.of(context)?.translate('music') ??
-                            "Music",
-                        icon: Icons.music_note_rounded,
-                        color: Colors.pinkAccent,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const MusicPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      _DashboardGridItem(
-                        title:
-                            AppLocalizations.of(
-                              context,
-                            )?.translate('faculty') ??
-                            "Faculty",
-                        icon: Icons.people_alt_rounded,
-                        color: Colors.cyan,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const FacultyPage(),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                          )?.translate('faculty') ??
+                          "Faculty",
+                      icon: Icons.people_alt_rounded,
+                      color: Colors.cyan,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const FacultyPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 32),
                 Text(

@@ -2677,10 +2677,11 @@ async def get_user_chat_sessions(user_email: str, db: Session = Depends(get_db))
             current_latest = result_map[o_id]["latest_message_time"]
             new_latest = session_data["latest_message_time"]
             
-            # Combine unread counts
+            # Combine unread counts from all sessions between these two users
             result_map[o_id]["unread_count"] += unread_count
             
             if not current_latest or (new_latest and new_latest > current_latest):
+                # We show the most recent session's metadata in the list
                 result_map[o_id]["session_id"] = session_data["session_id"]
                 result_map[o_id]["latest_message"] = session_data["latest_message"]
                 result_map[o_id]["latest_message_time"] = session_data["latest_message_time"]
@@ -2700,8 +2701,19 @@ async def get_chat_messages(session_id: int, current_user_email: str = None, db:
     if current_user_email:
         user = db.query(models.User).filter(models.User.email == current_user_email).first()
         if user:
+            # Determine the other user in this session
+            other_uid = session.user2_id if session.user1_id == user.id else session.user1_id
+            
+            # Find ALL sessions between these two users to mark everything as read
+            # This fixes the bug where "ghost" duplicate sessions keep unread counts high
+            related_sessions = db.query(models.ChatSession.id).filter(
+                ((models.ChatSession.user1_id == user.id) & (models.ChatSession.user2_id == other_uid)) |
+                ((models.ChatSession.user1_id == other_uid) & (models.ChatSession.user2_id == user.id))
+            ).all()
+            session_ids = [rs.id for rs in related_sessions]
+
             unread_msgs = db.query(models.ChatMessage).filter(
-                models.ChatMessage.session_id == session_id,
+                models.ChatMessage.session_id.in_(session_ids),
                 models.ChatMessage.sender_id != user.id,
                 models.ChatMessage.is_read == 0
             ).all()

@@ -97,7 +97,12 @@ class _DepartmentStageSelectionPageState
     if (widget.role == 'student') {
       if (selectedDepartment == null || selectedStage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please select a department and stage")),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)?.translate('select_dept_stage_error') ??
+                  "Please select a department and stage",
+            ),
+          ),
         );
         return;
       }
@@ -157,8 +162,12 @@ class _DepartmentStageSelectionPageState
       // Lecturer
       if (selectedDepartments.isEmpty || selectedStages.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Please select at least one department and stage"),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)
+                      ?.translate('select_one_dept_stage_error') ??
+                  "Please select at least one department and stage",
+            ),
           ),
         );
         return;
@@ -249,8 +258,12 @@ class _DepartmentStageSelectionPageState
                   const SizedBox(height: 20),
                   Text(
                     widget.role == 'student'
-                        ? "Student Profile"
-                        : "Lecturer Profile",
+                        ? (AppLocalizations.of(context)
+                                ?.translate('student_profile_title') ??
+                            "Student Profile")
+                        : (AppLocalizations.of(context)
+                                ?.translate('lecturer_profile_title') ??
+                            "Lecturer Profile"),
                     style: TextDesign.h1.copyWith(
                       fontSize: 32,
                       color: isDark ? Colors.white : AppColors.primaryText,
@@ -259,8 +272,12 @@ class _DepartmentStageSelectionPageState
                   const SizedBox(height: 8),
                   Text(
                     widget.role == 'student'
-                        ? "Choose your department and current stage"
-                        : "Select the departments and stages you teach",
+                        ? (AppLocalizations.of(context)
+                                ?.translate('choose_dept_stage') ??
+                            "Choose your department and current stage")
+                        : (AppLocalizations.of(context)
+                                ?.translate('select_dept_stage_teach') ??
+                            "Select the departments and stages you teach"),
                     style: TextDesign.body.copyWith(
                       color: isDark ? Colors.white70 : AppColors.mutedText,
                     ),
@@ -268,7 +285,11 @@ class _DepartmentStageSelectionPageState
                   const SizedBox(height: 40),
 
                   // Department Section
-                  _buildSectionTitle("Department", isDark),
+                  _buildSectionTitle(
+                    AppLocalizations.of(context)?.translate('department_label') ??
+                        "Department",
+                    isDark,
+                  ),
                   const SizedBox(height: 16),
                   if (widget.role == 'student')
                     _buildStudentDropdown(departments, selectedDepartment, (
@@ -287,7 +308,11 @@ class _DepartmentStageSelectionPageState
                   const SizedBox(height: 32),
 
                   // Stage Section
-                  _buildSectionTitle("Stage", isDark),
+                  _buildSectionTitle(
+                    AppLocalizations.of(context)?.translate('stage_label') ??
+                        "Stage",
+                    isDark,
+                  ),
                   const SizedBox(height: 16),
                   if (widget.role == 'student')
                     _buildStudentDropdown(stages, selectedStage, (val) {
@@ -304,9 +329,11 @@ class _DepartmentStageSelectionPageState
                   const SizedBox(height: 48),
                   CustomButton(
                     text: widget.isUpdateProfile
-                        ? "Save Profile"
+                        ? (AppLocalizations.of(context)
+                                ?.translate('save_profile') ??
+                            "Save Profile")
                         : AppLocalizations.of(context)?.translate('continue') ??
-                              "Continue",
+                            "Continue",
                     isLoading: _isLoading,
                     onTap: _handleContinue,
                     color: primaryColor,

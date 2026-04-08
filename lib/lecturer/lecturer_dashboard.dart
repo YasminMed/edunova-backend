@@ -149,7 +149,7 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "${l10n?.translate('lecturer_welcome_back') ?? 'Welcome back'}, dr. $lecturerName!",
+                  "${l10n?.translate('lecturer_welcome_back') ?? 'Welcome back'}, $lecturerName!",
                   style: TextDesign.h1.copyWith(color: titleColor),
                 ),
                 const SizedBox(height: 24),
