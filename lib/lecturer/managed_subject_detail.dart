@@ -856,8 +856,28 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () =>
-                        viewModel.submitAttendance(context, subject['id']),
+                    onPressed: () async {
+                      try {
+                        await viewModel.submitAttendance(subject['id']);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Attendance submitted successfully"),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("Failed to submit attendance: $e"),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
                     child: const Text(
                       "Submit",
                       style: TextStyle(color: Colors.white, fontSize: 16),

@@ -346,7 +346,7 @@ class ManagedSubjectViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  Future<void> submitAttendance(BuildContext context, int courseId) async {
+  Future<void> submitAttendance(int courseId) async {
     setBusy(true);
     try {
       List<Map<String, dynamic>> records = attendanceMap.entries
@@ -358,14 +358,9 @@ class ManagedSubjectViewModel extends BaseViewModel {
         records,
         date: _selectedAttendanceDate,
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Attendance Submitted Successfully"),
-          backgroundColor: Colors.green,
-        ),
-      );
     } catch (e) {
       debugPrint("Error submitting attendance: $e");
+      rethrow;
     } finally {
       setBusy(false);
     }
