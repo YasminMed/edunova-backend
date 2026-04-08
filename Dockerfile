@@ -10,9 +10,8 @@ RUN flutter pub get
 
 # Build the project
 COPY . .
-# Optimize build: disable analytics and use lightweight html renderer to save memory on Railway
-RUN flutter config --no-analytics && \
-    flutter build web --release --no-pub --web-renderer html
+# Use a standard build command to avoid usage errors (exit code 64)
+RUN flutter build web --release
 
 # Stage 2: Runtime Environment (FastAPI)
 FROM python:3.11-slim
