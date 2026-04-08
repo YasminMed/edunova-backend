@@ -1322,7 +1322,7 @@ async def get_assignments(course_id: int, category: str = "assignment", db: Sess
         ).count()
         ungraded = db.query(models.AssignmentSubmission).filter(
             models.AssignmentSubmission.assignment_id == ass.id,
-            models.AssignmentSubmission.is_graded == 0
+            (models.AssignmentSubmission.is_graded == 0) | (models.AssignmentSubmission.is_graded == None)
         ).count()
         
         result.append({
@@ -1462,6 +1462,47 @@ async def grade_submission(
     db.commit()
     return {"message": "Graded successfully"}
 
+@app.delete("/resources/{resource_id}")
+async def delete_resource(resource_id: int, db: Session = Depends(get_db)):
+    resource = db.query(models.CourseResource).filter(models.CourseResource.id == resource_id).first()
+    if not resource:
+        raise HTTPException(status_code=404, detail="Resource not found")
+    
+    # Try to delete file from disk
+    if resource.file_url and resource.file_url.startswith("/uploads/"):
+        filename = resource.file_url.split("/")[-1]
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        if os.path.exists(file_path):
+            try: os.remove(file_path)
+            except: pass
+            
+    db.delete(resource)
+    db.commit()
+    return {"message": "Resource deleted successfully"}
+
+@app.delete("/assignments/{assignment_id}")
+async def delete_assignment(assignment_id: int, db: Session = Depends(get_db)):
+    assignment = db.query(models.Assignment).filter(models.Assignment.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    
+    # Try to delete file from disk
+    if assignment.file_url and assignment.file_url.startswith("/uploads/"):
+        filename = assignment.file_url.split("/")[-1]
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        if os.path.exists(file_path):
+            try: os.remove(file_path)
+            except: pass
+            
+    # Delete related submissions first
+    db.query(models.AssignmentSubmission).filter(
+        models.AssignmentSubmission.assignment_id == assignment_id
+    ).delete()
+    
+    db.delete(assignment)
+    db.commit()
+    return {"message": "Assignment deleted successfully"}
+
 
 # --- Quiz Endpoints ---
 
@@ -1511,7 +1552,7 @@ async def get_quizzes(course_id: int, db: Session = Depends(get_db)):
         ).count()
         ungraded = db.query(models.QuizSubmission).filter(
             models.QuizSubmission.quiz_id == quiz.id,
-            models.QuizSubmission.is_graded == 0
+            (models.QuizSubmission.is_graded == 0) | (models.QuizSubmission.is_graded == None)
         ).count()
         
         result.append({
@@ -1648,6 +1689,29 @@ async def grade_quiz_submission(
     
     db.commit()
     return {"message": "Graded successfully"}
+
+@app.delete("/quizzes/{quiz_id}")
+async def delete_quiz(quiz_id: int, db: Session = Depends(get_db)):
+    quiz = db.query(models.Quiz).filter(models.Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+    
+    # Try to delete file from disk
+    if quiz.file_url and quiz.file_url.startswith("/uploads/"):
+        filename = quiz.file_url.split("/")[-1]
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        if os.path.exists(file_path):
+            try: os.remove(file_path)
+            except: pass
+            
+    # Delete related submissions first
+    db.query(models.QuizSubmission).filter(
+        models.QuizSubmission.quiz_id == quiz_id
+    ).delete()
+    
+    db.delete(quiz)
+    db.commit()
+    return {"message": "Quiz deleted successfully"}
 
 # --- Student & Exam Endpoints ---
 
@@ -3033,33 +3097,14 @@ async def get_student_progress(email: str, db: Session = Depends(get_db)):
             
         progress += challenge_progress
         
-        # Check if fully completed to award marks (ensure only once)
-        fully_completed = (q_count >= TARGET_QUIZZES and a_count >= TARGET_ASSIGNMENTS and att_rate >= TARGET_ATTENDANCE_RATE)
-        if fully_completed:
-            # Check if already awarded this week
-            week_str = week_start.strftime("%Y-W%U")
-            challenge_title = f"{CHALLENGE_TITLE_PREFIX}{week_str}"
-            
-            challenge = db.query(models.WeeklyChallenge).filter(models.WeeklyChallenge.title == challenge_title).first()
-            if not challenge:
-                challenge = models.WeeklyChallenge(title=challenge_title, description=f"Challenge for week {week_str}", points=10)
-                db.add(challenge)
-                db.commit()
-                db.refresh(challenge)
-                
-            completion = db.query(models.ChallengeCompletion).filter(
-                models.ChallengeCompletion.challenge_id == challenge.id,
-                models.ChallengeCompletion.student_id == student.id
-            ).first()
-            
-            if not completion:
-                # Award 2 marks!
-                student.total_academic_marks = (student.total_academic_marks or 0) + 2
-                
-                completion = models.ChallengeCompletion(challenge_id=challenge.id, student_id=student.id)
-                db.add(completion)
-                db.commit()
-                print(f"DEBUG: Awarded 2 marks to {student.email} for completing {challenge_title}")
+        # Award Yellow Points (+2 Marks) if challenge completed this week
+        week_str = week_start.strftime("%Y-W%U")
+        challenge_title = f"{CHALLENGE_TITLE_PREFIX}{week_str}"
+        challenge = db.query(models.WeeklyChallenge).filter(models.WeeklyChallenge.title == challenge_title).first()
+        if challenge:
+            check_and_award_challenge_bonus(db, student, challenge, q_count, a_count, att_rate)
+        
+        # Cap at 100%
 
         # Cap at 100%
         progress = min(progress, 100.0)
@@ -3402,6 +3447,39 @@ async def user_heartbeat(email: str, db: Session = Depends(get_db)):
 
 # --- Weekly Challenges Endpoints ---
 
+# --- Weekly Challenges & Rewards ---
+
+def check_and_award_challenge_bonus(db: Session, user: models.User, challenge: models.WeeklyChallenge, quiz_count: int, assignment_count: int, att_rate: float):
+    # AUTOMATIC REWARD SYSTEM
+    quiz_target = 3
+    assignment_target = 5
+    attendance_target = 0.8
+    
+    goals_met = (
+        quiz_count >= quiz_target and 
+        assignment_count >= assignment_target and 
+        att_rate >= attendance_target
+    )
+    
+    completion = db.query(models.ChallengeCompletion).filter(
+        models.ChallengeCompletion.challenge_id == challenge.id,
+        models.ChallengeCompletion.student_id == user.id
+    ).first()
+    
+    if goals_met and not completion:
+        completion = models.ChallengeCompletion(
+            challenge_id=challenge.id,
+            student_id=user.id
+        )
+        db.add(completion)
+        # Academic Marks (Yellow Points)
+        user.total_academic_marks = (user.total_academic_marks or 0) + 2
+        print(f"DEBUG: Awarded +2 Academic Marks to {user.email}")
+        db.commit()
+        db.refresh(completion)
+        db.refresh(user)
+    return completion
+
 @app.get("/student/weekly-challenge-status/{email}")
 async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == email).first()
@@ -3464,32 +3542,14 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
         models.ChallengeCompletion.student_id == user.id
     ).first()
     
-    # AUTOMATIC REWARD SYSTEM
+    # Using the unified reward helper to award Yellow Points (+2 Marks)
     quiz_target = 3
     assignment_target = 5
     attendance_target = 0.8
     
-    goals_met = (
-        quiz_count >= quiz_target and 
-        assignment_count >= assignment_target and 
-        att_rate >= attendance_target
-    )
+    if not completion:
+        completion = check_and_award_challenge_bonus(db, user, challenge, quiz_count, assignment_count, att_rate)
     
-    if goals_met and not completion:
-        # User hit all goals but hasn't been rewarded yet
-        completion = models.ChallengeCompletion(
-            challenge_id=challenge.id,
-            student_id=user.id
-        )
-        db.add(completion)
-        
-        # Award 2 points (academic marks)
-        user.total_academic_marks = (user.total_academic_marks or 0) + 2
-        
-        db.commit()
-        db.refresh(completion)
-        db.refresh(user)
-
     # Calculate previous week status
     prev_week_start = week_start - datetime.timedelta(days=7)
     prev_week_str = prev_week_start.strftime("%Y-W%U")

@@ -76,6 +76,19 @@ class ManagedSubjectViewModel extends BaseViewModel {
     }
   }
 
+  Future<void> deleteResource(int resourceId, int courseId, String category) async {
+    setBusy(true);
+    try {
+      await _materialService.deleteResource(resourceId);
+      await loadResources(courseId, category);
+    } catch (e) {
+      debugPrint("Error deleting resource: $e");
+      rethrow;
+    } finally {
+      setBusy(false);
+    }
+  }
+
   Future<void> addMaterial({
     required int courseId,
     required String title,
@@ -117,6 +130,19 @@ class ManagedSubjectViewModel extends BaseViewModel {
     }
   }
 
+  Future<void> deleteAssignment(int assignmentId, int courseId) async {
+    setBusy(true);
+    try {
+      await _materialService.deleteAssignment(assignmentId);
+      await loadAssignments(courseId);
+    } catch (e) {
+      debugPrint("Error deleting assignment: $e");
+      rethrow;
+    } finally {
+      setBusy(false);
+    }
+  }
+
   Future<void> addAssignment({
     required int courseId,
     required String title,
@@ -151,6 +177,19 @@ class ManagedSubjectViewModel extends BaseViewModel {
       _resources = await _materialService.getQuizzes(courseId);
     } catch (e) {
       debugPrint("Error loading quizzes: $e");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  Future<void> deleteQuiz(int quizId, int courseId) async {
+    setBusy(true);
+    try {
+      await _materialService.deleteQuiz(quizId);
+      await loadQuizzes(courseId);
+    } catch (e) {
+      debugPrint("Error deleting quiz: $e");
+      rethrow;
     } finally {
       setBusy(false);
     }

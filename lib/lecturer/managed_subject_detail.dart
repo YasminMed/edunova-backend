@@ -340,7 +340,12 @@ class ManagedSubjectDetailPage extends StatelessWidget {
                         color: Colors.redAccent,
                         size: 26,
                       ),
-                      onPressed: () {},
+                      onPressed: () => _showDeleteConfirmation(
+                        context,
+                        viewModel,
+                        resource['id'],
+                        categoryName,
+                      ),
                     ),
                   ],
                 ),
@@ -588,6 +593,60 @@ class ManagedSubjectDetailPage extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(
+    BuildContext context,
+    ManagedSubjectViewModel viewModel,
+    int resourceId,
+    String category,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Material"),
+        content: Text("Are you sure you want to delete this $category? This action cannot be undone and will remove it for all students."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                if (category == "Assignments") {
+                  await viewModel.deleteAssignment(resourceId, subject['id']);
+                } else if (category == "Quizzes") {
+                  await viewModel.deleteQuiz(resourceId, subject['id']);
+                } else {
+                  await viewModel.deleteResource(resourceId, subject['id'], category);
+                }
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("$category deleted successfully"),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Failed to delete $category: $e"),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
