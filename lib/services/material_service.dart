@@ -119,6 +119,14 @@ class MaterialService {
     }
   }
 
+  Future<void> deleteResource(int resourceId) async {
+    try {
+      await _dio.delete("/resources/$resourceId");
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Future<List<dynamic>> getAttendance(
     int courseId, {
     String? studentEmail,
@@ -195,6 +203,14 @@ class MaterialService {
         "/courses/$courseId/assignments?category=assignment",
       );
       return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> deleteAssignment(int assignmentId) async {
+    try {
+      await _dio.delete("/assignments/$assignmentId");
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -354,6 +370,14 @@ class MaterialService {
     try {
       final response = await _dio.get("/courses/$courseId/quizzes");
       return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> deleteQuiz(int quizId) async {
+    try {
+      await _dio.delete("/quizzes/$quizId");
     } on DioException catch (e) {
       throw _handleError(e);
     }
