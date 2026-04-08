@@ -334,7 +334,7 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
               ],
             ),
           ),
-          if (image != null)
+          if (image != null && image.isNotEmpty && image != "null" && image != "None")
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: ClipRRect(
@@ -345,14 +345,8 @@ class _StudentSocialFeedPageState extends State<StudentSocialFeedPage> {
                   height: 200,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 200,
-                      width: double.infinity,
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Icon(Icons.broken_image, color: Colors.grey),
-                      ),
-                    );
+                    // Hide the image entirely instead of showing a broken box
+                    return const SizedBox.shrink();
                   },
                 ),
               ),

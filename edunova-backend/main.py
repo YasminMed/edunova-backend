@@ -1205,15 +1205,18 @@ async def create_course(
     
     image_url = None
     if image:
-        # Generate random filename
-        file_ext = image.filename.split(".")[-1]
-        file_name = f"{secrets.token_hex(8)}.{file_ext}"
-        file_path = os.path.join(UPLOAD_DIR, file_name)
-        
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(image.file, buffer)
-        
-        image_url = f"/uploads/{file_name}"
+        # Store image in DB instead of disk
+        image_data = await image.read()
+        file_id = str(uuid.uuid4())
+        db_file = models.UploadFile(
+            id=file_id,
+            filename=image.filename,
+            content_type=image.content_type,
+            data=image_data,
+        )
+        db.add(db_file)
+        db.flush()
+        image_url = f"/files/{file_id}"
     
     # Identify lecturer
     lecturer_id = 1
@@ -1264,19 +1267,25 @@ async def upload_resource(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    file_path = os.path.join(UPLOAD_DIR, f"{secrets.token_hex(8)}_{file.filename}")
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    # Store file in DB instead of disk
+    file_data = await file.read()
+    file_id = str(uuid.uuid4())
+    db_file = models.UploadFile(
+        id=file_id,
+        filename=file.filename,
+        content_type=file.content_type,
+        data=file_data,
+    )
+    db.add(db_file)
+    db.flush()
     
-    print(f"DEBUG: Saved resource file to {file_path}")
-    if not os.path.exists(file_path):
-        print(f"ERROR: File {file_path} was NOT saved correctly")
+    print(f"DEBUG: Saved resource file to DB with id={file_id}")
     
     new_resource = models.CourseResource(
         course_id=course_id,
         category=category.lower(),
         title=title,
-        file_url=f"/uploads/{os.path.basename(file_path)}"
+        file_url=f"/files/{file_id}"
     )
     db.add(new_resource)
     db.commit()
@@ -1337,10 +1346,17 @@ async def create_assignment(
 ):
     file_url = None
     if file:
-        file_path = os.path.join(UPLOAD_DIR, f"ref_{secrets.token_hex(8)}_{file.filename}")
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        file_url = f"/uploads/{os.path.basename(file_path)}"
+        file_data = await file.read()
+        file_id = str(uuid.uuid4())
+        db_file = models.UploadFile(
+            id=file_id,
+            filename=file.filename,
+            content_type=file.content_type,
+            data=file_data,
+        )
+        db.add(db_file)
+        db.flush()
+        file_url = f"/files/{file_id}"
         
     deadline_date = None
     if deadline:
@@ -1418,10 +1434,17 @@ async def submit_assignment(
     
     file_url = submission.file_url if submission else None
     if file:
-        file_path = os.path.join(UPLOAD_DIR, f"sub_{secrets.token_hex(8)}_{file.filename}")
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        file_url = f"/uploads/{os.path.basename(file_path)}"
+        file_data = await file.read()
+        file_id = str(uuid.uuid4())
+        db_file = models.UploadFile(
+            id=file_id,
+            filename=file.filename,
+            content_type=file.content_type,
+            data=file_data,
+        )
+        db.add(db_file)
+        db.flush()
+        file_url = f"/files/{file_id}"
         
     if submission:
         submission.solution_text = solution_text or submission.solution_text
@@ -1925,10 +1948,17 @@ async def pay_installment(
         
     proof_url = None
     if proof:
-        file_path = os.path.join(UPLOAD_DIR, f"fee_{secrets.token_hex(8)}_{proof.filename}")
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(proof.file, buffer)
-        proof_url = f"/uploads/{os.path.basename(file_path)}"
+        file_data = await proof.read()
+        file_id = str(uuid.uuid4())
+        db_file = models.UploadFile(
+            id=file_id,
+            filename=proof.filename,
+            content_type=proof.content_type,
+            data=file_data,
+        )
+        db.add(db_file)
+        db.flush()
+        proof_url = f"/files/{file_id}"
         
     installment.status = "paid"
     installment.paid_at = datetime.datetime.utcnow()
