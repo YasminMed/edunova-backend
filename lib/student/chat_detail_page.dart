@@ -8,6 +8,7 @@ import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
 import '../services/chat_service.dart';
+import '../services/notification_service.dart';
 import '../models/chat_session.dart';
 import 'group_info_page.dart';
 
@@ -49,8 +50,19 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   @override
   void initState() {
     super.initState();
+    _checkMuteStatus();
     _loadMessages();
     _startTimers();
+  }
+
+  Future<void> _checkMuteStatus() async {
+    final key = widget.isGroup ? 'group_${widget.sessionId}' : 'chat_${widget.sessionId}';
+    final muted = await NotificationService().isChatMuted(key);
+    if (mounted) {
+      setState(() {
+        _isMuted = muted;
+      });
+    }
   }
 
   void _startTimers() {
@@ -195,10 +207,21 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     _loadMessages();
   }
 
-  void _toggleMute() {
+  void _toggleMute() async {
+    final key = widget.isGroup ? 'group_${widget.sessionId}' : 'chat_${widget.sessionId}';
+    
     setState(() {
       _isMuted = !_isMuted;
     });
+
+    if (_isMuted) {
+      await NotificationService().muteChat(key);
+    } else {
+      await NotificationService().unmuteChat(key);
+    }
+    
+    if (!mounted) return;
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

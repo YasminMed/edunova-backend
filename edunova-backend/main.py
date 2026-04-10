@@ -244,10 +244,32 @@ async def send_push_notification_task(token: str, title: str, body: str, data: d
     except messaging.ApiCallError as e:
         print(f"DEBUG: FCM ApiCallError (token might be invalid): {e.code} - {e.message}")
         if e.code in ['registration-token-not-registered', 'invalid-registration-token']:
-            # Token cleanup could go here
             pass
     except Exception as e:
         print(f"DEBUG: FCM Unexpected Error: {e}")
+
+async def send_data_only_push_task(token: str, data: dict):
+    """
+    Data-only FCM: no notification key, so Flutter controls display.
+    This allows the client to apply mute checks before showing anything.
+    """
+    try:
+        str_data = {k: str(v) for k, v in data.items()}
+        message = messaging.Message(
+            data=str_data,
+            android=messaging.AndroidConfig(priority="high"),
+            apns=messaging.APNSConfig(
+                headers={"apns-priority": "10"},
+                payload=messaging.APNSPayload(
+                    aps=messaging.Aps(content_available=True)
+                )
+            ),
+            token=token,
+        )
+        messaging.send(message)
+    except Exception as e:
+        print(f"DEBUG: FCM Data-only Error: {e}")
+
 
 def broadcast_notification(
     db: Session, 
@@ -3136,6 +3158,7 @@ async def send_chat_message(
     session_id: int,
     sender_email: str = Form(...),
     content: str = Form(...),
+    background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db)
 ):
     try:
@@ -3155,6 +3178,24 @@ async def send_chat_message(
         db.add(new_message)
         db.commit()
         db.refresh(new_message)
+
+        # --- Chat Notification (isolated, non-blocking) ---
+        try:
+            if background_tasks:
+                recipient_id = session.user2_id if session.user1_id == sender.id else session.user1_id
+                devices = db.query(models.Device).filter(models.Device.user_id == recipient_id).all()
+                preview = (content[:60] + '...') if len(content) > 60 else content
+                notif_data = {
+                    "type": "chat",
+                    "session_id": str(session_id),
+                    "sender_name": sender.full_name,
+                    "content_preview": preview,
+                }
+                for dev in devices:
+                    background_tasks.add_task(send_data_only_push_task, token=dev.fcm_token, data=notif_data)
+        except Exception as notif_err:
+            print(f"DEBUG: Chat notif error (non-fatal): {notif_err}")
+        # --- End Notification ---
         
         return {
             "id": new_message.id,
@@ -3285,6 +3326,7 @@ async def send_group_message(
     sender_email: str = Form(...),
     content: str = Form(...),
     attachment_id: str = Form(None),
+    background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db)
 ):
     try:
@@ -3309,6 +3351,28 @@ async def send_group_message(
         db.add(new_message)
         db.commit()
         db.refresh(new_message)
+
+        # --- Group Chat Notification (isolated, non-blocking) ---
+        try:
+            if background_tasks:
+                all_members = db.query(models.GroupMember).filter(models.GroupMember.group_id == group_id).all()
+                preview = (content[:60] + '...') if len(content) > 60 else content
+                notif_data = {
+                    "type": "group_chat",
+                    "group_id": str(group_id),
+                    "group_name": group.name,
+                    "sender_name": sender.full_name,
+                    "content_preview": preview,
+                }
+                for member in all_members:
+                    if member.user_id == sender.id:
+                        continue  # Don't notify the sender
+                    devices = db.query(models.Device).filter(models.Device.user_id == member.user_id).all()
+                    for dev in devices:
+                        background_tasks.add_task(send_data_only_push_task, token=dev.fcm_token, data=notif_data)
+        except Exception as notif_err:
+            print(f"DEBUG: Group notif error (non-fatal): {notif_err}")
+        # --- End Notification ---
 
         return {
             "id": new_message.id,

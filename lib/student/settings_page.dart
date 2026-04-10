@@ -5,6 +5,8 @@ import '../constants/text_design.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/theme_provider.dart';
 import '../providers/locale_provider.dart';
+import '../providers/user_provider.dart';
+import '../services/notification_service.dart';
 import 'support_page.dart';
 import 'contact_page.dart';
 
@@ -17,6 +19,17 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationPreference();
+  }
+
+  Future<void> _loadNotificationPreference() async {
+    final isEnabled = await NotificationService().isGloballyEnabled();
+    if (mounted) setState(() => _notificationsEnabled = isEnabled);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,22 +78,25 @@ class _SettingsPageState extends State<SettingsPage> {
                   'Notifications',
               icon: Icons.notifications_active_rounded,
               value: _notificationsEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _notificationsEnabled = value;
-                });
+              onChanged: (value) async {
+                setState(() => _notificationsEnabled = value);
+                final userProvider = Provider.of<UserProvider>(context, listen: false);
+                if (value) {
+                  if (userProvider.userId != null) {
+                    await NotificationService().enableNotifications(userProvider.userId!);
+                  }
+                } else {
+                  await NotificationService().disableNotifications();
+                }
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
                       value
-                          ? AppLocalizations.of(
-                                  context,
-                                )?.translate('notifications_unmuted') ??
-                                'Notifications Unmuted'
-                          : AppLocalizations.of(
-                                  context,
-                                )?.translate('notifications_muted') ??
-                                'Notifications Muted',
+                          ? AppLocalizations.of(context)?.translate('notifications_unmuted') ??
+                                'Notifications Enabled'
+                          : AppLocalizations.of(context)?.translate('notifications_muted') ??
+                                'Notifications Disabled',
                     ),
                     backgroundColor: AppColors.primary,
                     duration: const Duration(seconds: 1),
