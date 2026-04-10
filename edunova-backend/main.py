@@ -2648,11 +2648,14 @@ async def get_user_chat_sessions(user_email: str, db: Session = Depends(get_db))
         ).order_by(models.ChatMessage.created_at.desc()).first()
         
         # Only count unread messages sent by the other person
-        unread_count = db.query(models.ChatMessage).filter(
-            models.ChatMessage.session_id == s.id,
-            models.ChatMessage.sender_id == other_user.id,
-            models.ChatMessage.is_read == 0
-        ).count() if other_user.id != user.id else 0
+        # Ignore self-chats or messages where the sender is the current user
+        unread_count = 0
+        if other_user.id != user.id:
+            unread_count = db.query(models.ChatMessage).filter(
+                models.ChatMessage.session_id == s.id,
+                models.ChatMessage.sender_id == other_user.id,
+                models.ChatMessage.is_read == 0
+            ).count()
         
         session_data = {
             "session_id": s.id,
@@ -3151,18 +3154,45 @@ async def get_student_progress(email: str, db: Session = Depends(get_db)):
                 elif val > 50: progress += 2.0
             except: pass
 
-        # 3. Attendance: >80% (+2%)
-        att_total = db.query(models.Attendance).filter(models.Attendance.student_id == student.id).count()
-        att_present = db.query(models.Attendance).filter(models.Attendance.student_id == student.id, models.Attendance.status == "attended").count()
-        if att_total > 0 and (att_present / att_total) > 0.8:
-            progress += 2.0
-
-        # 4. Weekly Challenges: +1% per completed sub-task (3 quizes, 5 assignments, 1 attendance)
-        # Target counts
+        # Weekly attendance & Challenges Targets
         TARGET_QUIZZES = 3
         TARGET_ASSIGNMENTS = 5
         TARGET_ATTENDANCE_RATE = 0.8
         
+        # Weekly attendance — use ALL-TIME attendance average across courses
+        att_all_records = db.query(models.Attendance).filter(
+            models.Attendance.student_id == student.id
+        ).all()
+        
+        att_stage_list = [s.strip() for s in (student.stage or "").split(",") if s.strip()]
+        att_student_courses = db.query(models.Course).filter(
+            models.Course.department == student.department,
+            models.Course.stage.in_(att_stage_list) if att_stage_list else False
+        ).all()
+        
+        tmp_c_att = {}
+        for r in att_all_records:
+            if r.course_id not in tmp_c_att: tmp_c_att[r.course_id] = {"p": 0, "t": 0}
+            tmp_c_att[r.course_id]["t"] += 1
+            if r.status and r.status.lower().strip() in ("attended", "present"):
+                tmp_c_att[r.course_id]["p"] += 1
+        
+        if not att_student_courses:
+            att_rate = 0.0
+        else:
+            tmp_rates = []
+            for c in att_student_courses:
+                if c.id in tmp_c_att:
+                    tmp_rates.append(tmp_c_att[c.id]["p"] / tmp_c_att[c.id]["t"] if tmp_c_att[c.id]["t"] > 0 else 0.0)
+                else:
+                    tmp_rates.append(0.0)
+            att_rate = sum(tmp_rates) / len(att_student_courses)
+
+        # 3. Attendance Bonus: >80% (+2 marks towards student progress)
+        if att_rate > TARGET_ATTENDANCE_RATE:
+            progress += 2.0
+
+        # 4. Weekly Challenges: +1% per completed sub-task (3 quizes, 5 assignments, 1 attendance)
         week_start = get_current_week_start()
         
         # Real counts for this week
@@ -3176,19 +3206,11 @@ async def get_student_progress(email: str, db: Session = Depends(get_db)):
             models.AssignmentSubmission.submitted_at >= week_start
         ).count()
         
-        att_this_week = db.query(models.Attendance).filter(
-            models.Attendance.student_id == student.id,
-            models.Attendance.date >= week_start
-        ).all()
-        
-        att_present = len([att for att in att_this_week if att.status.lower() == "attended"])
-        att_rate = att_present / len(att_this_week) if att_this_week else 0.0
-        
         # Progress: 1% for each quiz (up to 3), 1% for each assignment (up to 5), 1% for attendance >= 80%
         challenge_progress = 0
         challenge_progress += min(q_count, TARGET_QUIZZES)
         challenge_progress += min(a_count, TARGET_ASSIGNMENTS)
-        if att_rate >= TARGET_ATTENDANCE_RATE and len(att_this_week) > 0:
+        if att_rate >= TARGET_ATTENDANCE_RATE and len(att_student_courses) > 0:
             challenge_progress += 1
             
         progress += challenge_progress
@@ -3605,26 +3627,27 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
         models.AssignmentSubmission.submitted_at >= week_start
     ).count()
     
-    # Weekly attendance
-    att_this_week = db.query(models.Attendance).filter(
+    # Weekly attendance — use ALL-TIME attendance (not just this week),
+    # so students with past records don't get 0% unfairly
+    att_all_time = db.query(models.Attendance).filter(
         models.Attendance.student_id == user.id,
-        models.Attendance.date >= week_start
     ).all()
     
-    # Get all courses the student is enrolled in
+    # Get all courses the student is enrolled in (handle comma-separated stages)
+    stage_list = [s.strip() for s in (user.stage or "").split(",") if s.strip()]
     student_courses = db.query(models.Course).filter(
         models.Course.department == user.department,
-        models.Course.stage == user.stage
+        models.Course.stage.in_(stage_list) if stage_list else False
     ).all()
     num_courses = len(student_courses)
     
     course_attendance = {}
-    for att in att_this_week:
+    for att in att_all_time:
         if att.course_id not in course_attendance:
             course_attendance[att.course_id] = {"present": 0, "total": 0}
         
         course_attendance[att.course_id]["total"] += 1
-        if att.status and att.status.lower().strip() == "attended":
+        if att.status and att.status.lower().strip() in ("attended", "present"):
             course_attendance[att.course_id]["present"] += 1
             
     if num_courses == 0:
@@ -3632,7 +3655,7 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
         att_rate = 0.0
     else:
         # Average attendance rate across ALL enrolled courses.
-        # Courses with no sessions recorded this week contribute 0.0.
+        # Courses with no sessions recorded contribute 0.0.
         course_rates = []
         for course in student_courses:
             if course.id in course_attendance:
