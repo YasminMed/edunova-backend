@@ -19,8 +19,9 @@ import 'fees_page.dart';
 import 'music_page.dart';
 import 'faculty_page.dart';
 import 'lectures_page.dart';
-import 'student_challenges_page.dart';
 import 'student_social_feed_page.dart';
+import 'notifications_page.dart';
+import 'student_challenges_page.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -164,6 +165,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildDashboardContent() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Stack(
       children: [
         // Parallax Background
@@ -199,27 +201,42 @@ class _StudentDashboardState extends State<StudentDashboard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header (Greeting)
-                Consumer<UserProvider>(
-                  builder: (context, userProvider, child) {
-                    final name = userProvider.fullName ?? "Student";
-                    return Text(
-                      "${AppLocalizations.of(context)?.translate('hello') ?? 'Hello'}, $name!",
-                      style: TextDesign.h1.copyWith(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Colors.black87,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Consumer<UserProvider>(
+                            builder: (context, userProvider, child) {
+                              final name = userProvider.fullName ?? "Student";
+                              return Text(
+                                "${AppLocalizations.of(context)?.translate('hello') ?? 'Hello'}, $name!",
+                                style: TextDesign.h1.copyWith(
+                                  fontSize: 24,
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black87,
+                                ),
+                              );
+                            },
+                          ),
+                          Text(
+                            AppLocalizations.of(context)?.translate('ready_to_learn') ??
+                                "Ready to learn something new today?",
+                            style: TextDesign.body.copyWith(
+                              fontSize: 13,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white70
+                                  : AppColors.mutedText,
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                ),
-                Text(
-                  AppLocalizations.of(context)?.translate('ready_to_learn') ??
-                      "Ready to learn something new today?",
-                  style: TextDesign.body.copyWith(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white70
-                        : AppColors.mutedText,
-                  ),
+                    ),
+                    _buildNotificationBell(context, isDark),
+                  ],
                 ),
                 const SizedBox(height: 24),
 
@@ -687,6 +704,34 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationBell(BuildContext context, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: IconButton(
+        icon: Icon(
+          Icons.notifications_none_rounded,
+          color: isDark ? Colors.white : AppColors.primary,
+        ),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const NotificationsPage()),
+          );
+        },
       ),
     );
   }

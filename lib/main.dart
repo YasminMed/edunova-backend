@@ -14,6 +14,11 @@ import 'providers/theme_provider.dart';
 import 'providers/user_provider.dart';
 import 'viewmodels/lecturer/lecturer_materials_viewmodel.dart';
 import 'providers/music_provider.dart';
+import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'services/notification_service.dart';
+import 'firebase_options.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +34,9 @@ void main() {
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
+
+  // --- Notification System Initialization ---
+  _initializeNotifications();
 
   runApp(
     MultiProvider(
@@ -192,5 +200,21 @@ class MyApp extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+Future<void> _initializeNotifications() async {
+  try {
+    // Attempt Firebase initialization using the generated options
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    
+    // Initialize our custom notification service
+    await NotificationService().initialize();
+    
+    if (kDebugMode) print('Notification System initialized successfully');
+  } catch (e) {
+    if (kDebugMode) print('Notification System initialization failed: $e');
   }
 }

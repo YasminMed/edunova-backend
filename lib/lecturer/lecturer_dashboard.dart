@@ -12,6 +12,7 @@ import 'student_analysis_page.dart';
 import 'post_creation_page.dart';
 import 'lecturer_materials_page.dart';
 import 'lecturer_reports_page.dart';
+import '../student/notifications_page.dart';
 
 class LecturerDashboard extends StatefulWidget {
   const LecturerDashboard({super.key});
@@ -148,9 +149,20 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "${l10n?.translate('lecturer_welcome_back') ?? 'Welcome back'}, $lecturerName!",
-                  style: TextDesign.h1.copyWith(color: titleColor),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "${l10n?.translate('lecturer_welcome_back') ?? 'Welcome back'}, $lecturerName!",
+                        style: TextDesign.h1.copyWith(
+                          fontSize: 24,
+                          color: titleColor
+                        ),
+                      ),
+                    ),
+                    _buildNotificationBell(context, isDark),
+                  ],
                 ),
                 const SizedBox(height: 24),
 
@@ -619,5 +631,33 @@ class _LecturerDashboardState extends State<LecturerDashboard> {
     }
 
     return content.isEmpty ? localizedAction : "$localizedAction $content";
+  }
+
+  Widget _buildNotificationBell(BuildContext context, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: IconButton(
+        icon: Icon(
+          Icons.notifications_none_rounded,
+          color: isDark ? Colors.white : AppColors.primary,
+        ),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const NotificationsPage()),
+          );
+        },
+      ),
+    );
   }
 }

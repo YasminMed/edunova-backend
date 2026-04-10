@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/notification_service.dart';
 
 class UserProvider extends ChangeNotifier {
   int? _userId;
@@ -52,6 +53,9 @@ class UserProvider extends ChangeNotifier {
       if (stage != null) await prefs.setString('stage', stage);
       if (photoUrl != null) await prefs.setString('photoUrl', photoUrl);
     }
+    
+    // Register device token for push notifications
+    NotificationService().registerDeviceToken(id);
 
     notifyListeners();
   }
@@ -65,10 +69,18 @@ class UserProvider extends ChangeNotifier {
     _department = prefs.getString('department');
     _stage = prefs.getString('stage');
     _photoUrl = prefs.getString('photoUrl');
+    
+    if (_userId != null) {
+      NotificationService().registerDeviceToken(_userId!);
+    }
+    
     notifyListeners();
   }
 
   Future<void> clearUser() async {
+    // Unregister device token to stop receiving notifications on this device
+    NotificationService().unregisterDeviceToken();
+
     _userId = null;
     _fullName = null;
     _email = null;

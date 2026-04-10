@@ -1,5 +1,5 @@
-from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Form, Body, Query
-from typing import Optional, List
+from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Form, Body, Query, BackgroundTasks
+from typing import Optional, List, Union
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -41,6 +41,14 @@ except ImportError:
         import models
         import database
         from database import engine, get_db, SessionLocal
+
+# Initialize Firebase Admin SDK
+try:
+    cred = credentials.Certificate(os.path.join(current_dir, "firebase-service-account.json"))
+    firebase_admin.initialize_app(cred)
+    print("DEBUG: Firebase Admin SDK initialized successfully")
+except Exception as e:
+    print(f"DEBUG: Firebase Admin SDK initialization error: {e}")
 
 app = FastAPI(title="EduNova API")
 
@@ -92,6 +100,9 @@ async def startup_db_migration():
     try:
         from sqlalchemy import text, inspect
         inspector = inspect(engine)
+        
+        # Ensure all tables exist (Additive only)
+        models.Base.metadata.create_all(bind=engine)
         
         # 1. Check chat_messages table
         cm_cols = [c["name"] for c in inspector.get_columns("chat_messages")]
@@ -211,6 +222,82 @@ async def serve_db_file(file_id: str, db: Session = Depends(get_db)):
         media_type=upload.content_type or "application/octet-stream",
         headers={"Content-Disposition": f'inline; filename="{upload.filename}"'},
     )
+
+# --- Notification Helpers ---
+
+async def send_push_notification_task(token: str, title: str, body: str, data: dict = None):
+    """
+    Background task to send FCM message via Firebase Admin SDK.
+    Isolated and non-blocking.
+    """
+    try:
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=title,
+                body=body,
+            ),
+            data=data or {},
+            token=token,
+        )
+        response = messaging.send(message)
+        print(f"DEBUG: FCM message sent successfully: {response}")
+    except messaging.ApiCallError as e:
+        print(f"DEBUG: FCM ApiCallError (token might be invalid): {e.code} - {e.message}")
+        if e.code in ['registration-token-not-registered', 'invalid-registration-token']:
+            # Token cleanup could go here
+            pass
+    except Exception as e:
+        print(f"DEBUG: FCM Unexpected Error: {e}")
+
+def broadcast_notification(
+    db: Session, 
+    user_ids: Union[int, List[int]], 
+    title: str, 
+    message: str, 
+    msg_type: str, 
+    ref_id: int = None,
+    background_tasks: BackgroundTasks = None
+):
+    """
+    Create notification records in DB and schedule push notifications.
+    Supports single user_id or list of user_ids.
+    """
+    try:
+        # Normalize to list
+        if isinstance(user_ids, int):
+            target_ids = [user_ids]
+        else:
+            target_ids = user_ids
+
+        for uid in target_ids:
+            # 1. Create DB history
+            new_notif = models.Notification(
+                user_id=uid,
+                title=title,
+                message=message,
+                type=msg_type,
+                reference_id=ref_id
+            )
+            db.add(new_notif)
+            
+            # 2. Schedule Pushes for all user's devices
+            if background_tasks:
+                devices = db.query(models.Device).filter(models.Device.user_id == uid).all()
+                for dev in devices:
+                    background_tasks.add_task(
+                        send_push_notification_task,
+                        token=dev.fcm_token,
+                        title=title,
+                        body=message,
+                        data={
+                            "type": str(msg_type),
+                            "reference_id": str(ref_id or "")
+                        }
+                    )
+        db.commit()
+    except Exception as e:
+        print(f"DEBUG: Broadcast error: {e}")
+        db.rollback()
 
 # --- Global Helpers ---
 
@@ -863,10 +950,63 @@ async def reset_password(request: ResetPasswordRequest, db: Session = Depends(ge
     verified_reset_emails.remove(request.email)
     return {"message": "Password reset successfully"}
 
+# --- Notification Endpoints ---
+
+@app.post("/devices/register")
+async def register_device(
+    user_id: int = Body(...),
+    fcm_token: str = Body(...),
+    platform: str = Body("android"),
+    db: Session = Depends(get_db)
+):
+    # Check if token exists
+    existing = db.query(models.Device).filter(models.Device.fcm_token == fcm_token).first()
+    if existing:
+        existing.user_id = user_id
+        existing.last_seen = datetime.datetime.utcnow()
+    else:
+        new_dev = models.Device(
+            user_id=user_id,
+            fcm_token=fcm_token,
+            platform=platform
+        )
+        db.add(new_dev)
+    
+    db.commit()
+    return {"status": "success"}
+
+@app.delete("/devices/token/{token}")
+async def unregister_device(token: str, db: Session = Depends(get_db)):
+    db.query(models.Device).filter(models.Device.fcm_token == token).delete()
+    db.commit()
+    return {"status": "success"}
+
+@app.get("/notifications")
+async def get_notifications(user_email: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == user_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    notifs = db.query(models.Notification)\
+        .filter(models.Notification.user_id == user.id)\
+        .order_by(models.Notification.created_at.desc())\
+        .limit(50)\
+        .all()
+    return notifs
+
+@app.post("/notifications/{notif_id}/read")
+async def mark_notification_read(notif_id: int, db: Session = Depends(get_db)):
+    notif = db.query(models.Notification).filter(models.Notification.id == notif_id).first()
+    if notif:
+        notif.is_read = True
+        db.commit()
+    return {"status": "success"}
+
 # --- Posts Endpoints ---
 
 @app.post("/posts")
 async def create_post(
+    bg_tasks: BackgroundTasks,
     title: str = Form(...),
     description: str = Form(...),
     user_email: str = Form(...),
@@ -913,6 +1053,26 @@ async def create_post(
         db.add(new_post)
         db.commit()
         db.refresh(new_post)
+
+        # --- ADDITIVE NOTIFICATION LOGIC ---
+        try:
+            # Global Post: Notify all users
+            all_users = db.query(models.User).all()
+            for u in all_users:
+                # To prevent spam, we could filter here, but user said 'Global Post sent to ALL users'
+                if u.id != user.id: # Don't notify the author
+                    broadcast_notification(
+                        db,
+                        u.id,
+                        "New Global Post",
+                        f"{user.full_name} posted: '{title}'",
+                        "post",
+                        new_post.id,
+                        bg_tasks
+                    )
+        except Exception as ne:
+            print(f"DEBUG: Notification Trigger Error (create_post): {ne}")
+        # ----------------------------------
 
         return {"message": "Post created successfully", "post_id": new_post.id}
     except HTTPException as he:
@@ -1262,6 +1422,7 @@ async def get_resources(course_id: int, category: str = "", db: Session = Depend
 @app.post("/courses/{course_id}/resources")
 async def upload_resource(
     course_id: int,
+    bg_tasks: BackgroundTasks,
     category: str = Form(...),
     title: str = Form(...),
     file: UploadFile = File(...),
@@ -1290,6 +1451,32 @@ async def upload_resource(
     db.add(new_resource)
     db.commit()
     db.refresh(new_resource)
+    
+    # --- ADDITIVE NOTIFICATION LOGIC ---
+    try:
+        course = db.query(models.Course).filter(models.Course.id == course_id).first()
+        if course:
+            # Find all students in this department and stage
+            target_students = db.query(models.User).filter(
+                models.User.role == "student",
+                models.User.department == course.department,
+                models.User.stage.like(f"%{course.stage}%")
+            ).all()
+            
+            for student in target_students:
+                broadcast_notification(
+                    db, 
+                    student.id, 
+                    "New Lecture Material", 
+                    f"New {category} '{title}' has been added to {course.name}.",
+                    "resource",
+                    new_resource.id,
+                    bg_tasks
+                )
+    except Exception as ne:
+        print(f"DEBUG: Notification Trigger Error (upload_resource): {ne}")
+    # ----------------------------------
+    
     return new_resource
 
 @app.post("/resources/{resource_id}/view")
@@ -1318,6 +1505,7 @@ async def get_attendance(course_id: int, student_email: Optional[str] = Query(No
 @app.post("/courses/{course_id}/attendance")
 async def submit_attendance(
     course_id: int,
+    bg_tasks: BackgroundTasks,
     records: list = Body(...),
     db: Session = Depends(get_db)
 ):
@@ -1330,6 +1518,30 @@ async def submit_attendance(
         )
         db.add(att)
     db.commit()
+    
+    # --- ADDITIVE NOTIFICATION LOGIC ---
+    try:
+        course = db.query(models.Course).filter(models.Course.id == course_id).first()
+        if course:
+            for record in records:
+                student_name = record.get("student_name")
+                status = record.get("status")
+                # Find student by name (since this endpoint only provides name)
+                student = db.query(models.User).filter(models.User.full_name == student_name, models.User.role == "student").first()
+                if student:
+                    broadcast_notification(
+                        db,
+                        student.id,
+                        "Attendance Update",
+                        f"Your attendance for {course.name} has been recorded as: {status}.",
+                        "attendance",
+                        course.id,
+                        bg_tasks
+                    )
+    except Exception as ne:
+        print(f"DEBUG: Notification Trigger Error (submit_attendance): {ne}")
+    # ----------------------------------
+    
     return {"message": "Attendance recorded"}
 
 # --- Assignment Endpoints ---
@@ -1337,6 +1549,7 @@ async def submit_attendance(
 @app.post("/courses/{course_id}/assignments")
 async def create_assignment(
     course_id: int,
+    bg_tasks: BackgroundTasks,
     title: str = Form(...),
     content: str = Form(...),
     category: str = Form("assignment"),
@@ -1373,9 +1586,34 @@ async def create_assignment(
         file_url=file_url,
         deadline=deadline_date
     )
-    db.add(new_assignment)
     db.commit()
     db.refresh(new_assignment)
+    
+    # --- ADDITIVE NOTIFICATION LOGIC ---
+    try:
+        course = db.query(models.Course).filter(models.Course.id == course_id).first()
+        if course:
+            # Find all students in this department and stage
+            target_students = db.query(models.User).filter(
+                models.User.role == "student",
+                models.User.department == course.department,
+                models.User.stage.like(f"%{course.stage}%")
+            ).all()
+            
+            for student in target_students:
+                broadcast_notification(
+                    db, 
+                    student.id, 
+                    f"New {category.capitalize()}", 
+                    f"A new {category} '{title}' has been added to {course.name}.",
+                    category,
+                    new_assignment.id,
+                    bg_tasks
+                )
+    except Exception as ne:
+        print(f"DEBUG: Notification Trigger Error (create_assignment): {ne}")
+    # ----------------------------------
+    
     return new_assignment
 
 @app.get("/courses/{course_id}/assignments")
@@ -1411,6 +1649,7 @@ async def get_assignments(course_id: int, category: str = "assignment", db: Sess
 @app.post("/assignments/{assignment_id}/submissions")
 async def submit_assignment(
     assignment_id: int,
+    bg_tasks: BackgroundTasks,
     student_email: str = Form(...),
     solution_text: str = Form(None),
     file: UploadFile = File(None),
@@ -1473,6 +1712,25 @@ async def submit_assignment(
                 description=f"Submitted assignment '{assignment.title}'"
             )
             
+    # --- ADDITIVE NOTIFICATION LOGIC ---
+    try:
+        assignment = db.query(models.Assignment).filter(models.Assignment.id == assignment_id).first()
+        if assignment and assignment.course:
+            lecturer_id = assignment.course.lecturer_id
+            if lecturer_id:
+                broadcast_notification(
+                    db,
+                    lecturer_id,
+                    "New Assignment Submission",
+                    f"Student {student.full_name} submitted their assignment: '{assignment.title}'.",
+                    "submission",
+                    submission.id,
+                    bg_tasks
+                )
+    except Exception as ne:
+        print(f"DEBUG: Notification Trigger Error (submit_assignment): {ne}")
+    # ----------------------------------
+            
     return submission
 
 @app.get("/assignments/{assignment_id}/submissions")
@@ -1521,6 +1779,7 @@ async def get_my_submission(assignment_id: int, student_email: str, db: Session 
 @app.post("/submissions/{submission_id}/grade")
 async def grade_submission(
     submission_id: int,
+    bg_tasks: BackgroundTasks,
     grade: str = Body(...),
     note: str = Body(None),
     db: Session = Depends(get_db)
@@ -1537,6 +1796,24 @@ async def grade_submission(
     submission.is_graded = 1
     
     db.commit()
+    
+    # --- ADDITIVE NOTIFICATION LOGIC ---
+    try:
+        # Notify the student
+        if submission.student_id:
+            broadcast_notification(
+                db,
+                submission.student_id,
+                "Assignment Graded",
+                f"Your submission for '{submission.assignment.title}' has been graded: {grade}.",
+                "grade",
+                submission.id,
+                bg_tasks
+            )
+    except Exception as ne:
+        print(f"DEBUG: Notification Trigger Error (grade_submission): {ne}")
+    # ----------------------------------
+    
     return {"message": "Graded successfully"}
 
 @app.delete("/resources/{resource_id}")
@@ -1586,6 +1863,7 @@ async def delete_assignment(assignment_id: int, db: Session = Depends(get_db)):
 @app.post("/courses/{course_id}/quizzes")
 async def create_quiz(
     course_id: int,
+    bg_tasks: BackgroundTasks,
     title: str = Form(...),
     content: str = Form(...),
     deadline: Optional[str] = Form(None),
@@ -1616,6 +1894,32 @@ async def create_quiz(
     db.add(new_quiz)
     db.commit()
     db.refresh(new_quiz)
+    
+    # --- ADDITIVE NOTIFICATION LOGIC ---
+    try:
+        course = db.query(models.Course).filter(models.Course.id == course_id).first()
+        if course:
+            # Find all students in this department and stage
+            target_students = db.query(models.User).filter(
+                models.User.role == "student",
+                models.User.department == course.department,
+                models.User.stage.like(f"%{course.stage}%")
+            ).all()
+            
+            for student in target_students:
+                broadcast_notification(
+                    db, 
+                    student.id, 
+                    "New Quiz Added", 
+                    f"A new quiz '{title}' has been added to {course.name}.",
+                    "quiz",
+                    new_quiz.id,
+                    bg_tasks
+                )
+    except Exception as ne:
+        print(f"DEBUG: Notification Trigger Error (create_quiz): {ne}")
+    # ----------------------------------
+    
     return new_quiz
 
 @app.get("/courses/{course_id}/quizzes")
@@ -1647,6 +1951,7 @@ async def get_quizzes(course_id: int, db: Session = Depends(get_db)):
 @app.post("/quizzes/{quiz_id}/submissions")
 async def submit_quiz(
     quiz_id: int,
+    bg_tasks: BackgroundTasks,
     student_email: str = Form(...),
     solution_text: str = Form(None),
     file: UploadFile = File(None),
@@ -1701,6 +2006,25 @@ async def submit_quiz(
                 description=f"Submitted quiz '{quiz.title}'"
             )
             
+    # --- ADDITIVE NOTIFICATION LOGIC ---
+    try:
+        quiz = db.query(models.Quiz).filter(models.Quiz.id == quiz_id).first()
+        if quiz and quiz.course:
+            lecturer_id = quiz.course.lecturer_id
+            if lecturer_id:
+                broadcast_notification(
+                    db,
+                    lecturer_id,
+                    "New Quiz Submission",
+                    f"Student {student.full_name} submitted their quiz: '{quiz.title}'.",
+                    "submission",
+                    submission.id,
+                    bg_tasks
+                )
+    except Exception as ne:
+        print(f"DEBUG: Notification Trigger Error (submit_quiz): {ne}")
+    # ----------------------------------
+            
     return submission
 
 @app.get("/quizzes/{quiz_id}/submissions")
@@ -1749,6 +2073,7 @@ async def get_my_quiz_submission(quiz_id: int, student_email: str, db: Session =
 @app.post("/quiz-submissions/{submission_id}/grade")
 async def grade_quiz_submission(
     submission_id: int,
+    bg_tasks: BackgroundTasks,
     grade: str = Body(...),
     note: str = Body(None),
     db: Session = Depends(get_db)
@@ -1765,6 +2090,23 @@ async def grade_quiz_submission(
     submission.is_graded = 1
     
     db.commit()
+    
+    # --- ADDITIVE NOTIFICATION LOGIC ---
+    try:
+        if submission.student_id:
+            broadcast_notification(
+                db,
+                submission.student_id,
+                "Quiz Graded",
+                f"Your submission for quiz '{submission.quiz.title}' has been graded: {grade}.",
+                "grade",
+                submission.id,
+                bg_tasks
+            )
+    except Exception as ne:
+        print(f"DEBUG: Notification Trigger Error (grade_quiz): {ne}")
+    # ----------------------------------
+    
     return {"message": "Graded successfully"}
 
 @app.delete("/quizzes/{quiz_id}")
@@ -2523,6 +2865,7 @@ async def download_faculty_report(
 @app.post("/courses/{course_id}/attendance/batch")
 async def save_batch_attendance(
     course_id: int,
+    bg_tasks: BackgroundTasks,
     attendance_data: list = Body(...), # [{"student_id": 1, "student_name": "Bob", "status": "attended"}]
     date_str: Optional[str] = Query(None),
     db: Session = Depends(get_db)
@@ -2572,6 +2915,28 @@ async def save_batch_attendance(
             db.add(new_att)
             
     db.commit()
+    
+    # --- ADDITIVE NOTIFICATION LOGIC ---
+    try:
+        course = db.query(models.Course).filter(models.Course.id == course_id).first()
+        if course:
+            for item in attendance_data:
+                student_id = item.get("student_id")
+                status = item.get("status")
+                if student_id:
+                    broadcast_notification(
+                        db,
+                        student_id,
+                        "Attendance Batch Update",
+                        f"Your attendance for {course.name} has been recorded as: {status}.",
+                        "attendance",
+                        course.id,
+                        bg_tasks
+                    )
+    except Exception as ne:
+        print(f"DEBUG: Notification Trigger Error (batch_attendance): {ne}")
+    # ----------------------------------
+    
     return {"message": "Batch attendance saved successfully"}
 
 # --- Chat Endpoints ---
@@ -3594,6 +3959,25 @@ def check_and_award_challenge_bonus(db: Session, user: models.User, challenge: m
         user.total_academic_marks = (user.total_academic_marks or 0) + 2
         print(f"DEBUG: Awarded +2 Academic Marks to {user.email}")
         db.commit()
+        
+        # --- ADDITIVE NOTIFICATION LOGIC ---
+        try:
+            # Note: BackgroundTasks is NOT passed into this internal function
+            # We will still broadcast to DB history. Push alert will be skipped for this internal call
+            # unless we pass bg_tasks down, but it's not strictly required in the internal award logic.
+            broadcast_notification(
+                db, 
+                user.id, 
+                "Reward Awarded! +2 Marks", 
+                f"Congratulations! You completed the weekly challenge '{challenge.title}' and earned 2 academic marks.",
+                "reward",
+                challenge.id,
+                None # Push alert skipped for internal bonus logic (DB history only)
+            )
+        except Exception as ne:
+            print(f"DEBUG: Notification Trigger Error (challenge_bonus): {ne}")
+        # ----------------------------------
+
         db.refresh(completion)
         db.refresh(user)
     return completion

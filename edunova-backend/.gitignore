@@ -8,3 +8,4 @@ test_leaderboard.py
 env/
 .env
 uploads/
+firebase-service-account.json

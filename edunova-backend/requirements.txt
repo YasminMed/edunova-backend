@@ -11,3 +11,4 @@ psycopg2-binary
 email-validator
 bcrypt
 fpdf2
+firebase-admin

@@ -294,3 +294,29 @@ class ChallengeCompletion(Base):
 
     challenge = relationship("WeeklyChallenge")
     student = relationship("User")
+
+class Device(Base):
+    __tablename__ = "devices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    fcm_token = Column(String, unique=True, index=True, nullable=False)
+    platform = Column(String) # android, ios, web
+    last_seen = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    title = Column(String, nullable=False)
+    message = Column(String, nullable=False)
+    type = Column(String) # assignment, submission, reward, rank, post
+    reference_id = Column(Integer, nullable=True) # Deep-linking ID
+    is_read = Column(Boolean, default=False, index=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
+
+    user = relationship("User")
+
