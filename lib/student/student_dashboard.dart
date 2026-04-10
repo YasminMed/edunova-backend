@@ -234,7 +234,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   crossAxisCount: 4,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  childAspectRatio: 0.85, // Adjusted for 4 columns
+                  childAspectRatio: 0.70, // Adjusted to avoid bottom overflow on small screens
                   children: [
                     _DashboardGridItem(
                       title:

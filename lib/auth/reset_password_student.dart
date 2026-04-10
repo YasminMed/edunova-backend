@@ -178,8 +178,9 @@ class _ResetPasswordStudentPageState extends State<ResetPasswordStudentPage> {
         children: [
           const AnimatedBackground(),
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -278,6 +279,7 @@ class _ResetPasswordStudentPageState extends State<ResetPasswordStudentPage> {
               ),
             ),
           ),
+        ),
         ],
       ),
     );

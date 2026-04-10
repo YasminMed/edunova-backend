@@ -98,14 +98,46 @@ class _GroupSettingsPageState extends State<GroupSettingsPage> {
             : result.files.single.path != null);
 
     if (hasFile) {
-      setState(() {
-        if (kIsWeb) {
-          _selectedImageBytes = result.files.single.bytes;
-          _selectedImageName = result.files.single.name;
+      if (kIsWeb) {
+        _selectedImageBytes = result.files.single.bytes;
+        _selectedImageName = result.files.single.name;
+      } else {
+        _selectedImagePath = result.files.single.path;
+      }
+
+      final ownerEmail = _getOwnerEmail();
+      if (ownerEmail == null) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Uploading photo...')),
+      );
+
+      final success = await _chatService.updateGroupChat(
+        widget.groupId,
+        ownerEmail,
+        imagePath: _selectedImagePath,
+        bytes: _selectedImageBytes,
+        fileName: _selectedImageName,
+      );
+
+      if (mounted) {
+        setState(() {
+          _selectedImageBytes = null;
+          _selectedImagePath = null;
+          _selectedImageName = null;
+        });
+
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Photo uploaded successfully!')),
+          );
+          _loadGroupDetails();
         } else {
-          _selectedImagePath = result.files.single.path;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to upload photo')),
+          );
         }
-      });
+      }
     }
   }
 
@@ -322,16 +354,16 @@ class _GroupSettingsPageState extends State<GroupSettingsPage> {
                                       as ImageProvider
                                 : FileImage(File(_selectedImagePath!))
                                       as ImageProvider)
-                          : (widget.photoUrl != null
+                          : ((_groupDetails?['photo_url'] ?? widget.photoUrl) != null
                                     ? NetworkImage(
-                                        "${ChatService.baseUrl}${widget.photoUrl}",
+                                        "${ChatService.baseUrl}${_groupDetails?['photo_url'] ?? widget.photoUrl}",
                                       )
                                     : null)
                                 as ImageProvider?,
                       child:
                           (_selectedImageBytes == null &&
                               _selectedImagePath == null &&
-                              widget.photoUrl == null)
+                              (_groupDetails?['photo_url'] ?? widget.photoUrl) == null)
                           ? const Icon(
                               Icons.groups_rounded,
                               size: 50,

@@ -3611,6 +3611,13 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
         models.Attendance.date >= week_start
     ).all()
     
+    # Get all courses the student is enrolled in
+    student_courses = db.query(models.Course).filter(
+        models.Course.department == user.department,
+        models.Course.stage == user.stage
+    ).all()
+    num_courses = len(student_courses)
+    
     course_attendance = {}
     for att in att_this_week:
         if att.course_id not in course_attendance:
@@ -3620,18 +3627,24 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
         if att.status and att.status.lower().strip() == "attended":
             course_attendance[att.course_id]["present"] += 1
             
-    if not course_attendance:
+    if num_courses == 0:
         att_rate = 1.0
     else:
-        course_rates = [
-            data["present"] / data["total"] 
-            for data in course_attendance.values() 
-            if data["total"] > 0
-        ]
-        att_rate = sum(course_rates) / len(course_rates) if course_rates else 1.0
-        
-    att_present = sum(data["present"] for data in course_attendance.values())
-    att_total = sum(data["total"] for data in course_attendance.values())
+        if not course_attendance:
+            att_rate = 0.0
+        else:
+            course_rates = []
+            for course in student_courses:
+                if course.id in course_attendance:
+                    data = course_attendance[course.id]
+                    rate = data["present"] / data["total"] if data["total"] > 0 else 0.0
+                else:
+                    rate = 0.0
+                course_rates.append(rate)
+            att_rate = sum(course_rates) / num_courses
+            
+    att_present = sum(data["present"] for data in course_attendance.values()) if course_attendance else 0
+    att_total = sum(data["total"] for data in course_attendance.values()) if course_attendance else 0
 
     completion = db.query(models.ChallengeCompletion).filter(
         models.ChallengeCompletion.challenge_id == challenge.id,
