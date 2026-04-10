@@ -3628,20 +3628,20 @@ async def get_weekly_challenge_status(email: str, db: Session = Depends(get_db))
             course_attendance[att.course_id]["present"] += 1
             
     if num_courses == 0:
-        att_rate = 1.0
+        # If student has no enrolled courses, attendance goal cannot be met
+        att_rate = 0.0
     else:
-        if not course_attendance:
-            att_rate = 0.0
-        else:
-            course_rates = []
-            for course in student_courses:
-                if course.id in course_attendance:
-                    data = course_attendance[course.id]
-                    rate = data["present"] / data["total"] if data["total"] > 0 else 0.0
-                else:
-                    rate = 0.0
-                course_rates.append(rate)
-            att_rate = sum(course_rates) / num_courses
+        # Average attendance rate across ALL enrolled courses.
+        # Courses with no sessions recorded this week contribute 0.0.
+        course_rates = []
+        for course in student_courses:
+            if course.id in course_attendance:
+                data = course_attendance[course.id]
+                rate = data["present"] / data["total"] if data["total"] > 0 else 0.0
+            else:
+                rate = 0.0
+            course_rates.append(rate)
+        att_rate = sum(course_rates) / num_courses
             
     att_present = sum(data["present"] for data in course_attendance.values()) if course_attendance else 0
     att_total = sum(data["total"] for data in course_attendance.values()) if course_attendance else 0
