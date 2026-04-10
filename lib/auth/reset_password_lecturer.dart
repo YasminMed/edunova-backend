@@ -276,7 +276,6 @@ class _ResetPasswordLecturerPageState extends State<ResetPasswordLecturerPage> {
                     ),
                   ],
                 ),
-                ),
               ),
             ),
           ),
